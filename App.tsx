@@ -4,54 +4,42 @@ import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
+import { storiesData } from './src/storiesData';
 
-// 使用 Vite 的 import.meta.glob 直接读取 text 文件夹中的所有 .md 文件
+// 使用 Vite 的 import.meta.glob 直接读取 text 文件夹中的所有 .md 文件（仅用于获取正文内容）
 const markdownModules = import.meta.glob('./text/*.md', { query: '?raw', import: 'default', eager: true });
 
-// 解析 Markdown 文件内容
-function parseMarkdownContent(content: string, fileName: string): Story {
+// 从markdown文件中提取正文内容（跳过前5行）
+function extractBodyContent(content: string): string {
   const lines = content.split('\n');
-  
-  // 解析格式：
-  // 第一行：标签
-  // 第二行：简介
-  // 第三行：版本信息（对应文件名或none）
-  // 第四行：语言标识（CN或EN）
-  // 第五行：空行
-  // 第六行开始：正文
-  const tags = lines[0]?.trim() || '';
-  const summary = lines[1]?.trim() || '';
-  const version = lines[2]?.trim() || '';
-  const language = (lines[3]?.trim() || '').toUpperCase();
-  
   // 从第6行（index 5）开始是正文
-  const bodyContent = lines.slice(5).join('\n').trim();
-  
-  // 使用文件名作为标题（去掉路径和扩展名）
-  const title = fileName.replace('.md', '').replace('./text/', '').replace('/text/', '');
-  
-  // 根据语言标识判断（CN=中文，EN=英文）
-  const isChinese = language === 'CN';
-  
-  return {
-    id: Math.random().toString(36).substr(2, 9),
-    title,
-    tags,
-    summary,
-    version,
-    content: bodyContent,
-    fileName: fileName.replace('./text/', '').replace('/text/', ''),
-    uploadDate: Date.now(),
-    isChinese,
-    language
-  };
+  return lines.slice(5).join('\n').trim();
 }
 
 const App: React.FC = () => {
-  // 从导入的文件中解析所有故事
+  // 合并统计数据和正文内容
   const stories = useMemo<Story[]>(() => {
-    return Object.entries(markdownModules).map(([path, content]) => {
-      return parseMarkdownContent(content as string, path);
+    return storiesData.map(data => {
+      // 根据文件名找到对应的markdown内容
+      const filePath = `./text/${data.fileName}`;
+      const content = markdownModules[filePath] as string | undefined;
+      
+      // 提取正文内容
+      const bodyContent = content ? extractBodyContent(content) : '';
+      
+      return {
+        id: data.id,
+        title: data.title,
+        tags: data.tags,
+        summary: data.summary,
+        version: data.version,
+        content: bodyContent,
+        fileName: data.fileName,
+        uploadDate: Date.now(),
+        isChinese: data.isChinese,
+        language: data.language,
+        wordCount: data.wordCount
+      };
     });
   }, []);
 
@@ -101,12 +89,18 @@ const App: React.FC = () => {
     });
   };
 
-  // 统计字数（中文统计字符，英文统计单词）
-  const getWordCount = (content: string, isChinese?: boolean): string => {
-    if (isChinese) {
-      return `${content.length} 字符`;
+  // 统计字数（使用预计算的值）
+  const getWordCount = (story: Story): string => {
+    if (story.wordCount !== undefined) {
+      return story.isChinese 
+        ? `${story.wordCount} 字符`
+        : `${story.wordCount} words`;
+    }
+    // 后备方案：如果没有预计算值，实时计算
+    if (story.isChinese) {
+      return `${story.content.length} 字符`;
     } else {
-      const words = content.split(/\s+/).filter(w => w.length > 0);
+      const words = story.content.split(/\s+/).filter(w => w.length > 0);
       return `${words.length} words`;
     }
   };
@@ -114,18 +108,9 @@ const App: React.FC = () => {
   // Render Functions
   const renderHome = () => (
     <div className="text-center space-y-8 animate-in zoom-in duration-1000">
-      <div className="space-y-4">
-        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <BookOpen className="text-emerald-400" size={40} />
-        </div>
-        <h1 className="text-7xl font-bold tracking-tighter text-emerald-950">
-          Muse<span className="text-purple-400">Garden</span>
-        </h1>
-        <p className="text-xl text-gray-400 font-light italic max-w-lg mx-auto">
-          "Where stories bloom and thoughts find their silence."
-        </p>
-      </div>
-      
+      <p className="text-xl text-gray-400 font-light italic max-w-lg mx-auto">
+        "那呼唤爱的样子如此美丽……"
+      </p>
       <button 
         onClick={() => setCurrentView(AppState.TOC)}
         className="group relative inline-flex items-center gap-3 px-10 py-4 bg-emerald-900 text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-emerald-100"
@@ -152,7 +137,7 @@ const App: React.FC = () => {
           <div className="space-y-12">
             {chineseStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">中文</h3>
+                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">CN</h3>
                 {chineseStories.map((story, index) => (
                   <div 
                     key={story.id}
@@ -187,7 +172,7 @@ const App: React.FC = () => {
           <div className="space-y-12">
             {englishStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">English</h3>
+                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">EN</h3>
                 {englishStories.map((story, index) => (
                   <div 
                     key={story.id}
@@ -265,7 +250,7 @@ const App: React.FC = () => {
                 return null;
               })()}
               <div className="flex items-center gap-4 text-gray-400 text-sm">
-                <span>{getWordCount(activeStory.content, activeStory.isChinese)}</span>
+                <span>{getWordCount(activeStory)}</span>
               </div>
             </header>
 

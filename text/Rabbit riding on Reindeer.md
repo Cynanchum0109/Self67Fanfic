@@ -1,6 +1,7 @@
 Reindeer/Rabbit.
 Sex and a little warm
-Chinese:总之是想看兔子把驯鹿榨空这种事
+总之是想看兔子把驯鹿榨空这种事
+EN
 
 Before the Reindeer's sluggish brain could react, the Rabbit sat astride his lap. One hand pressed against the Reindeer's chest, restraining any possible resistance, while the other pulled out his usual dagger. His butt pressed tightly against the Reindeer's penis.
 

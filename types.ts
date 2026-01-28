@@ -10,6 +10,7 @@ export interface Story {
   uploadDate: number;
   isChinese?: boolean;
   language?: string;
+  wordCount?: number;
 }
 
 export enum AppState {

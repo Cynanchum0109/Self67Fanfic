@@ -23,9 +23,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             className="text-2xl font-bold tracking-tighter text-emerald-800 flex items-center gap-2 cursor-pointer group"
           >
             <div className="w-3 h-3 rounded-full bg-emerald-300 group-hover:bg-purple-300 transition-colors animate-pulse"></div>
-            MuseGarden
+            HongCliff
           </h1>
-          <p className="text-xs text-purple-400 mt-1 uppercase tracking-widest font-semibold">Creator Haven</p>
+          <p className="text-xs text-purple-400 mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
@@ -73,7 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             <a href="#" className="hover:text-emerald-500 transition-colors"><Github size={18} /></a>
             <a href="#" className="hover:text-purple-500 transition-colors"><Mail size={18} /></a>
           </div>
-          <p className="text-[10px] text-center text-gray-300 mt-4">© 2024 MuseGarden</p>
+          <p className="text-[10px] text-center text-gray-300 mt-4">© 2026 BQCynanchum</p>
         </div>
       </aside>
 

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# 本地脚本文件夹（不同步到 GitHub）
+scripts/local/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
