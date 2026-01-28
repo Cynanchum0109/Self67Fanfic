@@ -19,10 +19,19 @@ function extractBodyContent(content: string): string {
 const App: React.FC = () => {
   // 合并统计数据和正文内容
   const stories = useMemo<Story[]>(() => {
+    // 调试信息
+    console.log('Markdown modules keys:', Object.keys(markdownModules));
+    console.log('Stories data:', storiesData.length);
+    
     return storiesData.map(data => {
       // 根据文件名找到对应的markdown内容
       const filePath = `./text/${data.fileName}`;
       const content = markdownModules[filePath] as string | undefined;
+      
+      if (!content) {
+        console.warn(`⚠️ 未找到文件内容: ${filePath}`);
+        console.warn('可用的文件路径:', Object.keys(markdownModules));
+      }
       
       // 提取正文内容
       const bodyContent = content ? extractBodyContent(content) : '';
