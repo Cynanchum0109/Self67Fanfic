@@ -1,106 +1,114 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { Story, AppState } from './types';
-import { Trash2, BookOpen, Quote, Clock, Upload, ArrowRight } from 'lucide-react';
+import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
+
+// 使用 Vite 的 import.meta.glob 直接读取 text 文件夹中的所有 .md 文件
+const markdownModules = import.meta.glob('./text/*.md', { query: '?raw', import: 'default', eager: true });
+
+// 解析 Markdown 文件内容
+function parseMarkdownContent(content: string, fileName: string): Story {
+  const lines = content.split('\n');
+  
+  // 解析格式：
+  // 第一行：标签
+  // 第二行：简介
+  // 第三行：版本信息（对应文件名或none）
+  // 第四行：语言标识（CN或EN）
+  // 第五行：空行
+  // 第六行开始：正文
+  const tags = lines[0]?.trim() || '';
+  const summary = lines[1]?.trim() || '';
+  const version = lines[2]?.trim() || '';
+  const language = (lines[3]?.trim() || '').toUpperCase();
+  
+  // 从第6行（index 5）开始是正文
+  const bodyContent = lines.slice(5).join('\n').trim();
+  
+  // 使用文件名作为标题（去掉路径和扩展名）
+  const title = fileName.replace('.md', '').replace('./text/', '').replace('/text/', '');
+  
+  // 根据语言标识判断（CN=中文，EN=英文）
+  const isChinese = language === 'CN';
+  
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    title,
+    tags,
+    summary,
+    version,
+    content: bodyContent,
+    fileName: fileName.replace('./text/', '').replace('/text/', ''),
+    uploadDate: Date.now(),
+    isChinese,
+    language
+  };
+}
 
 const App: React.FC = () => {
-  const [stories, setStories] = useState<Story[]>([]);
+  // 从导入的文件中解析所有故事
+  const stories = useMemo<Story[]>(() => {
+    return Object.entries(markdownModules).map(([path, content]) => {
+      return parseMarkdownContent(content as string, path);
+    });
+  }, []);
+
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
 
-  // Persistence
+  // 初始化：设置第一个故事为活动故事
   useEffect(() => {
-    const saved = localStorage.getItem('musegarden_stories');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // 兼容旧数据格式，确保所有必需的字段都存在
-        const normalizedStories = parsed.map((story: any) => ({
-          ...story,
-          tags: story.tags || '',
-          summary: story.summary || '',
-          version: story.version || '',
-        }));
-        setStories(normalizedStories);
-        if (normalizedStories.length > 0 && !activeStoryId) setActiveStoryId(normalizedStories[0].id);
-      } catch (e) {
-        console.error("Failed to load stories", e);
-      }
+    if (stories.length > 0 && !activeStoryId) {
+      setActiveStoryId(stories[0].id);
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('musegarden_stories', JSON.stringify(stories));
-  }, [stories]);
+  }, [stories, activeStoryId]);
 
   const activeStory = stories.find(s => s.id === activeStoryId);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
+  const getStoryPreview = (story: Story) => {
+    // 只显示简介，不显示版本信息
+    return story.summary || "No preview available.";
+  };
 
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n');
-        
-        // 解析格式：第一行标签，第二行简介，第三行版本，之后是正文
-        const tags = lines[0]?.trim() || '';
-        const summary = lines[1]?.trim() || '';
-        const version = lines[2]?.trim() || '';
-        
-        // 从第4行开始是正文（跳过前3行和可能的空行）
-        const contentStartIndex = lines.findIndex((line, index) => 
-          index >= 3 && line.trim() !== ''
-        );
-        const bodyContent = contentStartIndex >= 0 
-          ? lines.slice(contentStartIndex).join('\n')
-          : lines.slice(3).join('\n');
-        
-        // 使用文件名作为标题，如果没有标签则使用文件名
-        const title = tags || file.name.replace('.md', '');
-
-        const newStory: Story = {
-          id: Math.random().toString(36).substr(2, 9),
-          title,
-          tags,
-          summary,
-          version,
-          content: bodyContent,
-          fileName: file.name,
-          uploadDate: Date.now()
-        };
-        
-        setStories(prev => {
-          if (prev.find(p => p.fileName === file.name)) return prev;
-          return [...prev, newStory];
-        });
-      };
-      reader.readAsText(file);
+  // 根据版本信息找到对应的文章
+  // 版本信息直接是对应的文件名（去掉扩展名），如果是none则没有对应版本
+  const findStoryByVersion = (version: string, currentStory: Story): Story | undefined => {
+    // 如果版本是none，没有对应版本
+    if (version.toLowerCase() === 'none') return undefined;
+    
+    // 版本信息就是对应的文件名（去掉扩展名）
+    const versionName = version.trim();
+    
+    // 查找匹配的文章（通过文件名或标题）
+    return stories.find(s => {
+      // 排除当前文章本身
+      if (s.id === currentStory.id) return false;
+      
+      // 匹配文件名（去掉扩展名）或标题
+      const sFileName = s.fileName.replace('.md', '').trim();
+      const sTitle = s.title.trim();
+      const normalizedVersion = versionName.trim();
+      
+      // 直接匹配文件名或标题（精确匹配或包含匹配）
+      return sFileName === normalizedVersion || 
+             sTitle === normalizedVersion ||
+             sFileName.includes(normalizedVersion) ||
+             sTitle.includes(normalizedVersion) ||
+             normalizedVersion.includes(sFileName) ||
+             normalizedVersion.includes(sTitle);
     });
   };
 
-  const deleteStory = (id: string) => {
-    setStories(prev => prev.filter(s => s.id !== id));
-    if (activeStoryId === id) setActiveStoryId(null);
-  };
-
-  const getStoryPreview = (story: Story) => {
-    // 优先使用简介，如果没有则使用正文预览
-    if (story.summary) {
-      return story.summary;
+  // 统计字数（中文统计字符，英文统计单词）
+  const getWordCount = (content: string, isChinese?: boolean): string => {
+    if (isChinese) {
+      return `${content.length} 字符`;
+    } else {
+      const words = content.split(/\s+/).filter(w => w.length > 0);
+      return `${words.length} words`;
     }
-    const lines = story.content.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith('#')) {
-        return trimmed.length > 150 ? trimmed.substring(0, 150) + '...' : trimmed;
-      }
-    }
-    return "No preview available.";
   };
 
   // Render Functions
@@ -128,64 +136,97 @@ const App: React.FC = () => {
     </div>
   );
 
-  const renderTOC = () => (
-    <div className="space-y-12 animate-in fade-in duration-700">
-      <header className="border-b border-gray-50 pb-10">
-        <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-500 mb-2">Table of Contents</h2>
-        <h1 className="text-5xl font-bold text-emerald-950">Collection of Works</h1>
-      </header>
+  const renderTOC = () => {
+    const chineseStories = stories.filter(s => s.isChinese === true);
+    const englishStories = stories.filter(s => s.isChinese === false);
 
-      <div className="grid grid-cols-1 gap-12">
-        {stories.map((story, index) => (
-          <div 
-            key={story.id}
-            onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
-            className="group cursor-pointer flex flex-col md:flex-row gap-8 items-start"
-          >
-            <div className="text-5xl font-black text-emerald-50 opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
-              {(index + 1).toString().padStart(2, '0')}
-            </div>
-            <div className="flex-1 space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-3xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
-                  {story.title}
-                </h3>
-                {story.tags && (
-                  <span className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
-                    {story.tags}
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
-                {getStoryPreview(story)}
-              </p>
-              <div className="flex items-center gap-4 pt-2 flex-wrap">
-                {story.version && (
-                  <>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-purple-400">
-                      {story.version}
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-                  </>
-                )}
-                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-                  {new Date(story.uploadDate).toLocaleDateString()}
-                </span>
-                <span className="w-10 h-[1px] bg-emerald-100 group-hover:w-20 transition-all duration-500"></span>
-              </div>
-            </div>
+    return (
+      <div className="space-y-12 animate-in fade-in duration-700">
+        <header className="border-b border-gray-50 pb-10">
+          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-500 mb-2">Table of Contents</h2>
+          <h1 className="text-5xl font-bold text-emerald-950">Collection of Works</h1>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* 中文栏 */}
+          <div className="space-y-12">
+            {chineseStories.length > 0 && (
+              <>
+                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">中文</h3>
+                {chineseStories.map((story, index) => (
+                  <div 
+                    key={story.id}
+                    onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
+                    className="group cursor-pointer flex flex-col gap-6 items-start"
+                  >
+                    <div className="text-4xl font-black text-emerald-50 opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
+                      {(index + 1).toString().padStart(2, '0')}
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                          {story.title}
+                        </h3>
+                        {story.tags && (
+                          <span className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                            {story.tags}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
+                        {getStoryPreview(story)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
-        ))}
+
+          {/* 英文栏 */}
+          <div className="space-y-12">
+            {englishStories.length > 0 && (
+              <>
+                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">English</h3>
+                {englishStories.map((story, index) => (
+                  <div 
+                    key={story.id}
+                    onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
+                    className="group cursor-pointer flex flex-col gap-6 items-start"
+                  >
+                    <div className="text-4xl font-black text-emerald-50 opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
+                      {(index + 1).toString().padStart(2, '0')}
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                          {story.title}
+                        </h3>
+                        {story.tags && (
+                          <span className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                            {story.tags}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
+                        {getStoryPreview(story)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
 
         {stories.length === 0 && (
           <div className="py-32 text-center text-gray-400 border-2 border-dashed border-emerald-50 rounded-3xl">
             <p>The garden is currently resting. Please check back later.</p>
-            <p className="text-xs mt-2 uppercase tracking-widest">(Add stories via Author Dashboard)</p>
           </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderReader = () => (
     <div className="flex gap-12 animate-in slide-in-from-right duration-500">
@@ -207,13 +248,24 @@ const App: React.FC = () => {
               {activeStory.summary && (
                 <p className="text-lg text-gray-600 italic mb-4 serif-text">{activeStory.summary}</p>
               )}
-              {activeStory.version && (
-                <p className="text-sm text-purple-500 mb-4">{activeStory.version}</p>
-              )}
+              {activeStory.version && activeStory.version.toLowerCase() !== 'none' && (() => {
+                const relatedStory = findStoryByVersion(activeStory.version, activeStory);
+                if (relatedStory) {
+                  // 显示对应的语言版本标签
+                  const versionLabel = relatedStory.isChinese ? '中文版' : 'English Version';
+                  return (
+                    <button
+                      onClick={() => { setActiveStoryId(relatedStory.id); }}
+                      className="text-sm text-purple-500 mb-4 hover:text-purple-600 hover:underline transition-colors cursor-pointer"
+                    >
+                      {versionLabel}: {relatedStory.title}
+                    </button>
+                  );
+                }
+                return null;
+              })()}
               <div className="flex items-center gap-4 text-gray-400 text-sm">
-                <span className="flex items-center gap-1"><Clock size={14} /> {Math.ceil(activeStory.content.split(/\s+/).length / 200)} min read</span>
-                <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-                <span>{activeStory.content.length} characters</span>
+                <span>{getWordCount(activeStory.content, activeStory.isChinese)}</span>
               </div>
             </header>
 
@@ -255,77 +307,11 @@ const App: React.FC = () => {
     </div>
   );
 
-  const renderLibrary = () => (
-    <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-emerald-950">Author Dashboard</h1>
-          <p className="text-gray-500 mt-2">Manage the source files for your Garden.</p>
-        </div>
-        <div className="relative">
-          <input 
-            type="file" 
-            id="file-upload" 
-            multiple 
-            accept=".md" 
-            className="hidden" 
-            onChange={handleFileUpload} 
-          />
-          <label 
-            htmlFor="file-upload" 
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold cursor-pointer hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-100"
-          >
-            <Upload size={18} /> Import Stories
-          </label>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 gap-4">
-        {stories.map(story => (
-          <div 
-            key={story.id} 
-            className="group flex items-center justify-between p-6 bg-white border border-gray-100 rounded-3xl hover:border-purple-200 transition-all"
-          >
-            <div className="flex items-center gap-6">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <BookOpen size={24} />
-              </div>
-              <div>
-                <h4 className="text-xl font-bold text-gray-800">{story.title}</h4>
-                <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
-                  <span>{story.fileName}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-                  <span>{new Date(story.uploadDate).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
-                className="px-4 py-2 text-emerald-600 bg-emerald-50 rounded-xl font-bold hover:bg-emerald-100"
-              >
-                Preview
-              </button>
-              <button 
-                onClick={() => deleteStory(story.id)}
-                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
     <Layout activeView={currentView} onNavigate={(view) => setCurrentView(view)}>
       {currentView === AppState.HOME && renderHome()}
       {currentView === AppState.TOC && renderTOC()}
       {currentView === AppState.READER && renderReader()}
-      {currentView === AppState.LIBRARY && renderLibrary()}
     </Layout>
   );
 };

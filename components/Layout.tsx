@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BookOpen, List, Home, Github, Mail, Settings } from 'lucide-react';
+import { BookOpen, List, Home, Github, Mail } from 'lucide-react';
 import { AppState } from '../types';
 
 interface LayoutProps {
@@ -69,12 +69,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
         </nav>
 
         <div className="p-6 border-t border-gray-50">
-          <button 
-            onClick={() => onNavigate(AppState.LIBRARY)}
-            className="mb-4 flex items-center gap-2 text-[10px] text-gray-300 hover:text-emerald-400 uppercase tracking-widest font-bold transition-colors"
-          >
-            <Settings size={12} /> Author Dashboard
-          </button>
           <div className="flex justify-around text-gray-400">
             <a href="#" className="hover:text-emerald-500 transition-colors"><Github size={18} /></a>
             <a href="#" className="hover:text-purple-500 transition-colors"><Mail size={18} /></a>

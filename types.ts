@@ -8,6 +8,8 @@ export interface Story {
   content: string;
   fileName: string;
   uploadDate: number;
+  isChinese?: boolean;
+  language?: string;
 }
 
 export enum AppState {
