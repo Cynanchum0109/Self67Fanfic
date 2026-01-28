@@ -16,8 +16,15 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setStories(parsed);
-        if (parsed.length > 0 && !activeStoryId) setActiveStoryId(parsed[0].id);
+        // 兼容旧数据格式，确保所有必需的字段都存在
+        const normalizedStories = parsed.map((story: any) => ({
+          ...story,
+          tags: story.tags || '',
+          summary: story.summary || '',
+          version: story.version || '',
+        }));
+        setStories(normalizedStories);
+        if (normalizedStories.length > 0 && !activeStoryId) setActiveStoryId(normalizedStories[0].id);
       } catch (e) {
         console.error("Failed to load stories", e);
       }
@@ -34,19 +41,35 @@ const App: React.FC = () => {
     const files = event.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
-        const firstLine = text.split('\n')[0];
-        const title = firstLine.startsWith('# ') 
-          ? firstLine.replace('# ', '') 
-          : file.name.replace('.md', '');
+        const lines = text.split('\n');
+        
+        // 解析格式：第一行标签，第二行简介，第三行版本，之后是正文
+        const tags = lines[0]?.trim() || '';
+        const summary = lines[1]?.trim() || '';
+        const version = lines[2]?.trim() || '';
+        
+        // 从第4行开始是正文（跳过前3行和可能的空行）
+        const contentStartIndex = lines.findIndex((line, index) => 
+          index >= 3 && line.trim() !== ''
+        );
+        const bodyContent = contentStartIndex >= 0 
+          ? lines.slice(contentStartIndex).join('\n')
+          : lines.slice(3).join('\n');
+        
+        // 使用文件名作为标题，如果没有标签则使用文件名
+        const title = tags || file.name.replace('.md', '');
 
         const newStory: Story = {
           id: Math.random().toString(36).substr(2, 9),
           title,
-          content: text,
+          tags,
+          summary,
+          version,
+          content: bodyContent,
           fileName: file.name,
           uploadDate: Date.now()
         };
@@ -65,9 +88,12 @@ const App: React.FC = () => {
     if (activeStoryId === id) setActiveStoryId(null);
   };
 
-  const getStoryPreview = (content: string) => {
-    const lines = content.split('\n');
-    // Skip headers and empty lines to find the first real paragraph
+  const getStoryPreview = (story: Story) => {
+    // 优先使用简介，如果没有则使用正文预览
+    if (story.summary) {
+      return story.summary;
+    }
+    const lines = story.content.split('\n');
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith('#')) {
@@ -120,13 +146,28 @@ const App: React.FC = () => {
               {(index + 1).toString().padStart(2, '0')}
             </div>
             <div className="flex-1 space-y-3">
-              <h3 className="text-3xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
-                {story.title}
-              </h3>
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-3xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                  {story.title}
+                </h3>
+                {story.tags && (
+                  <span className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                    {story.tags}
+                  </span>
+                )}
+              </div>
               <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
-                {getStoryPreview(story.content)}
+                {getStoryPreview(story)}
               </p>
-              <div className="flex items-center gap-4 pt-2">
+              <div className="flex items-center gap-4 pt-2 flex-wrap">
+                {story.version && (
+                  <>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-purple-400">
+                      {story.version}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-gray-200"></span>
+                  </>
+                )}
                 <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
                   {new Date(story.uploadDate).toLocaleDateString()}
                 </span>
@@ -155,9 +196,22 @@ const App: React.FC = () => {
               <div className="flex items-center gap-2 text-xs text-emerald-500 font-bold uppercase tracking-widest mb-4">
                 <Quote size={14} /> Chapter Reading
               </div>
-              <h1 className="text-5xl font-bold text-emerald-950 mb-2">{activeStory.title}</h1>
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <h1 className="text-5xl font-bold text-emerald-950">{activeStory.title}</h1>
+                {activeStory.tags && (
+                  <span className="text-sm px-4 py-2 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                    {activeStory.tags}
+                  </span>
+                )}
+              </div>
+              {activeStory.summary && (
+                <p className="text-lg text-gray-600 italic mb-4 serif-text">{activeStory.summary}</p>
+              )}
+              {activeStory.version && (
+                <p className="text-sm text-purple-500 mb-4">{activeStory.version}</p>
+              )}
               <div className="flex items-center gap-4 text-gray-400 text-sm">
-                <span className="flex items-center gap-1"><Clock size={14} /> {Math.ceil(activeStory.content.split(' ').length / 200)} min read</span>
+                <span className="flex items-center gap-1"><Clock size={14} /> {Math.ceil(activeStory.content.split(/\s+/).length / 200)} min read</span>
                 <span className="w-1 h-1 rounded-full bg-gray-200"></span>
                 <span>{activeStory.content.length} characters</span>
               </div>
