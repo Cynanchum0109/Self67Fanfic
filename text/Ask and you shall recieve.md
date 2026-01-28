@@ -1,5 +1,5 @@
 Kurokumo 67
-Heathcliff drowned Hong Lu.
+Heathcliff drowned Hong Lu in his （i）.
 求仁得仁
 EN
 

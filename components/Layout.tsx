@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { BookOpen, List, Home, Github, Mail } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, List, Home, Github, Mail, Menu, X } from 'lucide-react';
 import { AppState } from '../types';
 
 interface LayoutProps {
@@ -10,16 +10,41 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // We keep the library view hidden for the general user, but accessible if they know where to look (or for the author)
   const isReaderOrToc = activeView === AppState.READER || activeView === AppState.TOC;
 
+  const handleNavigate = (view: AppState) => {
+    onNavigate(view);
+    setIsSidebarOpen(false); // 导航后关闭侧边栏
+  };
+
   return (
     <div className="flex min-h-screen bg-[#FDFCFE]">
+      {/* Hamburger Menu Button */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:bg-emerald-50 transition-colors"
+        aria-label="Toggle menu"
+      >
+        {isSidebarOpen ? <X size={24} className="text-emerald-800" /> : <Menu size={24} className="text-emerald-800" />}
+      </button>
+
+      {/* Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-30 transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Fixed Sidebar */}
-      <aside className="w-64 fixed inset-y-0 left-0 bg-white border-r border-emerald-50 shadow-sm flex flex-col z-10">
+      <aside className={`w-64 fixed inset-y-0 left-0 bg-white border-r border-emerald-50 shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         <div className="p-8">
           <h1 
-            onClick={() => onNavigate(AppState.HOME)}
+            onClick={() => handleNavigate(AppState.HOME)}
             className="text-2xl font-bold tracking-tighter text-emerald-800 flex items-center gap-2 cursor-pointer group"
           >
             <div className="w-3 h-3 rounded-full bg-emerald-300 group-hover:bg-purple-300 transition-colors animate-pulse"></div>
@@ -30,7 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
 
         <nav className="flex-1 px-4 space-y-2">
           <button
-            onClick={() => onNavigate(AppState.HOME)}
+            onClick={() => handleNavigate(AppState.HOME)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
               activeView === AppState.HOME 
               ? 'bg-emerald-50 text-emerald-800 font-medium' 
@@ -42,7 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
           </button>
           
           <button
-            onClick={() => onNavigate(AppState.TOC)}
+            onClick={() => handleNavigate(AppState.TOC)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
               activeView === AppState.TOC 
               ? 'bg-purple-50 text-purple-800 font-medium' 
@@ -55,7 +80,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
 
           {isReaderOrToc && (
             <button
-              onClick={() => onNavigate(AppState.READER)}
+              onClick={() => handleNavigate(AppState.READER)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                 activeView === AppState.READER 
                 ? 'bg-emerald-50 text-emerald-800 font-medium' 
@@ -78,7 +103,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       </aside>
 
       {/* Main Content Area */}
-      <main className="ml-64 flex-1">
+      <main className="flex-1">
         <div className={`max-w-5xl mx-auto p-8 md:p-12 lg:p-16 ${activeView === AppState.HOME ? 'flex items-center justify-center min-h-screen' : ''}`}>
           {children}
         </div>
