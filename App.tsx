@@ -3,16 +3,12 @@ import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { Story, AppState } from './types';
-import { generateStorySummary, analyzeMood } from './services/geminiService';
-import { Sparkles, Trash2, ChevronRight, BookOpen, Quote, Clock, Upload, List, ArrowRight } from 'lucide-react';
+import { Trash2, BookOpen, Quote, Clock, Upload, ArrowRight } from 'lucide-react';
 
 const App: React.FC = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [mood, setMood] = useState<string | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Persistence
   useEffect(() => {
@@ -81,27 +77,12 @@ const App: React.FC = () => {
     return "No preview available.";
   };
 
-  const askAiAssistant = async () => {
-    if (!activeStory) return;
-    setIsAiLoading(true);
-    setAiSummary(null);
-    setMood(null);
-    try {
-      const summary = await generateStorySummary(activeStory.content);
-      const moodRes = await analyzeMood(activeStory.content);
-      setAiSummary(summary);
-      setMood(moodRes);
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
   // Render Functions
   const renderHome = () => (
     <div className="text-center space-y-8 animate-in zoom-in duration-1000">
       <div className="space-y-4">
         <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Sparkles className="text-emerald-400" size={40} />
+          <BookOpen className="text-emerald-400" size={40} />
         </div>
         <h1 className="text-7xl font-bold tracking-tighter text-emerald-950">
           Muse<span className="text-purple-400">Garden</span>
@@ -195,39 +176,8 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Reading Sidebar */}
+      {/* Reading Sidebar - Chapters List */}
       <aside className="w-64 sticky top-12 h-fit space-y-8 hidden xl:block">
-        <div className="p-6 rounded-3xl bg-white border border-purple-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-purple-400">AI Muse</h4>
-            <Sparkles className="text-purple-300" size={16} />
-          </div>
-          <p className="text-sm text-gray-500 leading-relaxed italic">
-            "Every great story begins with a single word. Let me help you reflect on your work."
-          </p>
-          <button 
-            onClick={askAiAssistant}
-            disabled={!activeStory || isAiLoading}
-            className="w-full py-2 bg-purple-500 text-white rounded-xl text-sm font-bold hover:bg-purple-600 disabled:opacity-50 transition-colors shadow-lg shadow-purple-200"
-          >
-            {isAiLoading ? 'Summoning Muse...' : 'Analyze Story'}
-          </button>
-        </div>
-
-        {mood && (
-          <div className="p-6 rounded-3xl bg-emerald-50 border border-emerald-100 animate-in slide-in-from-bottom duration-500">
-             <h4 className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-2">Atmosphere</h4>
-             <p className="text-sm text-emerald-800 font-bold">{mood}</p>
-          </div>
-        )}
-
-        {aiSummary && (
-          <div className="p-6 rounded-3xl bg-white border border-emerald-50 shadow-sm animate-in fade-in duration-700">
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-3">Critique & Summary</h4>
-            <p className="text-xs text-gray-600 leading-relaxed">{aiSummary}</p>
-          </div>
-        )}
-
         {/* Local TOC */}
         <div className="space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Chapters</h4>
@@ -235,7 +185,7 @@ const App: React.FC = () => {
             {stories.map(s => (
               <button
                 key={s.id}
-                onClick={() => { setActiveStoryId(s.id); setAiSummary(null); setMood(null); }}
+                onClick={() => { setActiveStoryId(s.id); }}
                 className={`w-full text-left px-4 py-2 text-sm rounded-lg truncate transition-all ${
                   activeStoryId === s.id 
                   ? 'bg-emerald-500 text-white font-medium' 
