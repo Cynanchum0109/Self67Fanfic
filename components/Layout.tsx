@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BookOpen, List, Home, Github, Mail, Menu, X } from 'lucide-react';
+import { BookOpen, List, Home, Menu, X } from 'lucide-react';
 import { AppState } from '../types';
 
 interface LayoutProps {
@@ -94,11 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
         </nav>
 
         <div className="p-6 border-t border-gray-50">
-          <div className="flex justify-around text-gray-400">
-            <a href="#" className="hover:text-[#81E5D0] transition-colors"><Github size={18} /></a>
-            <a href="#" className="hover:text-[#7B5B89] transition-colors"><Mail size={18} /></a>
-          </div>
-          <p className="text-[10px] text-center text-gray-300 mt-4">© 2026 BQCynanchum</p>
+          <p className="text-[10px] text-center text-gray-300">© 2026 BQCynanchum</p>
         </div>
       </aside>
 
