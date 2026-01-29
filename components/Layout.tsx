@@ -24,10 +24,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:bg-emerald-50 transition-colors"
+        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:bg-[#8AE7CC] transition-colors"
         aria-label="Toggle menu"
       >
-        {isSidebarOpen ? <X size={24} className="text-emerald-800" /> : <Menu size={24} className="text-emerald-800" />}
+        {isSidebarOpen ? <X size={24} className="text-[#7B5B89]" /> : <Menu size={24} className="text-[#7B5B89]" />}
       </button>
 
       {/* Overlay */}
@@ -39,18 +39,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       )}
 
       {/* Fixed Sidebar */}
-      <aside className={`w-64 fixed inset-y-0 left-0 bg-white border-r border-emerald-50 shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+      <aside className={`w-64 fixed inset-y-0 left-0 bg-white border-r border-[#8AE7CC] shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="p-8">
           <h1 
             onClick={() => handleNavigate(AppState.HOME)}
-            className="text-2xl font-bold tracking-tighter text-emerald-800 flex items-center gap-2 cursor-pointer group"
+            className="text-2xl font-bold tracking-tighter text-[#7B5B89] flex items-center gap-2 cursor-pointer group"
           >
-            <div className="w-3 h-3 rounded-full bg-emerald-300 group-hover:bg-purple-300 transition-colors animate-pulse"></div>
+            <div className="w-3 h-3 rounded-full bg-[#81E5D0] group-hover:bg-[#7B5B89] transition-colors animate-pulse"></div>
             HongCliff
           </h1>
-          <p className="text-xs text-purple-400 mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
+          <p className="text-xs text-[#796384] mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
@@ -58,8 +58,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             onClick={() => handleNavigate(AppState.HOME)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
               activeView === AppState.HOME 
-              ? 'bg-emerald-50 text-emerald-800 font-medium' 
-              : 'text-gray-500 hover:bg-emerald-50/50 hover:text-emerald-700'
+              ? 'bg-[#8AE7CC] text-[#7B5B89] font-medium' 
+              : 'text-gray-500 hover:bg-[#8AE7CC]/50 hover:text-[#796384]'
             }`}
           >
             <Home size={20} />
@@ -70,8 +70,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             onClick={() => handleNavigate(AppState.TOC)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
               activeView === AppState.TOC 
-              ? 'bg-purple-50 text-purple-800 font-medium' 
-              : 'text-gray-500 hover:bg-purple-50/50 hover:text-purple-700'
+              ? 'bg-[#7B5B89]/10 text-[#796384] font-medium' 
+              : 'text-gray-500 hover:bg-[#7B5B89]/10 hover:text-[#796384]'
             }`}
           >
             <List size={20} />
@@ -83,8 +83,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
               onClick={() => handleNavigate(AppState.READER)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                 activeView === AppState.READER 
-                ? 'bg-emerald-50 text-emerald-800 font-medium' 
-                : 'text-gray-500 hover:bg-emerald-50/50 hover:text-emerald-700'
+                ? 'bg-[#8AE7CC] text-[#7B5B89] font-medium' 
+                : 'text-gray-500 hover:bg-[#8AE7CC]/50 hover:text-[#796384]'
               }`}
             >
               <BookOpen size={20} />
@@ -95,8 +95,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
 
         <div className="p-6 border-t border-gray-50">
           <div className="flex justify-around text-gray-400">
-            <a href="#" className="hover:text-emerald-500 transition-colors"><Github size={18} /></a>
-            <a href="#" className="hover:text-purple-500 transition-colors"><Mail size={18} /></a>
+            <a href="#" className="hover:text-[#81E5D0] transition-colors"><Github size={18} /></a>
+            <a href="#" className="hover:text-[#7B5B89] transition-colors"><Mail size={18} /></a>
           </div>
           <p className="text-[10px] text-center text-gray-300 mt-4">© 2026 BQCynanchum</p>
         </div>

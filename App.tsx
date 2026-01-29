@@ -122,7 +122,7 @@ const App: React.FC = () => {
       </p>
       <button 
         onClick={() => setCurrentView(AppState.TOC)}
-        className="group relative inline-flex items-center gap-3 px-10 py-4 bg-emerald-900 text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-emerald-100"
+        className="group relative inline-flex items-center gap-3 px-10 py-4 bg-[#7B5B89] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#8AE7CC]"
       >
         <span className="relative z-10">Enter the Garden</span>
         <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
@@ -137,8 +137,8 @@ const App: React.FC = () => {
     return (
       <div className="space-y-12 animate-in fade-in duration-700">
         <header className="border-b border-gray-50 pb-10">
-          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-500 mb-2">Table of Contents</h2>
-          <h1 className="text-5xl font-bold text-emerald-950">Collection of Works</h1>
+          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-[#81E5D0] mb-2">Table of Contents</h2>
+          <h1 className="text-5xl font-bold text-[#796384]">Collection of Works</h1>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -146,23 +146,23 @@ const App: React.FC = () => {
           <div className="space-y-12">
             {chineseStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">CN</h3>
+                <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#8AE7CC] pb-2">CN</h3>
                 {chineseStories.map((story, index) => (
                   <div 
                     key={story.id}
                     onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
                     className="group cursor-pointer flex flex-col gap-6 items-start"
                   >
-                    <div className="text-4xl font-black text-emerald-50 opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
+                    <div className="text-4xl font-black text-[#8AE7CC] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
                       {(index + 1).toString().padStart(2, '0')}
                     </div>
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-[#796384] transition-colors">
                           {story.title}
                         </h3>
                         {story.tags && (
-                          <span className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                          <span className="text-xs px-3 py-1 bg-[#7B5B89]/10 text-[#796384] rounded-full font-medium whitespace-nowrap">
                             {story.tags}
                           </span>
                         )}
@@ -181,23 +181,23 @@ const App: React.FC = () => {
           <div className="space-y-12">
             {englishStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-emerald-800 border-b border-emerald-100 pb-2">EN</h3>
+                <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#8AE7CC] pb-2">EN</h3>
                 {englishStories.map((story, index) => (
                   <div 
                     key={story.id}
                     onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
                     className="group cursor-pointer flex flex-col gap-6 items-start"
                   >
-                    <div className="text-4xl font-black text-emerald-50 opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
+                    <div className="text-4xl font-black text-[#8AE7CC] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
                       {(index + 1).toString().padStart(2, '0')}
                     </div>
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-[#796384] transition-colors">
                           {story.title}
                         </h3>
                         {story.tags && (
-                          <span className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                          <span className="text-xs px-3 py-1 bg-[#7B5B89]/10 text-[#796384] rounded-full font-medium whitespace-nowrap">
                             {story.tags}
                           </span>
                         )}
@@ -214,7 +214,7 @@ const App: React.FC = () => {
         </div>
 
         {stories.length === 0 && (
-          <div className="py-32 text-center text-gray-400 border-2 border-dashed border-emerald-50 rounded-3xl">
+          <div className="py-32 text-center text-gray-400 border-2 border-dashed border-[#8AE7CC] rounded-3xl">
             <p>The garden is currently resting. Please check back later.</p>
           </div>
         )}
@@ -228,13 +228,13 @@ const App: React.FC = () => {
         {activeStory ? (
           <div className="space-y-12">
             <header className="border-b border-gray-50 pb-8">
-              <div className="flex items-center gap-2 text-xs text-emerald-500 font-bold uppercase tracking-widest mb-4">
+              <div className="flex items-center gap-2 text-xs text-[#81E5D0] font-bold uppercase tracking-widest mb-4">
                 <Quote size={14} /> Chapter Reading
               </div>
               <div className="flex items-start justify-between gap-4 mb-2">
-                <h1 className="text-5xl font-bold text-emerald-950">{activeStory.title}</h1>
+                <h1 className="text-5xl font-bold text-[#796384]">{activeStory.title}</h1>
                 {activeStory.tags && (
-                  <span className="text-sm px-4 py-2 bg-purple-50 text-purple-600 rounded-full font-medium whitespace-nowrap">
+                  <span className="text-sm px-4 py-2 bg-[#7B5B89]/10 text-[#796384] rounded-full font-medium whitespace-nowrap">
                     {activeStory.tags}
                   </span>
                 )}
@@ -250,7 +250,7 @@ const App: React.FC = () => {
                   return (
                     <button
                       onClick={() => { setActiveStoryId(relatedStory.id); }}
-                      className="text-sm text-purple-500 mb-4 hover:text-purple-600 hover:underline transition-colors cursor-pointer"
+                      className="text-sm text-[#7B5B89] mb-4 hover:text-[#796384] hover:underline transition-colors cursor-pointer"
                     >
                       {versionLabel}: {relatedStory.title}
                     </button>
@@ -271,7 +271,7 @@ const App: React.FC = () => {
           <div className="h-96 flex flex-col items-center justify-center text-gray-400 space-y-4">
             <BookOpen size={64} className="opacity-20" />
             <p className="text-lg">Please select a story from the library to begin reading.</p>
-            <button onClick={() => setCurrentView(AppState.TOC)} className="text-emerald-500 font-bold underline">Go to Contents</button>
+            <button onClick={() => setCurrentView(AppState.TOC)} className="text-[#81E5D0] font-bold underline">Go to Contents</button>
           </div>
         )}
       </div>
@@ -288,7 +288,7 @@ const App: React.FC = () => {
                 onClick={() => { setActiveStoryId(s.id); }}
                 className={`w-full text-left px-4 py-2 text-sm rounded-lg truncate transition-all ${
                   activeStoryId === s.id 
-                  ? 'bg-emerald-500 text-white font-medium' 
+                  ? 'bg-[#7B5B89] text-white font-medium' 
                   : 'text-gray-500 hover:bg-gray-50'
                 }`}
               >
