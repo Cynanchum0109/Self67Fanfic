@@ -1,0 +1,15 @@
+{
+  "name": "67Cynanchum",
+  "short_name": "67Cynanchum",
+  "icons": [
+    {
+      "src": "/assets/icons/ambrosial.png",
+      "sizes": "334x244",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#81E5D0",
+  "background_color": "#F8F6FA",
+  "display": "standalone"
+}
+
