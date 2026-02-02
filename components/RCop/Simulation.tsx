@@ -921,8 +921,19 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // 计算缩放比例（Canvas实际尺寸 vs 显示尺寸）
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // 将鼠标坐标转换为Canvas坐标
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    // 检查是否在缩圈边界内
+    const bounds = arenaBoundsRef.current;
+    if (x < bounds.left || x > bounds.right || y < bounds.top || y > bounds.bottom) {
+      return; // 超出边界，不投放
+    }
     
     drugPointsRef.current.push({
       id: Date.now(),
