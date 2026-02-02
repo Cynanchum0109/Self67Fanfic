@@ -69,9 +69,11 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
       const scoreStr = score.toString();
       const hasSix = scoreStr.includes('6');
       const hasSeven = scoreStr.includes('7');
+      const indexOfSix = scoreStr.indexOf('6');
+      const indexOfSeven = scoreStr.indexOf('7');
       
-      if (hasSix && hasSeven) {
-        // 同时包含6和7：粉色
+      if (hasSix && hasSeven && indexOfSix < indexOfSeven) {
+        // 6在7前面（如67、167）：粉色
         ctx.fillStyle = 'rgba(242, 182, 251, 0.9)';
       } else if (hasSix) {
         // 包含6：薄荷绿
