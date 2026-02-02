@@ -122,9 +122,9 @@ const App: React.FC = () => {
       </p>
       <button 
         onClick={() => setCurrentView(AppState.TOC)}
-        className="group relative inline-flex items-center gap-3 px-10 py-4 bg-[#8AE7CC] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#8AE7CC]"
+        className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#81E5D0] to-[#6BD4C0] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#81E5D0]/40 hover:shadow-[#6BD4C0]/50"
       >
-        <span className="relative z-10">Enter the Well</span>
+        <span className="relative z-10">Enter the Garden</span>
         <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
       </button>
     </div>
@@ -136,9 +136,9 @@ const App: React.FC = () => {
 
     return (
       <div className="space-y-12 animate-in fade-in duration-700">
-        <header className="border-b border-gray-50 pb-10">
-          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-[#81E5D0] mb-2">Table of Contents</h2>
-          <h1 className="text-5xl font-bold text-[#796384]">Collection of Works</h1>
+        <header className="border-b border-[#E8F9F6] pb-10">
+          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-[#6BD4C0] mb-2">Table of Contents</h2>
+          <h1 className="text-5xl font-bold text-[#7B5B89]">Collection of Works</h1>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -146,23 +146,23 @@ const App: React.FC = () => {
           <div className="space-y-12">
             {chineseStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#8AE7CC] pb-2">CN</h3>
+                <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#D4F4EC] pb-2">CN</h3>
                 {chineseStories.map((story, index) => (
                   <div 
                     key={story.id}
                     onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
                     className="group cursor-pointer flex flex-col gap-6 items-start"
                   >
-                    <div className="text-4xl font-black text-[#7B5B89] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
+                    <div className="text-4xl font-black text-[#9D8AB5] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
                       {(index + 1).toString().padStart(2, '0')}
                     </div>
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-[#81E5D0] transition-colors">
+                        <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
                           {story.title}
                         </h3>
                         {story.tags && (
-                          <span className="text-xs px-3 py-1 bg-[#7B5B89]/10 text-[#796384] rounded-full font-medium whitespace-nowrap">
+                          <span className="text-xs px-3 py-1 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
                             {story.tags}
                           </span>
                         )}
@@ -188,16 +188,16 @@ const App: React.FC = () => {
                     onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
                     className="group cursor-pointer flex flex-col gap-6 items-start"
                   >
-                    <div className="text-4xl font-black text-[#7B5B89] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
+                    <div className="text-4xl font-black text-[#9D8AB5] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
                       {(index + 1).toString().padStart(2, '0')}
                     </div>
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-[#81E5D0] transition-colors">
+                        <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
                           {story.title}
                         </h3>
                         {story.tags && (
-                          <span className="text-xs px-3 py-1 bg-[#7B5B89]/10 text-[#796384] rounded-full font-medium whitespace-nowrap">
+                          <span className="text-xs px-3 py-1 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
                             {story.tags}
                           </span>
                         )}
@@ -214,7 +214,7 @@ const App: React.FC = () => {
         </div>
 
         {stories.length === 0 && (
-          <div className="py-32 text-center text-gray-400 border-2 border-dashed border-[#8AE7CC] rounded-3xl">
+          <div className="py-32 text-center text-gray-400 border-2 border-dashed border-[#D4F4EC] rounded-3xl bg-[#E8F9F6]/30">
             <p>The garden is currently resting. Please check back later.</p>
           </div>
         )}
@@ -227,14 +227,14 @@ const App: React.FC = () => {
       <div className="flex-1 max-w-3xl">
         {activeStory ? (
           <div className="space-y-12">
-            <header className="border-b border-gray-50 pb-8">
-              <div className="flex items-center gap-2 text-xs text-[#81E5D0] font-bold uppercase tracking-widest mb-4">
+            <header className="border-b border-[#E8F9F6] pb-8">
+              <div className="flex items-center gap-2 text-xs text-[#6BD4C0] font-bold uppercase tracking-widest mb-4">
                 <Quote size={14} /> Chapter Reading
               </div>
               <div className="flex items-start justify-between gap-4 mb-2">
-                <h1 className="text-5xl font-bold text-[#796384]">{activeStory.title}</h1>
+                <h1 className="text-5xl font-bold text-[#7B5B89]">{activeStory.title}</h1>
                 {activeStory.tags && (
-                  <span className="text-sm px-4 py-2 bg-[#7B5B89]/10 text-[#796384] rounded-full font-medium whitespace-nowrap">
+                  <span className="text-sm px-4 py-2 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
                     {activeStory.tags}
                   </span>
                 )}
@@ -250,7 +250,7 @@ const App: React.FC = () => {
                   return (
                     <button
                       onClick={() => { setActiveStoryId(relatedStory.id); }}
-                      className="text-sm text-[#81E5D0] mb-4 hover:text-[#7B5B89] hover:underline transition-colors cursor-pointer"
+                      className="text-sm text-[#6BD4C0] mb-4 hover:text-[#5FC4B0] hover:underline transition-colors cursor-pointer"
                     >
                       {versionLabel}: {relatedStory.title}
                     </button>
@@ -271,7 +271,7 @@ const App: React.FC = () => {
           <div className="h-96 flex flex-col items-center justify-center text-gray-400 space-y-4">
             <BookOpen size={64} className="opacity-20" />
             <p className="text-lg">Please select a story from the library to begin reading.</p>
-            <button onClick={() => setCurrentView(AppState.TOC)} className="text-[#81E5D0] font-bold underline">Go to Contents</button>
+            <button onClick={() => setCurrentView(AppState.TOC)} className="text-[#6BD4C0] font-bold underline hover:text-[#5FC4B0] transition-colors">Go to Contents</button>
           </div>
         )}
       </div>
@@ -288,8 +288,8 @@ const App: React.FC = () => {
                 onClick={() => { setActiveStoryId(s.id); }}
                 className={`w-full text-left px-4 py-2 text-sm rounded-lg truncate transition-all ${
                   activeStoryId === s.id 
-                  ? 'bg-[#7B5B89] text-white font-medium' 
-                  : 'text-gray-500 hover:bg-gray-50'
+                  ? 'bg-[#7B5B89] text-white font-medium shadow-sm' 
+                  : 'text-gray-600 hover:bg-[#E8E0ED] hover:text-[#7B5B89]'
                 }`}
               >
                 {s.title}

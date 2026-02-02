@@ -20,11 +20,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FDFCFE]">
+    <div className="flex min-h-screen bg-[#F8F6FA]">
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:bg-[#8AE7CC] transition-colors"
+        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:bg-[#D4F4EC] transition-colors"
         aria-label="Toggle menu"
       >
         {isSidebarOpen ? <X size={24} className="text-[#7B5B89]" /> : <Menu size={24} className="text-[#7B5B89]" />}
@@ -39,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       )}
 
       {/* Fixed Sidebar */}
-      <aside className={`w-64 fixed inset-y-0 left-0 bg-white border-r border-[#8AE7CC] shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+      <aside className={`w-64 fixed inset-y-0 left-0 bg-white border-r border-[#E8F9F6] shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="p-8">
@@ -47,10 +47,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             onClick={() => handleNavigate(AppState.HOME)}
             className="text-2xl font-bold tracking-tighter text-[#7B5B89] flex items-center gap-2 cursor-pointer group"
           >
-            <div className="w-3 h-3 rounded-full bg-[#81E5D0] group-hover:bg-[#7B5B89] transition-colors animate-pulse"></div>
+            <div className="w-3 h-3 rounded-full bg-[#6BD4C0] group-hover:bg-[#5FC4B0] transition-colors animate-pulse"></div>
             HongCliff
           </h1>
-          <p className="text-xs text-[#796384] mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
+          <p className="text-xs text-[#9D8AB5] mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
@@ -58,8 +58,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             onClick={() => handleNavigate(AppState.HOME)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
               activeView === AppState.HOME 
-              ? 'bg-[#8AE7CC] text-[#7B5B89] font-medium' 
-              : 'text-gray-500 hover:bg-[#8AE7CC]/50 hover:text-[#796384]'
+              ? 'bg-[#D4F4EC] text-[#7B5B89] font-medium' 
+              : 'text-gray-600 hover:bg-[#E8F9F6] hover:text-[#7B5B89]'
             }`}
           >
             <Home size={20} />
@@ -70,8 +70,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             onClick={() => handleNavigate(AppState.TOC)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
               activeView === AppState.TOC 
-              ? 'bg-[#7B5B89]/10 text-[#796384] font-medium' 
-              : 'text-gray-500 hover:bg-[#7B5B89]/10 hover:text-[#796384]'
+              ? 'bg-[#E8E0ED] text-[#7B5B89] font-medium' 
+              : 'text-gray-600 hover:bg-[#F8F6FA] hover:text-[#7B5B89]'
             }`}
           >
             <List size={20} />
@@ -82,9 +82,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             <button
               onClick={() => handleNavigate(AppState.READER)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                activeView === AppState.READER 
-                ? 'bg-[#8AE7CC] text-[#7B5B89] font-medium' 
-                : 'text-gray-500 hover:bg-[#8AE7CC]/50 hover:text-[#796384]'
+              activeView === AppState.READER 
+              ? 'bg-[#D4F4EC] text-[#7B5B89] font-medium' 
+              : 'text-gray-600 hover:bg-[#E8F9F6] hover:text-[#7B5B89]'
               }`}
             >
               <BookOpen size={20} />
@@ -93,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
           )}
         </nav>
 
-        <div className="p-6 border-t border-gray-50">
+        <div className="p-6 border-t border-[#E8F9F6]">
           <p className="text-[10px] text-center text-gray-300">© 2026 BQCynanchum</p>
         </div>
       </aside>
