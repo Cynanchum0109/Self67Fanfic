@@ -18,6 +18,7 @@ interface Agent {
   wanderTargetX?: number; // 探索目标点X
   wanderTargetY?: number; // 探索目标点Y
   lastWanderChange?: number; // 上次改变探索方向的时间
+  lastHeartEffectTime?: number; // 上次触发爱心特效的时间
 }
 
 interface PinkMistEffect {
@@ -48,6 +49,8 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [ending, setEnding] = useState<'A' | 'B' | 'C' | null>(null);
+  const [endingText, setEndingText] = useState<string>('');
+  const finalBattleRef = useRef<{ a0: Agent | null; a1: Agent | null; started: boolean }>({ a0: null, a1: null, started: false });
 
   const agentsRef = useRef<Agent[]>([]);
   const drugPointsRef = useRef<DrugPoint[]>([]);
@@ -76,8 +79,10 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const POWER_GAIN_ON_DRUG = 5;
   const POWER_GAIN_ON_CROSS_TEAM = 3;
   const CROSS_TEAM_GROWTH_THRESHOLD = 0.4; // 跨队共同增强的阈值（大幅扩大，让更多异队碰撞触发共同增强）
-  const NO_ENCOUNTER_TIME = 30000; // 30秒没有相遇开始缩圈
-  const SHRINK_RATE = 2; // 每秒缩小2像素
+  const HEART_EFFECT_COOLDOWN = 500; // 爱心特效冷却时间（0.5秒）
+  const NO_ENCOUNTER_TIME = 5000; // 5秒没有相遇开始缩圈（缩短）
+  const SHRINK_RATE = 10; // 每秒缩小10像素（更快）
+  const FINAL_BATTLE_THRESHOLD = 0.25; // 终局判定阈值（存活概率 = 两个击杀概率之和）
 
   // 初始化agents
   const initializeAgents = () => {
@@ -161,6 +166,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
 
   // 更新agent移动
   const updateAgentMovement = (agent: Agent, deltaTime: number) => {
+    // 如果正在进行终局战斗，且这个agent是参与者，不执行正常移动逻辑
+    if (finalBattleRef.current.started && !gameEnded) {
+      const battle = finalBattleRef.current;
+      if (battle.a0 && battle.a1 && (agent.id === battle.a0.id || agent.id === battle.a1.id)) {
+        return; // 终局战斗由processFinalBattle处理
+      }
+    }
+    
     // 受保护的agent只进行游走，不参与战斗/食物逻辑
     if (agent.protected) {
       const bounds = arenaBoundsRef.current;
@@ -363,11 +376,21 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         agentsInRadius.forEach(agent => {
           agent.power += POWER_GAIN_ON_DRUG;
           agent.truceUntil = now + TRUCE_DURATION;
-          // 爱心特效固定在原位置，不跟随agent移动
-          const heartX = agent.x;
-          const heartY = agent.y;
-          pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
-          heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+          // 检查爱心特效冷却时间
+          const canTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
+          if (canTriggerHeart) {
+            // 爱心特效固定在原位置，不跟随agent移动
+            const heartX = agent.x;
+            const heartY = agent.y;
+            pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+            heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+            agent.lastHeartEffectTime = now; // 更新冷却时间
+          } else {
+            // 即使不能触发爱心，也要添加粉色烟雾
+            const heartX = agent.x;
+            const heartY = agent.y;
+            pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+          }
         });
         // 在药物位置也添加特效
         pinkMistEffectsRef.current.push({ x: drug.x, y: drug.y, time: now, radius: 0 });
@@ -430,15 +453,28 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
           // 力量相近（使用扩大的阈值），都增长
           agent.power += POWER_GAIN_ON_CROSS_TEAM;
           other.power += POWER_GAIN_ON_CROSS_TEAM;
+          
+          // 检查爱心特效冷却时间
+          const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
+          const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
+          
           // 爱心特效固定在原位置，不跟随agent移动
           const heartX = agent.x;
           const heartY = agent.y;
           const otherHeartX = other.x;
           const otherHeartY = other.y;
+          
           pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
           pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
-          heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
-          heartEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, scale: 0 });
+          
+          if (agentCanTriggerHeart) {
+            heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+            agent.lastHeartEffectTime = now; // 更新冷却时间
+          }
+          if (otherCanTriggerHeart) {
+            heartEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, scale: 0 });
+            other.lastHeartEffectTime = now; // 更新冷却时间
+          }
         }
         }
       });
@@ -481,6 +517,64 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     }
   };
 
+  // 处理终局战斗（让两个agent互相靠近）
+  const processFinalBattle = (a0: Agent, a1: Agent) => {
+    const maxSpeed = Math.max(REINDEER_MAX_SPEED, RABBIT_MAX_SPEED);
+    
+    // 让两个agent互相靠近
+    const dx0 = a1.x - a0.x;
+    const dy0 = a1.y - a0.y;
+    const dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+    
+    if (dist0 > 0) {
+      a0.velocityX = (dx0 / dist0) * maxSpeed;
+      a0.velocityY = (dy0 / dist0) * maxSpeed;
+    }
+    
+    const dx1 = a0.x - a1.x;
+    const dy1 = a0.y - a1.y;
+    const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+    
+    if (dist1 > 0) {
+      a1.velocityX = (dx1 / dist1) * maxSpeed;
+      a1.velocityY = (dy1 / dist1) * maxSpeed;
+    }
+    
+    // 更新位置
+    a0.x += a0.velocityX;
+    a0.y += a0.velocityY;
+    a1.x += a1.velocityX;
+    a1.y += a1.velocityY;
+    
+    // 检查碰撞（当距离小于等于两个agent的半径之和时）
+    const collisionDistance = AGENT_SIZE * 2;
+    if (dist0 <= collisionDistance) {
+      // 碰撞，进行判定
+      const powerDiff = (a1.power - a0.power) / Math.max(a0.power, a1.power);
+      
+      if (powerDiff > FINAL_BATTLE_THRESHOLD) {
+        // 兔子击杀驯鹿
+        setEnding('A');
+        setEndingText('兔子 击杀 驯鹿');
+        agentsRef.current = agentsRef.current.filter(a => a.id !== a0.id);
+      } else if (powerDiff < -FINAL_BATTLE_THRESHOLD) {
+        // 驯鹿击杀兔子
+        setEnding('C');
+        setEndingText('驯鹿 击杀 兔子');
+        agentsRef.current = agentsRef.current.filter(a => a.id !== a1.id);
+      } else {
+        // 存活
+        setEnding('B');
+        setEndingText('存 活');
+      }
+      
+      setGameEnded(true);
+      isRunningRef.current = false;
+      setIsRunning(false);
+      finalBattleRef.current = { a0: null, a1: null, started: false };
+    }
+  };
+
   // 检查终局
   const checkEndgame = () => {
     const team0 = agentsRef.current.filter(a => a.team === 0);
@@ -506,21 +600,17 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       a0.protected = false;
       a1.protected = false;
       
-      const powerDiff = (a1.power - a0.power) / Math.max(a0.power, a1.power);
-      
-      if (powerDiff > 0.5) {
-        setEnding('A'); // Team 1 wins
-        agentsRef.current = agentsRef.current.filter(a => a.id !== a0.id);
-      } else if (powerDiff < -0.5) {
-        setEnding('C'); // Team 0 wins
-        agentsRef.current = agentsRef.current.filter(a => a.id !== a1.id);
-      } else {
-        setEnding('B'); // Both survive
+      // 开始终局战斗
+      if (!finalBattleRef.current.started) {
+        finalBattleRef.current = { a0, a1, started: true };
       }
       
-      setGameEnded(true);
-      isRunningRef.current = false;
-      setIsRunning(false);
+      // 处理终局战斗（让两个agent互相靠近并碰撞判定）
+      if (finalBattleRef.current.started && !gameEnded) {
+        processFinalBattle(a0, a1);
+      }
+    } else {
+      finalBattleRef.current = { a0: null, a1: null, started: false };
     }
   };
 
@@ -685,8 +775,6 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     const team1Count = agentsRef.current.filter(a => a.team === 1).length;
     const totalPower0 = agentsRef.current.filter(a => a.team === 0).reduce((sum, a) => sum + a.power, 0);
     const totalPower1 = agentsRef.current.filter(a => a.team === 1).reduce((sum, a) => sum + a.power, 0);
-    const timeSinceEncounter = now - lastEncounterTimeRef.current;
-    const shrinkWarning = timeSinceEncounter > NO_ENCOUNTER_TIME;
     
     ctx.fillStyle = '#333';
     ctx.font = '16px Inter';
@@ -694,16 +782,11 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     ctx.fillText(`Rabbit兔子: ${team1Count} (战力: ${totalPower1.toFixed(1)})`, 20, 50);
     ctx.fillText(`药物: ${drugPointsRef.current.length}`, 20, 70);
     
-    if (shrinkWarning) {
-      ctx.fillStyle = '#ff0000';
-      ctx.fillText(`⚠ 缩圈中... (${Math.floor((timeSinceEncounter - NO_ENCOUNTER_TIME) / 1000)}秒)`, 20, 90);
-    }
-    
-    if (gameEnded && ending) {
+    if (gameEnded && ending && endingText) {
       ctx.fillStyle = '#7B5B89';
-      ctx.font = 'bold 32px Inter';
+      ctx.font = 'bold 36px Inter';
       ctx.textAlign = 'center';
-      ctx.fillText(`Ending ${ending}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+      ctx.fillText(endingText, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
       ctx.textAlign = 'left';
     }
   };
@@ -735,6 +818,8 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     setIsRunning(true);
     setGameEnded(false);
     setEnding(null);
+    setEndingText('');
+    finalBattleRef.current = { a0: null, a1: null, started: false };
     lastTimeRef.current = performance.now();
     animationFrameRef.current = requestAnimationFrame(gameLoop);
   };
@@ -745,9 +830,12 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     setIsRunning(false);
     setGameEnded(false);
     setEnding(null);
+    setEndingText('');
+    finalBattleRef.current = { a0: null, a1: null, started: false };
     drugPointsRef.current = [];
     darkeningEffectsRef.current = [];
     pinkMistEffectsRef.current = [];
+    heartEffectsRef.current = [];
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
