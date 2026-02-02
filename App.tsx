@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
-import Game from './components/Game';
-import Simulation from './components/Simulation';
+import Game from './components/dino/Game';
+import Simulation from './components/RCop/Simulation';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';

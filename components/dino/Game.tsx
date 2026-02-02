@@ -17,7 +17,7 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
     dino: { x: 50, y: 150, width: 40, height: 40, velocityY: 0, isJumping: false },
     obstacles: [] as Array<{ x: number; y: number; width: number; height: number }>,
     groundY: 150,
-    speed: 2.5,
+    speed: 3,
     gravity: 0.4,
     jumpPower: -10,
     animationId: 0,
@@ -233,7 +233,7 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         state.dino.velocityY = 0;
         state.dino.isJumping = false;
         state.obstacles = [];
-        state.speed = 2.5;
+        state.speed = 3;
         state.lastObstacleX = 0;
         state.gameStartTime = now;
         state.lastScoreUpdate = now;
