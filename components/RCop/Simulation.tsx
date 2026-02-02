@@ -574,21 +574,58 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     const maxSpeed = Math.max(REINDEER_MAX_SPEED, RABBIT_MAX_SPEED);
     const relativeSpeed = maxSpeed * 2;
     
-    // 如果已经碰撞，立即进行判定（1v1碰撞只触发存活结局）
+    // 如果已经碰撞，立即进行判定
     if (dist0 <= collisionDistance + relativeSpeed) {
-      // 碰撞，触发存活结局
+      // 碰撞，进行判定
       const now = Date.now();
-      setEnding('B');
-      setEndingText('存 活');
-      // 添加爱心特效
-      const heartX = (a0.x + a1.x) / 2;
-      const heartY = (a0.y + a1.y) / 2;
-      pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
-      pinkMistEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, radius: 0 });
-      pinkMistEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, radius: 0 });
-      heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
-      heartEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, scale: 0 });
-      heartEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, scale: 0 });
+      const powerDiff = (a1.power - a0.power) / Math.max(a0.power, a1.power);
+      const aggressiveness = Math.max(REINDEER_AGGRESSIVENESS, RABBIT_AGGRESSIVENESS);
+      
+      // 先进行击杀或增强判定
+      if (Math.abs(powerDiff) > aggressiveness) {
+        // 战力差距大，进行击杀判定
+        if (powerDiff > FINAL_BATTLE_THRESHOLD) {
+          // 兔子击杀驯鹿（结局A）
+          setEnding('A');
+          setEndingText('兔子 击杀 驯鹿');
+          darkeningEffectsRef.current.push({ x: a0.x, y: a0.y, time: now });
+          agentsRef.current = agentsRef.current.filter(a => a.id !== a0.id);
+        } else if (powerDiff < -FINAL_BATTLE_THRESHOLD) {
+          // 驯鹿击杀兔子（结局C）
+          setEnding('C');
+          setEndingText('驯鹿 击杀 兔子');
+          darkeningEffectsRef.current.push({ x: a1.x, y: a1.y, time: now });
+          agentsRef.current = agentsRef.current.filter(a => a.id !== a1.id);
+        } else {
+          // 战力差距在阈值内，存活（结局B）
+          setEnding('B');
+          setEndingText('存 活');
+          // 添加爱心特效
+          const heartX = (a0.x + a1.x) / 2;
+          const heartY = (a0.y + a1.y) / 2;
+          pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+          pinkMistEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, radius: 0 });
+          pinkMistEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, radius: 0 });
+          heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+          heartEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, scale: 0 });
+          heartEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, scale: 0 });
+        }
+      } else {
+        // 战力差距小，进行增强判定
+        a0.power += POWER_GAIN_ON_CROSS_TEAM;
+        a1.power += POWER_GAIN_ON_CROSS_TEAM;
+        // 添加爱心特效
+        const heartX = (a0.x + a1.x) / 2;
+        const heartY = (a0.y + a1.y) / 2;
+        pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+        pinkMistEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, radius: 0 });
+        pinkMistEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, radius: 0 });
+        heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+        heartEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, scale: 0 });
+        heartEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, scale: 0 });
+        // 增强后不结束游戏，继续战斗
+        return; // 增强后继续，不结束游戏
+      }
       
       setGameEnded(true);
       isRunningRef.current = false;
@@ -783,22 +820,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     ctx.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
     ctx.setLineDash([]);
     
-    // 绘制agents
-    agentsRef.current.forEach(agent => {
-      ctx.fillStyle = agent.team === 0 ? '#6BD4C0' : '#7B5B89'; // 驯鹿绿色，兔子紫色
-      if (agent.protected) {
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(agent.x, agent.y, AGENT_SIZE + 2, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.arc(agent.x, agent.y, AGENT_SIZE, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    
-    // 绘制击杀特效（红色）
+    // 绘制击杀特效（红色）- 在agents下方
     darkeningEffectsRef.current.forEach(effect => {
       const age = now - effect.time;
       const alpha = 1 - (age / 500);
@@ -808,7 +830,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       ctx.fill();
     });
     
-    // 绘制粉色烟雾（在原地弥漫开逐渐消失）
+    // 绘制粉色烟雾（在原地弥漫开逐渐消失）- 在agents下方
     pinkMistEffectsRef.current.forEach(effect => {
       const age = now - effect.time;
       if (age > 2000) return;
@@ -827,7 +849,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       ctx.fill();
     });
     
-    // 绘制爱心特效（固定在原位置，不拖尾）
+    // 绘制爱心特效（固定在原位置，不拖尾）- 在agents下方
     heartEffectsRef.current.forEach(effect => {
       const age = now - effect.time;
       if (age > 1500) return;
@@ -852,6 +874,21 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       ctx.fill();
       ctx.stroke();
       ctx.restore();
+    });
+    
+    // 绘制agents（在特效上方）
+    agentsRef.current.forEach(agent => {
+      ctx.fillStyle = agent.team === 0 ? '#6BD4C0' : '#7B5B89'; // 驯鹿绿色，兔子紫色
+      if (agent.protected) {
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(agent.x, agent.y, AGENT_SIZE + 2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(agent.x, agent.y, AGENT_SIZE, 0, Math.PI * 2);
+      ctx.fill();
     });
     
     // 绘制统计信息
