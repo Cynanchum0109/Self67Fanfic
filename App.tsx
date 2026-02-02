@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import Game from './components/Game';
+import Simulation from './components/Simulation';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
@@ -56,6 +57,7 @@ const App: React.FC = () => {
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
   const [showGame, setShowGame] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(false);
 
   // 初始化：设置第一个故事为活动故事
   useEffect(() => {
@@ -130,6 +132,13 @@ const App: React.FC = () => {
         >
           <span className="relative z-10">Enter the Garden</span>
           <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
+        </button>
+        
+        <button
+          onClick={() => setShowSimulation(true)}
+          className="block mx-auto mt-8 text-orange-500 hover:text-orange-600 transition-colors cursor-pointer text-base font-medium underline"
+        >
+          R公司孵化场观测（施工中）
         </button>
         
         <button
@@ -319,6 +328,7 @@ const App: React.FC = () => {
       {currentView === AppState.TOC && renderTOC()}
       {currentView === AppState.READER && renderReader()}
       {showGame && <Game onClose={() => setShowGame(false)} />}
+      {showSimulation && <Simulation onClose={() => setShowSimulation(false)} />}
     </Layout>
   );
 };
