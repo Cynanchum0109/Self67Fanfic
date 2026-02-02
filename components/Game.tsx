@@ -65,8 +65,25 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
       });
 
-      // 绘制分数
-      ctx.fillStyle = '#7B5B89';
+      // 绘制分数（根据数字改变颜色）
+      const scoreStr = score.toString();
+      const hasSix = scoreStr.includes('6');
+      const hasSeven = scoreStr.includes('7');
+      
+      if (hasSix && hasSeven) {
+        // 同时包含6和7：粉色
+        ctx.fillStyle = 'rgba(242, 182, 251, 0.9)';
+      } else if (hasSix) {
+        // 包含6：薄荷绿
+        ctx.fillStyle = '#6BD4C0';
+      } else if (hasSeven) {
+        // 包含7：浅紫色
+        ctx.fillStyle = '#9D8AB5';
+      } else {
+        // 都不包含：深紫色
+        ctx.fillStyle = '#796384';
+      }
+      
       ctx.font = '20px Inter';
       ctx.fillText(`Score: ${score}`, 20, 30);
 
