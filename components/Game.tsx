@@ -17,7 +17,7 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
     dino: { x: 50, y: 150, width: 40, height: 40, velocityY: 0, isJumping: false },
     obstacles: [] as Array<{ x: number; y: number; width: number; height: number }>,
     groundY: 150,
-    speed: 7,
+    speed: 2.5,
     gravity: 0.4,
     jumpPower: -10,
     animationId: 0,
