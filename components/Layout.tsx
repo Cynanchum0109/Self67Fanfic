@@ -45,10 +45,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
         <div className="p-8">
           <h1 
             onClick={() => handleNavigate(AppState.HOME)}
-            className="text-2xl font-bold tracking-tighter text-[#7B5B89] flex items-center gap-2 cursor-pointer group"
+            className="text-2xl font-bold tracking-tighter flex items-center gap-2 cursor-pointer group"
           >
             <div className="w-3 h-3 rounded-full bg-[#6BD4C0] group-hover:bg-[#5FC4B0] transition-colors animate-pulse"></div>
-            HongCliff
+            <span><span className="text-[#6BD4C0]">Hong</span><span className="text-[#7B5B89]">Cliff</span></span>
           </h1>
           <p className="text-xs text-[#9D8AB5] mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
         </div>

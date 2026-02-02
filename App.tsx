@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
+import Game from './components/Game';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
@@ -54,6 +55,7 @@ const App: React.FC = () => {
 
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
+  const [showGame, setShowGame] = useState(false);
 
   // 初始化：设置第一个故事为活动故事
   useEffect(() => {
@@ -120,13 +122,23 @@ const App: React.FC = () => {
       <p className="text-xl text-gray-400 font-light italic max-w-lg mx-auto">
         "那呼唤爱的样子如此美丽……"
       </p>
-      <button 
-        onClick={() => setCurrentView(AppState.TOC)}
-        className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#81E5D0] to-[#6BD4C0] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#81E5D0]/40 hover:shadow-[#6BD4C0]/50"
-      >
-        <span className="relative z-10">Enter the Garden</span>
-        <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
-      </button>
+
+      <div className="space-y-4">
+        <button 
+          onClick={() => setCurrentView(AppState.TOC)}
+          className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#81E5D0] to-[#6BD4C0] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#81E5D0]/40 hover:shadow-[#6BD4C0]/50"
+        >
+          <span className="relative z-10">Enter the Garden</span>
+          <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
+        </button>
+        
+        <button
+          onClick={() => setShowGame(true)}
+          className="block mx-auto mt-12 text-[#6BD4C0] hover:text-[#5FC4B0] transition-colors cursor-pointer text-sm font-light underline"
+        >
+          碰到就要结婚喔～
+        </button>
+      </div>
     </div>
   );
 
@@ -306,6 +318,7 @@ const App: React.FC = () => {
       {currentView === AppState.HOME && renderHome()}
       {currentView === AppState.TOC && renderTOC()}
       {currentView === AppState.READER && renderReader()}
+      {showGame && <Game onClose={() => setShowGame(false)} />}
     </Layout>
   );
 };
