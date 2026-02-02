@@ -126,7 +126,7 @@ const App: React.FC = () => {
       <div className="space-y-4">
         <button 
           onClick={() => setCurrentView(AppState.TOC)}
-          className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#81E5D0] to-[#6BD4C0] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#81E5D0]/40 hover:shadow-[#6BD4C0]/50"
+          className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#9D8AB5] to-[#7B5B89] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#9D8AB5]/40 hover:shadow-[#7B5B89]/50"
         >
           <span className="relative z-10">Enter the Garden</span>
           <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
