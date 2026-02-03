@@ -15,7 +15,7 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
-    "id": "vmww2zgq9",
+    "id": "atudprm7o",
     "title": "Ask and you shall recieve",
     "tags": "Kurokumo 67",
     "summary": "Heathcliff drowned Hong Lu in his （i）.",
@@ -26,7 +26,7 @@ export const storiesData: StoryData[] = [
     "wordCount": 2705
   },
   {
-    "id": "4htr298an",
+    "id": "jry75enpf",
     "title": "Rabbit riding on Reindeer",
     "tags": "Reindeer/Rabbit.",
     "summary": "Sex and a little warm",
@@ -37,7 +37,7 @@ export const storiesData: StoryData[] = [
     "wordCount": 1899
   },
   {
-    "id": "9spspzb4g",
+    "id": "zjswrt4ay",
     "title": "Would you answer a call from your boss in midnight",
     "tags": "Full-Stop Office 67",
     "summary": "Established relationship.",
@@ -48,7 +48,7 @@ export const storiesData: StoryData[] = [
     "wordCount": 1989
   },
   {
-    "id": "drdtd2gka",
+    "id": "u651de3rc",
     "title": "总之是想看兔子把驯鹿榨空这种事",
     "tags": "驯鹿/兔子",
     "summary": "鹿打了兔子后被报复事件。",
@@ -59,7 +59,7 @@ export const storiesData: StoryData[] = [
     "wordCount": 3390
   },
   {
-    "id": "8fgbshik2",
+    "id": "j9vwef8e3",
     "title": "求仁得仁",
     "tags": "黑云67",
     "summary": "黑云宝溺水事件",
@@ -70,7 +70,7 @@ export const storiesData: StoryData[] = [
     "wordCount": 5322
   },
   {
-    "id": "ot4fhib2l",
+    "id": "l7qfq9d70",
     "title": "老板半夜打电话你接不接",
     "tags": "句点67",
     "summary": "交往前提的半夜骚扰事件",

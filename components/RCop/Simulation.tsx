@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
+import { boostSpeeches } from './speech/boost';
+import { crossKillSpeeches } from './speech/crossKill';
+import { sameTeamKillSpeeches } from './speech/sameTeamKill';
+import { idleSpeeches } from './speech/idle';
 
 interface SimulationProps {
   onClose: () => void;
@@ -44,12 +48,35 @@ interface DrugPoint {
   createdAt: number;
 }
 
+// 事件类型
+type SpeechEventType = 'BOOST' | 'CROSS_KILL' | 'SAME_TEAM_KILL' | 'IDLE';
+
+// 台词事件接口
+interface SpeechEvent {
+  type: SpeechEventType;
+  speakerTeam: 0 | 1; // 触发者队伍
+  x: number;
+  y: number;
+  time: number;
+}
+
+// 弹幕气泡接口
+interface Bubble {
+  text: string;
+  x: number;
+  y: number;
+  createdAt: number;
+  type: SpeechEventType;
+  speakerTeam: 0 | 1; // 说话者队伍，用于确定颜色
+}
+
 const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [ending, setEnding] = useState<'A' | 'B' | 'C' | null>(null);
   const [endingText, setEndingText] = useState<string>('');
+  const [endingPreText, setEndingPreText] = useState<string>('');
   const finalBattleRef = useRef<{ a0: Agent | null; a1: Agent | null; started: boolean }>({ a0: null, a1: null, started: false });
 
   const agentsRef = useRef<Agent[]>([]);
@@ -62,6 +89,11 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const heartEffectsRef = useRef<HeartEffect[]>([]);
   const lastEncounterTimeRef = useRef<number>(0);
   const arenaBoundsRef = useRef({ left: 0, right: 1200, top: 0, bottom: 800 });
+  const speechEventsRef = useRef<SpeechEvent[]>([]);
+  const bubblesRef = useRef<Bubble[]>([]);
+  const lastSchedulerTickRef = useRef<number>(0);
+  const gameStartTimeRef = useRef<number>(0);
+  const lastEventTypeTimeRef = useRef<Map<SpeechEventType, number>>(new Map());
 
   const CANVAS_WIDTH = 1200;
   const CANVAS_HEIGHT = 800;
@@ -75,7 +107,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const REINDEER_MAX_SPEED = 2; // 驯鹿速度
   const RABBIT_MAX_SPEED = 3; // 兔子速度更快
   const REINDEER_AGGRESSIVENESS = 0.3; // 驯鹿攻击性阈值
-  const RABBIT_AGGRESSIVENESS = 0.2; // 兔子攻击性更强（阈值更低）
+  const RABBIT_AGGRESSIVENESS = 0.25; // 兔子攻击性阈值（降低攻击欲望）
   const POWER_GAIN_ON_DRUG = 5;
   const POWER_GAIN_ON_CROSS_TEAM = 3;
   const CROSS_TEAM_GROWTH_THRESHOLD = 0.4; // 跨队共同增强的阈值（大幅扩大，让更多异队碰撞触发共同增强）
@@ -83,6 +115,44 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const NO_ENCOUNTER_TIME = 5000; // 5秒没有相遇开始缩圈（缩短）
   const SHRINK_RATE = 10; // 每秒缩小10像素（更快）
   const FINAL_BATTLE_THRESHOLD = 0.25; // 终局判定阈值（存活概率 = 两个击杀概率之和）
+  
+  // 弹幕系统常量
+  const BUBBLE_LIFETIME = 1000; // 1秒（立刻开始淡出）
+  const SCHEDULER_TICK_INTERVAL = 200; // 200ms调度一次
+  const MAX_BUBBLES = 5;
+  const MIN_BUBBLES = 1;
+  const BUBBLE_OFFSET_RADIUS = 40; // 位置偏移半径
+  const INITIAL_SAME_TEAM_KILL_BAN = 15000; // 开局15秒禁止同队击杀弹幕
+  const EVENT_PROXIMITY_RADIUS = 60; // 同一事件周围小范围（60像素）
+  
+  // 事件优先级和冷却
+  const eventPriorities: Record<SpeechEventType, number> = {
+    BOOST: 4,
+    CROSS_KILL: 3,
+    IDLE: 2,
+    SAME_TEAM_KILL: 1,
+  };
+  
+  const eventCooldowns: Record<SpeechEventType, number> = {
+    BOOST: 1000,
+    CROSS_KILL: 2000,
+    SAME_TEAM_KILL: 1500,
+    IDLE: 3000,
+  };
+
+  // 台词选择函数
+  const getRandomSpeech = (type: SpeechEventType, team: 0 | 1): string | null => {
+    const speeches = {
+      BOOST: boostSpeeches,
+      CROSS_KILL: crossKillSpeeches,
+      SAME_TEAM_KILL: sameTeamKillSpeeches,
+      IDLE: idleSpeeches,
+    }[type];
+    
+    const pool = speeches[team === 0 ? 'team0' : 'team1'] || (speeches as any).mixed || [];
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
 
   // 初始化agents
   const initializeAgents = () => {
@@ -313,9 +383,12 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       
       if (teamsInRadius.size === 2) {
         // 两队都在 - 明显的粉色烟雾和爱心特效
+        const randomAgent = agentsInRadius[Math.floor(Math.random() * agentsInRadius.length)];
         agentsInRadius.forEach(agent => {
           agent.power += POWER_GAIN_ON_DRUG;
           agent.truceUntil = now + TRUCE_DURATION;
+        });
+        agentsInRadius.forEach(agent => {
           // 检查爱心特效冷却时间
           const canTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
           if (canTriggerHeart) {
@@ -323,6 +396,16 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
             const heartX = agent.x;
             const heartY = agent.y;
             pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+            // 50%概率生成BOOST事件，位置跟随粉红烟雾
+            if (Math.random() < 0.5) {
+              speechEventsRef.current.push({
+                type: 'BOOST',
+                speakerTeam: agent.team,
+                x: heartX,
+                y: heartY,
+                time: now,
+              });
+            }
             heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
             agent.lastHeartEffectTime = now; // 更新冷却时间
           } else {
@@ -330,10 +413,30 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
             const heartX = agent.x;
             const heartY = agent.y;
             pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+            // 50%概率生成BOOST事件，位置跟随粉红烟雾
+            if (Math.random() < 0.5) {
+              speechEventsRef.current.push({
+                type: 'BOOST',
+                speakerTeam: agent.team,
+                x: heartX,
+                y: heartY,
+                time: now,
+              });
+            }
           }
         });
         // 在药物位置也添加特效
         pinkMistEffectsRef.current.push({ x: drug.x, y: drug.y, time: now, radius: 0 });
+        // 50%概率生成BOOST事件，位置跟随粉红烟雾（使用随机agent的队伍）
+        if (Math.random() < 0.5) {
+          speechEventsRef.current.push({
+            type: 'BOOST',
+            speakerTeam: randomAgent.team,
+            x: drug.x,
+            y: drug.y,
+            time: now,
+          });
+        }
         heartEffectsRef.current.push({ x: drug.x, y: drug.y, time: now, scale: 0 });
         drugsToRemove.push(drug.id);
         lastEncounterTimeRef.current = now; // 更新相遇时间
@@ -381,6 +484,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 other.power += agent.power * killBonus;
                 agentsToRemove.push(agent.id);
                 darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
+                // 生成同队击杀事件
+                speechEventsRef.current.push({
+                  type: 'SAME_TEAM_KILL',
+                  speakerTeam: other.team,
+                  x: other.x,
+                  y: other.y,
+                  time: now,
+                });
               } else {
                 // 受保护的agent遇到击杀情况，改为共同增强
                 agent.power += POWER_GAIN_ON_CROSS_TEAM;
@@ -392,7 +503,27 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 const otherHeartX = other.x;
                 const otherHeartY = other.y;
                 pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: agent.team,
+                    x: heartX,
+                    y: heartY,
+                    time: now,
+                  });
+                }
                 pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: other.team,
+                    x: otherHeartX,
+                    y: otherHeartY,
+                    time: now,
+                  });
+                }
                 if (agentCanTriggerHeart) {
                   heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
                   agent.lastHeartEffectTime = now;
@@ -410,6 +541,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 agent.power += other.power * killBonus;
                 agentsToRemove.push(other.id);
                 darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
+                // 生成同队击杀事件
+                speechEventsRef.current.push({
+                  type: 'SAME_TEAM_KILL',
+                  speakerTeam: agent.team,
+                  x: agent.x,
+                  y: agent.y,
+                  time: now,
+                });
               } else {
                 // 受保护的other遇到击杀情况，改为共同增强
                 agent.power += POWER_GAIN_ON_CROSS_TEAM;
@@ -421,7 +560,27 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 const otherHeartX = other.x;
                 const otherHeartY = other.y;
                 pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: agent.team,
+                    x: heartX,
+                    y: heartY,
+                    time: now,
+                  });
+                }
                 pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: other.team,
+                    x: otherHeartX,
+                    y: otherHeartY,
+                    time: now,
+                  });
+                }
                 if (agentCanTriggerHeart) {
                   heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
                   agent.lastHeartEffectTime = now;
@@ -445,6 +604,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 other.power += agent.power * killBonus;
                 agentsToRemove.push(agent.id);
                 darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
+                // 生成跨队击杀事件
+                speechEventsRef.current.push({
+                  type: 'CROSS_KILL',
+                  speakerTeam: other.team,
+                  x: other.x,
+                  y: other.y,
+                  time: now,
+                });
               } else {
                 // 受保护的agent遇到击杀情况，改为共同增强
                 agent.power += POWER_GAIN_ON_CROSS_TEAM;
@@ -456,7 +623,27 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 const otherHeartX = other.x;
                 const otherHeartY = other.y;
                 pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: agent.team,
+                    x: heartX,
+                    y: heartY,
+                    time: now,
+                  });
+                }
                 pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: other.team,
+                    x: otherHeartX,
+                    y: otherHeartY,
+                    time: now,
+                  });
+                }
                 if (agentCanTriggerHeart) {
                   heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
                   agent.lastHeartEffectTime = now;
@@ -474,6 +661,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 agent.power += other.power * killBonus;
                 agentsToRemove.push(other.id);
                 darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
+                // 生成跨队击杀事件
+                speechEventsRef.current.push({
+                  type: 'CROSS_KILL',
+                  speakerTeam: agent.team,
+                  x: agent.x,
+                  y: agent.y,
+                  time: now,
+                });
               } else {
                 // 受保护的other遇到击杀情况，改为共同增强
                 agent.power += POWER_GAIN_ON_CROSS_TEAM;
@@ -485,7 +680,27 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 const otherHeartX = other.x;
                 const otherHeartY = other.y;
                 pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: agent.team,
+                    x: heartX,
+                    y: heartY,
+                    time: now,
+                  });
+                }
                 pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
+                // 50%概率生成BOOST事件，位置跟随粉红烟雾
+                if (Math.random() < 0.5) {
+                  speechEventsRef.current.push({
+                    type: 'BOOST',
+                    speakerTeam: other.team,
+                    x: otherHeartX,
+                    y: otherHeartY,
+                    time: now,
+                  });
+                }
                 if (agentCanTriggerHeart) {
                   heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
                   agent.lastHeartEffectTime = now;
@@ -512,7 +727,27 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
             const otherHeartY = other.y;
             
             pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+            // 50%概率生成BOOST事件，位置跟随粉红烟雾
+            if (Math.random() < 0.5) {
+              speechEventsRef.current.push({
+                type: 'BOOST',
+                speakerTeam: agent.team,
+                x: heartX,
+                y: heartY,
+                time: now,
+              });
+            }
             pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
+            // 50%概率生成BOOST事件，位置跟随粉红烟雾
+            if (Math.random() < 0.5) {
+              speechEventsRef.current.push({
+                type: 'BOOST',
+                speakerTeam: other.team,
+                x: otherHeartX,
+                y: otherHeartY,
+                time: now,
+              });
+            }
             
             if (agentCanTriggerHeart) {
               heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
@@ -534,6 +769,125 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     agentsRef.current = agentsRef.current.filter(a => !agentsToRemove.includes(a.id));
   };
   
+  // 气泡位置计算
+  const calculateBubblePosition = (event: SpeechEvent, existingBubbles: Bubble[]): { x: number; y: number } | null => {
+    for (let i = 0; i < 5; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const offset = 20 + Math.random() * BUBBLE_OFFSET_RADIUS;
+      const x = event.x + Math.cos(angle) * offset;
+      const y = event.y + Math.sin(angle) * offset;
+      
+      // 检查是否与现有气泡重叠（距离 < 40px）
+      const tooClose = existingBubbles.some(b => {
+        const dist = Math.sqrt((b.x - x) ** 2 + (b.y - y) ** 2);
+        return dist < BUBBLE_OFFSET_RADIUS;
+      });
+      
+      if (!tooClose) return { x, y };
+    }
+    return null; // 找不到合适位置
+  };
+
+  // 调度器主函数
+  const schedulerTick = () => {
+    const now = Date.now();
+    const currentBubbles = bubblesRef.current.filter(b => now - b.createdAt < BUBBLE_LIFETIME);
+    const shouldAddBubble = currentBubbles.length < MIN_BUBBLES || 
+                           (currentBubbles.length < MAX_BUBBLES && speechEventsRef.current.length > 0);
+    
+    if (!shouldAddBubble) return;
+    
+    // 过滤有效事件（超过1秒未调度的删除）
+    const validEvents = speechEventsRef.current.filter(e => now - e.time < 1000);
+    
+    // 检查开局15秒内禁止 SAME_TEAM_KILL
+    const gameAge = now - gameStartTimeRef.current;
+    let filteredEvents = validEvents.filter(e => {
+      if (e.type === 'SAME_TEAM_KILL' && gameAge < INITIAL_SAME_TEAM_KILL_BAN) {
+        return false;
+      }
+      return true;
+    });
+    
+    // 检查同一事件周围小范围内是否已有相同类型的气泡在显示
+    filteredEvents = filteredEvents.filter(event => {
+      // 检查是否有相同类型的气泡在附近显示
+      const hasNearbyBubble = currentBubbles.some(bubble => {
+        if (bubble.type !== event.type) return false;
+        const dist = Math.sqrt((bubble.x - event.x) ** 2 + (bubble.y - event.y) ** 2);
+        return dist < EVENT_PROXIMITY_RADIUS;
+      });
+      return !hasNearbyBubble;
+    });
+    
+    if (filteredEvents.length === 0) {
+      // 如果没有事件，生成IDLE事件
+      const aliveAgents = agentsRef.current;
+      if (aliveAgents.length > 0) {
+        const randomAgent = aliveAgents[Math.floor(Math.random() * aliveAgents.length)];
+        const idleEvent: SpeechEvent = {
+          type: 'IDLE',
+          speakerTeam: randomAgent.team,
+          x: randomAgent.x,
+          y: randomAgent.y,
+          time: now,
+        };
+        filteredEvents.push(idleEvent);
+      } else {
+        return;
+      }
+    }
+    
+    // 按优先级排序
+    const sortedEvents = [...filteredEvents].sort((a, b) => {
+      return eventPriorities[b.type] - eventPriorities[a.type];
+    });
+    
+    // 尝试从高优先级事件生成气泡
+    for (const event of sortedEvents) {
+      // 检查冷却时间
+      const lastTime = lastEventTypeTimeRef.current.get(event.type) || 0;
+      if (now - lastTime < eventCooldowns[event.type]) {
+        continue;
+      }
+      
+      // 获取台词
+      const speech = getRandomSpeech(event.type, event.speakerTeam);
+      if (!speech) continue;
+      
+      // 计算位置
+      const position = calculateBubblePosition(event, currentBubbles);
+      if (!position) continue;
+      
+      // 创建气泡
+      const bubble: Bubble = {
+        text: speech,
+        x: position.x,
+        y: position.y,
+        createdAt: now,
+        type: event.type,
+        speakerTeam: event.speakerTeam,
+      };
+      
+      bubblesRef.current.push(bubble);
+      lastEventTypeTimeRef.current.set(event.type, now);
+      
+      // 移除已使用的事件
+      const eventIndex = speechEventsRef.current.findIndex(e => 
+        e.type === event.type && 
+        e.speakerTeam === event.speakerTeam &&
+        Math.abs(e.x - event.x) < 1 &&
+        Math.abs(e.y - event.y) < 1 &&
+        Math.abs(e.time - event.time) < 100
+      );
+      if (eventIndex >= 0) {
+        speechEventsRef.current.splice(eventIndex, 1);
+      }
+      
+      break; // 每tick最多添加一个气泡
+    }
+  };
+
   // 处理缩圈
   const processArenaShrink = (deltaTime: number) => {
     const now = Date.now();
@@ -581,37 +935,39 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       const powerDiff = (a1.power - a0.power) / Math.max(a0.power, a1.power);
       const aggressiveness = Math.max(REINDEER_AGGRESSIVENESS, RABBIT_AGGRESSIVENESS);
       
-      // 先进行击杀或增强判定
+      // 先进行击杀判定
       if (Math.abs(powerDiff) > aggressiveness) {
         // 战力差距大，进行击杀判定
         if (powerDiff > FINAL_BATTLE_THRESHOLD) {
           // 兔子击杀驯鹿（结局A）
           setEnding('A');
+          setEndingPreText('“你可要痛快咬住我的脖子。\n 红血滴落。草脏了，天近了。两颗眼珠上映现出彩虹。\n我淡笑着，死了。\n我一直等候着呢，这一刻。”');
           setEndingText('兔子 击杀 驯鹿');
           darkeningEffectsRef.current.push({ x: a0.x, y: a0.y, time: now });
           agentsRef.current = agentsRef.current.filter(a => a.id !== a0.id);
+          setGameEnded(true);
+          isRunningRef.current = false;
+          setIsRunning(false);
+          finalBattleRef.current = { a0: null, a1: null, started: false };
+          return;
         } else if (powerDiff < -FINAL_BATTLE_THRESHOLD) {
           // 驯鹿击杀兔子（结局C）
           setEnding('C');
+          setEndingPreText('“哈，我输了，你征服了我。我就把自己给你。\n摄食我吧，我们当合为一体。\n你要问我："这是最后的挣扎？假意屈服的计谋？"\n我回答："吃吧，你早已涎水直流了。"”');
           setEndingText('驯鹿 击杀 兔子');
           darkeningEffectsRef.current.push({ x: a1.x, y: a1.y, time: now });
           agentsRef.current = agentsRef.current.filter(a => a.id !== a1.id);
-        } else {
-          // 战力差距在阈值内，存活（结局B）
-          setEnding('B');
-          setEndingText('存 活');
-          // 添加爱心特效
-          const heartX = (a0.x + a1.x) / 2;
-          const heartY = (a0.y + a1.y) / 2;
-          pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
-          pinkMistEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, radius: 0 });
-          pinkMistEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, radius: 0 });
-          heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
-          heartEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, scale: 0 });
-          heartEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, scale: 0 });
+          setGameEnded(true);
+          isRunningRef.current = false;
+          setIsRunning(false);
+          finalBattleRef.current = { a0: null, a1: null, started: false };
+          return;
         }
-      } else {
-        // 战力差距小，进行增强判定
+      }
+      
+      // 再进行增强判定
+      if (Math.abs(powerDiff) <= CROSS_TEAM_GROWTH_THRESHOLD) {
+        // 战力相近，触发增强并直接进入存活结局（结局B）
         a0.power += POWER_GAIN_ON_CROSS_TEAM;
         a1.power += POWER_GAIN_ON_CROSS_TEAM;
         // 添加爱心特效
@@ -623,15 +979,35 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
         heartEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, scale: 0 });
         heartEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, scale: 0 });
-        // 增强后不结束游戏，继续战斗
-        return; // 增强后继续，不结束游戏
+        // 触发存活结局
+        setEnding('B');
+        setEndingPreText('“两人同行总会好些。\n如果我们无法前进，\n就让我们死在途中。\n让我们死在一起。”');
+        setEndingText('存 活');
+        setGameEnded(true);
+        isRunningRef.current = false;
+        setIsRunning(false);
+        finalBattleRef.current = { a0: null, a1: null, started: false };
+        return;
       }
       
+      // 其他情况（战力差距在中间范围），也触发存活结局（结局B）
+      setEnding('B');
+      setEndingPreText('“两人同行总会好些。\n如果我们无法前进，\n就让我们死在途中。\n让我们死在一起。”');
+      setEndingText('存 活');
+      // 添加爱心特效
+      const heartX = (a0.x + a1.x) / 2;
+      const heartY = (a0.y + a1.y) / 2;
+      pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+      pinkMistEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, radius: 0 });
+      pinkMistEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, radius: 0 });
+      heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+      heartEffectsRef.current.push({ x: a0.x, y: a0.y, time: now, scale: 0 });
+      heartEffectsRef.current.push({ x: a1.x, y: a1.y, time: now, scale: 0 });
       setGameEnded(true);
       isRunningRef.current = false;
       setIsRunning(false);
       finalBattleRef.current = { a0: null, a1: null, started: false };
-      return; // 已经碰撞，不再移动
+      return;
     }
     
     // 如果还没碰撞，继续互相靠近
@@ -666,6 +1042,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       // 驯鹿队全灭，兔子获胜（结局A：兔子击杀驯鹿）
       const now = Date.now();
       setEnding('A');
+      setEndingPreText('“你可要痛快咬住我的脖子。\n 红血滴落。草脏了，天近了。两颗眼珠上映现出彩虹。\n我淡笑着，死了。\n我一直等候着呢，这一刻。”');
       setEndingText('兔子 击杀 驯鹿');
       // 在剩余兔子位置添加击杀特效
       team1.forEach(agent => {
@@ -682,6 +1059,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       // 兔子队全灭，驯鹿获胜（结局C：驯鹿击杀兔子）
       const now = Date.now();
       setEnding('C');
+      setEndingPreText('“哈，我输了，你征服了我。我就把自己给你。\n摄食我吧，我们当合为一体。你要问我："这是最后的挣扎？假意屈服的计谋？"我回答："吃吧，你早已涎水直流了。"”');
       setEndingText('驯鹿 击杀 兔子');
       // 在剩余驯鹿位置添加击杀特效
       team0.forEach(agent => {
@@ -763,6 +1141,18 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       }).filter((e): e is PinkMistEffect => e !== null);
       // 爱心特效只过滤过期，不更新坐标（确保固定在原位置）
       heartEffectsRef.current = heartEffectsRef.current.filter(e => now - e.time < 1500);
+      
+      // 调度器tick
+      if (now - lastSchedulerTickRef.current >= SCHEDULER_TICK_INTERVAL) {
+        schedulerTick();
+        lastSchedulerTickRef.current = now;
+      }
+      
+      // 清理过期事件（超过1秒未调度的删除）
+      speechEventsRef.current = speechEventsRef.current.filter(e => now - e.time < 1000);
+      
+      // 清理过期气泡
+      bubblesRef.current = bubblesRef.current.filter(b => now - b.createdAt < BUBBLE_LIFETIME);
     }
     
     // 绘制（无论游戏是否结束都要绘制，以显示结局文字）
@@ -891,6 +1281,29 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       ctx.fill();
     });
     
+    // 绘制弹幕气泡
+    bubblesRef.current.forEach(bubble => {
+      const age = now - bubble.createdAt;
+      if (age > BUBBLE_LIFETIME) return;
+      
+      // 计算透明度（立刻开始淡出，总用时1秒）
+      const alpha = 1 - (age / BUBBLE_LIFETIME);
+      
+      // 根据队伍设置颜色：team0（驯鹿）深绿色，team1（兔子）棕色
+      const teamColor = bubble.speakerTeam === 0 
+        ? `rgba(0, 100, 0, ${alpha})` // 深绿色
+        : `rgba(139, 69, 19, ${alpha})`; // 棕色
+      
+      // 绘制文本（无背景）
+      ctx.font = '28px Inter';
+      ctx.fillStyle = teamColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(bubble.text, bubble.x, bubble.y - 10);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    });
+    
     // 绘制统计信息
     const team0Count = agentsRef.current.filter(a => a.team === 0).length;
     const team1Count = agentsRef.current.filter(a => a.team === 1).length;
@@ -906,11 +1319,43 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     ctx.fillText(`药物: ${drugPointsRef.current.length}`, 20, 70);
     
     if (gameEnded && ending && endingText) {
+      // 绘制前置文本（黑色粗体，带引号）
+      if (endingPreText) {
+        ctx.fillStyle = '#000000';
+        ctx.font = '500 48px "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        // 处理换行
+        const lines = endingPreText.split('\n').map(line => line.trim()).filter(line => line);
+        const lineHeight = 70; // 正常行距
+        // 计算文本块的总高度
+        const totalHeight = lines.length * lineHeight;
+        const startY = CANVAS_HEIGHT / 2 - totalHeight / 2 - 60;
+        // 计算最宽行的宽度，用于居中
+        let maxWidth = 0;
+        lines.forEach(line => {
+          const width = ctx.measureText(line).width;
+          if (width > maxWidth) maxWidth = width;
+        });
+        const textStartX = CANVAS_WIDTH / 2 - maxWidth / 2;
+        lines.forEach((line, index) => {
+          if (line) {
+            ctx.fillText(line, textStartX, startY + index * lineHeight);
+          }
+        });
+        ctx.textBaseline = 'alphabetic';
+      }
+      
+      // 绘制结局文本（左对齐，居中显示）
       ctx.fillStyle = '#7B5B89';
-      ctx.font = 'bold 36px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(endingText, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+      ctx.font = 'bold 48px Inter';
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const endingTextWidth = ctx.measureText(endingText).width;
+      const endingTextX = CANVAS_WIDTH / 2 - endingTextWidth / 2;
+      ctx.fillText(endingText, endingTextX, CANVAS_HEIGHT / 2 + 80 + 48); // 往下移动一个字体高度（48px）
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
     }
   };
 
@@ -953,8 +1398,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     setGameEnded(false);
     setEnding(null);
     setEndingText('');
+    setEndingPreText('');
     finalBattleRef.current = { a0: null, a1: null, started: false };
     lastTimeRef.current = performance.now();
+    gameStartTimeRef.current = Date.now();
+    lastSchedulerTickRef.current = Date.now();
+    speechEventsRef.current = [];
+    bubblesRef.current = [];
+    lastEventTypeTimeRef.current.clear();
     animationFrameRef.current = requestAnimationFrame(gameLoop);
   };
 
@@ -965,6 +1416,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     setGameEnded(false);
     setEnding(null);
     setEndingText('');
+    setEndingPreText('');
     finalBattleRef.current = { a0: null, a1: null, started: false };
     drugPointsRef.current = [];
     darkeningEffectsRef.current = [];
@@ -972,19 +1424,30 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     heartEffectsRef.current = [];
     lastEncounterTimeRef.current = Date.now();
     arenaBoundsRef.current = { left: 0, right: CANVAS_WIDTH, top: 0, bottom: CANVAS_HEIGHT };
+    speechEventsRef.current = [];
+    bubblesRef.current = [];
+    lastSchedulerTickRef.current = 0;
+    gameStartTimeRef.current = 0;
+    lastEventTypeTimeRef.current.clear();
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
     initializeAgents();
+    // 强制清除画布并重新绘制，确保结局文本被清除
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      }
+    }
     draw();
   };
 
-  // 监听gameEnded状态变化，重新绘制以显示结局文字
+  // 监听gameEnded状态变化，重新绘制以显示或清除结局文字
   useEffect(() => {
-    if (gameEnded) {
-      draw();
-    }
-  }, [gameEnded, ending, endingText]);
+    draw();
+  }, [gameEnded, ending, endingText, endingPreText]);
 
   // 初始化
   useEffect(() => {
