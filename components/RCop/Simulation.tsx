@@ -898,7 +898,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       if (d < FINAL_MID_DIFF) {
         endGame({
           ending: 'survive',
-          preText: '“两人同行总会好些。\n如果我们无法前进，\n就让我们死在途中。\n让我们死在一起。”',
+          preText: '“两人同行总会好些。\n  如果我们无法前进，\n  就让我们死在途中。\n  让我们死在一起。”',
           text: '存 活',
         });
 
@@ -1277,9 +1277,13 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         // 计算文本块的总高度
         const totalHeight = allLines.length * lineHeight;
         const startY = CANVAS_HEIGHT / 2 - totalHeight / 2 - 60;
-        // 文本起始X位置（左对齐，留出左边距）
-        const textStartX = margin;
-        
+        // 计算最宽行的宽度，用于居中
+        let maxLineWidth = 0;
+        allLines.forEach(line => {
+          const width = ctx.measureText(line).width;
+          if (width > maxLineWidth) maxLineWidth = width;
+        });
+        const textStartX = CANVAS_WIDTH / 2 - maxLineWidth / 2;
         allLines.forEach((line, index) => {
           if (line) {
             ctx.fillText(line, textStartX, startY + index * lineHeight);
