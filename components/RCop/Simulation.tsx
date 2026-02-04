@@ -111,6 +111,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const RABBIT_AGGRESSIVENESS = 0.25; // 兔子攻击性阈值（降低攻击欲望）
   const POWER_GAIN_ON_DRUG = 5;
   const POWER_GAIN_ON_CROSS_TEAM = 3;
+  const POWER_GAIN_ON_CROSS_TEAM_REINDEER = 4; // 驯鹿队跨队增强加成
   const CROSS_TEAM_GROWTH_THRESHOLD = 0.5; // 跨队共同增强的阈值（提高阈值，让更多异队碰撞触发共同增强）
   const HEART_EFFECT_COOLDOWN = 500; // 爱心特效冷却时间（0.5秒）
   const NO_ENCOUNTER_TIME = 5000; // 5秒没有相遇开始缩圈（缩短）
@@ -493,39 +494,45 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         const powerDiff = (other.power - agent.power) / Math.max(agent.power, other.power);
         
         if (agent.team === other.team) {
-          // 同队：只要有战力差距就击杀，不检查aggressiveness，不发生共同增强
+          // 同队：根据战力差距和aggressiveness决定是否击杀
           // 注意：受保护对象不会遇到同队（因为保护时该队只剩1个）
           if (Math.abs(powerDiff) > 0.001) { // 避免浮点数误差
-            if (powerDiff > 0) {
-              // other更强，杀agent
-              // 如果是驯鹿击杀，获得更多战力加成
-              const killBonus = other.team === 0 ? 0.6 : 0.5;
-              other.power += agent.power * killBonus;
-              agentsToRemove.push(agent.id);
-              darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
-              // 生成同队击杀事件
-              speechEventsRef.current.push({
-                type: 'SAME_TEAM_KILL',
-                speakerTeam: other.team,
-                x: other.x,
-                y: other.y,
-                time: now,
-              });
-            } else {
-              // agent更强，杀other
-              // 如果是驯鹿击杀，获得更多战力加成
-              const killBonus = agent.team === 0 ? 0.6 : 0.5;
-              agent.power += other.power * killBonus;
-              agentsToRemove.push(other.id);
-              darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
-              // 生成同队击杀事件
-              speechEventsRef.current.push({
-                type: 'SAME_TEAM_KILL',
-                speakerTeam: agent.team,
-                x: agent.x,
-                y: agent.y,
-                time: now,
-              });
+            // 如果战力差距大于aggressiveness，直接击杀
+            // 如果战力差距小于等于aggressiveness，20%概率击杀
+            const shouldKill = Math.abs(powerDiff) > aggressiveness || Math.random() < 0.2;
+            
+            if (shouldKill) {
+              if (powerDiff > 0) {
+                // other更强，杀agent
+                // 如果是驯鹿击杀，获得更多战力加成
+                const killBonus = other.team === 0 ? 0.65 : 0.5;
+                other.power += agent.power * killBonus;
+                agentsToRemove.push(agent.id);
+                darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
+                // 生成同队击杀事件
+                speechEventsRef.current.push({
+                  type: 'SAME_TEAM_KILL',
+                  speakerTeam: other.team,
+                  x: other.x,
+                  y: other.y,
+                  time: now,
+                });
+              } else {
+                // agent更强，杀other
+                // 如果是驯鹿击杀，获得更多战力加成
+                const killBonus = agent.team === 0 ? 0.65 : 0.5;
+                agent.power += other.power * killBonus;
+                agentsToRemove.push(other.id);
+                darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
+                // 生成同队击杀事件
+                speechEventsRef.current.push({
+                  type: 'SAME_TEAM_KILL',
+                  speakerTeam: agent.team,
+                  x: agent.x,
+                  y: agent.y,
+                  time: now,
+                });
+              }
             }
           }
         } else {
@@ -537,7 +544,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
               // other更强，杀agent（但受保护的agent不会被击杀，改为共同增强）
               if (!agent.protected) {
                 // 如果是驯鹿击杀，获得更多战力加成
-                const killBonus = other.team === 0 ? 0.6 : 0.5;
+                const killBonus = other.team === 0 ? 0.65 : 0.5;
                 other.power += agent.power * killBonus;
                 agentsToRemove.push(agent.id);
                 darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
@@ -551,8 +558,8 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 });
               } else {
                 // 受保护的agent遇到击杀情况，改为共同增强
-                agent.power += POWER_GAIN_ON_CROSS_TEAM;
-                other.power += POWER_GAIN_ON_CROSS_TEAM;
+                agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
+                other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
                 const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const heartX = agent.x;
@@ -594,7 +601,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
               // agent更强，杀other（但受保护的other不会被击杀，改为共同增强）
               if (!other.protected) {
                 // 如果是驯鹿击杀，获得更多战力加成
-                const killBonus = agent.team === 0 ? 0.6 : 0.5;
+                const killBonus = agent.team === 0 ? 0.65 : 0.5;
                 agent.power += other.power * killBonus;
                 agentsToRemove.push(other.id);
                 darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
@@ -608,8 +615,8 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 });
               } else {
                 // 受保护的other遇到击杀情况，改为共同增强
-                agent.power += POWER_GAIN_ON_CROSS_TEAM;
-                other.power += POWER_GAIN_ON_CROSS_TEAM;
+                agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
+                other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
                 const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const heartX = agent.x;
@@ -653,8 +660,8 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
             // 只要在阈值内就触发共同增强，不需要再检查 CROSS_TEAM_GROWTH_THRESHOLD
             if (Math.abs(powerDiff) <= CROSS_TEAM_GROWTH_THRESHOLD) {
               // 力量相近（使用扩大的阈值），都增长
-              agent.power += POWER_GAIN_ON_CROSS_TEAM;
-              other.power += POWER_GAIN_ON_CROSS_TEAM;
+              agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
+              other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
               
               // 检查爱心特效冷却时间
               const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
@@ -882,7 +889,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         // 你原本的"事务所/逃脱"文本放这里
         endGame({
           ending: 'escape',
-          preText: '“……我们开了一间小事务所。他仍会头疼，我的手也时不时颤抖。我们仍从噩梦中惊醒，然后共享这个夜晚。但生活就是这样开始的。”',
+          preText: '“……我们开了一间小事务所。他还会头疼，我的手也时不时颤抖。我们仍从噩梦中惊醒，然后共享一个夜晚。生活就是这样开始的。”',
           text: '逃 脱',
         });
 
@@ -991,7 +998,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       team1.forEach(agent => darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now }));
       endGame({
         ending: 'rabbit_survives',
-        preText: '“……已经将遗体移交给鸿园集团。但不剩下多少了——我都不知道能不能称它为一具遗体。无论如何，这件事已经告一段落。就当它是一件圣诞礼物吧。”',
+        preText: '“我们既不想预见结局，\n  又不能一起生存，——\n  哪怕是无休无止的爱，\n  哪怕是报以整个身心的恨。”',
         text: '兔子 存活',
       });
       return;
@@ -1002,7 +1009,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       team0.forEach(agent => darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now }));
       endGame({
         ending: 'reindeer_survives',
-        preText: '“……有时我们吞食他们，有时他们吞食我们。他欢快地撕扯着自己的肉，淌下的血是红色的。”',
+        preText: '“世间仍存在的幸福——\n    被所爱杀死。\n  谁怀着一个疲惫的灵魂，\n  闪烁着半疯半醒的幻想？——\n    你，还是我？”',
         text: '驯鹿 存活',
       });
       return;
