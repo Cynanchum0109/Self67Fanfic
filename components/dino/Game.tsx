@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, ArrowUp } from 'lucide-react';
+import walk1Image from './Assets/07_walk1.png';
+import walk2Image from './Assets/07_walk2.png';
+import walk3Image from './Assets/07_walk3.png';
 
 interface GameProps {
   onClose: () => void;
@@ -12,11 +15,16 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
+  // 图片引用
+  const walkImagesRef = useRef<HTMLImageElement[]>([]);
+  const imagesLoadedRef = useRef(false);
+  const animationFrameRef = useRef(0);
+  
   // 游戏状态
   const gameState = useRef({
-    dino: { x: 50, y: 150, width: 40, height: 40, velocityY: 0, isJumping: false },
+    dino: { x: 50, y: 106, width: 28, height: 44, velocityY: 0, isJumping: false },
     obstacles: [] as Array<{ x: number; y: number; width: number; height: number }>,
-    groundY: 150,
+    groundY: 106,
     speed: 3,
     gravity: 0.4,
     jumpPower: -10,
@@ -25,7 +33,32 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
     minObstacleDistance: 300, // 障碍物之间的最小距离
     gameStartTime: 0, // 游戏开始时间
     lastScoreUpdate: 0, // 上次更新分数的时间
+    animationFrameInterval: 12, // 动画帧切换间隔，初始12帧，随着难度增加而减少（动画更快）
   });
+
+  // 加载图片
+  useEffect(() => {
+    const images: HTMLImageElement[] = [];
+    let loadedCount = 0;
+    
+    const loadImage = (src: string, index: number) => {
+      const img = new Image();
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount === 3) {
+          imagesLoadedRef.current = true;
+        }
+      };
+      img.src = src;
+      images[index] = img;
+    };
+    
+    loadImage(walk1Image, 0);
+    loadImage(walk2Image, 1);
+    loadImage(walk3Image, 2);
+    
+    walkImagesRef.current = images;
+  }, []);
 
   // 初始化游戏
   useEffect(() => {
@@ -51,13 +84,26 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
 
       // 绘制地面
       ctx.fillStyle = '#E8F9F6';
-      ctx.fillRect(0, gameState.current.groundY + 40, canvas.width, 10);
+      ctx.fillRect(0, gameState.current.groundY + 44, canvas.width, 10);
 
       const state = gameState.current;
 
-      // 绘制角色（紫色矩形）
-      ctx.fillStyle = '#7B5B89';
-      ctx.fillRect(state.dino.x, state.dino.y, state.dino.width, state.dino.height);
+      // 绘制角色（使用图片）
+      if (imagesLoadedRef.current && walkImagesRef.current.length === 3) {
+        // 根据时间切换动画帧（使用动态帧间隔，随着难度增加而加快）
+        // 跳跃时显示第一帧，行走时切换三帧
+        const frameIndex = state.dino.isJumping 
+          ? 0 
+          : Math.floor(animationFrameRef.current / state.animationFrameInterval) % 3;
+        const currentImage = walkImagesRef.current[frameIndex];
+        if (currentImage && currentImage.complete) {
+          ctx.drawImage(currentImage, state.dino.x, state.dino.y, state.dino.width, state.dino.height);
+        }
+      } else {
+        // 如果图片未加载，显示占位矩形
+        ctx.fillStyle = '#7B5B89';
+        ctx.fillRect(state.dino.x, state.dino.y, state.dino.width, state.dino.height);
+      }
 
       // 绘制障碍物（薄荷绿矩形）
       state.obstacles.forEach(obstacle => {
@@ -147,8 +193,8 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         state.obstacles.push({
           x: canvas.width,
           y: state.groundY,
-          width: 30,
-          height: 25, // 降低障碍物高度，更容易跳过
+          width: 28,
+          height: 44, // 与主角尺寸相同
         });
         state.lastObstacleX = canvas.width;
       }
@@ -168,6 +214,11 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
           x: obstacle.x - state.speed,
         }))
         .filter(obstacle => obstacle.x > -obstacle.width);
+      
+      // 更新动画帧（游戏进行中时持续更新）
+      if (isPlaying) {
+        animationFrameRef.current++;
+      }
 
       // 碰撞检测（添加一些容差，避免过于敏感）
       state.obstacles.forEach(obstacle => {
@@ -193,9 +244,14 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
       if (now - state.lastScoreUpdate >= 1000) { // 每1000毫秒（1秒）更新一次
         setScore(prev => {
           const newScore = prev + 1;
-        // 增加难度（速度增长）
+        // 增加难度（速度增长和动画加快）
         if (newScore % 6 === 0 && newScore > 0) {
           state.speed += 0.2;
+          // 减少动画帧间隔，让行走动画更快（最小值为4，避免太快）
+          // 每次减少0.3，让动画加快更慢一些
+          if (state.animationFrameInterval > 4) {
+            state.animationFrameInterval -= 0.3;
+          }
         }
           return newScore;
         });
@@ -234,9 +290,11 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         state.dino.isJumping = false;
         state.obstacles = [];
         state.speed = 3;
+        state.animationFrameInterval = 12;
         state.lastObstacleX = 0;
         state.gameStartTime = now;
         state.lastScoreUpdate = now;
+        animationFrameRef.current = 0;
       } else if (!isPlaying) {
         setIsPlaying(true);
         const now = Date.now();
@@ -260,14 +318,16 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
       setScore(0);
       setIsPlaying(true);
       const now = Date.now();
-      state.dino.y = state.groundY;
-      state.dino.velocityY = 0;
-      state.dino.isJumping = false;
-      state.obstacles = [];
-      state.speed = 2.5;
-      state.lastObstacleX = 0;
-      state.gameStartTime = now;
-      state.lastScoreUpdate = now;
+        state.dino.y = state.groundY;
+        state.dino.velocityY = 0;
+        state.dino.isJumping = false;
+        state.obstacles = [];
+        state.speed = 2.5;
+        state.animationFrameInterval = 12;
+        state.lastObstacleX = 0;
+        state.gameStartTime = now;
+        state.lastScoreUpdate = now;
+        animationFrameRef.current = 0;
     } else if (!isPlaying) {
       setIsPlaying(true);
       const now = Date.now();
