@@ -4,7 +4,9 @@ import { X, ArrowUp } from 'lucide-react';
 import walk1Image from './Assets/07_walk1.png';
 import walk2Image from './Assets/07_walk2.png';
 import walk3Image from './Assets/07_walk3.png';
-import obstacleImageSrc from './Assets/06_walk1.png';
+import obstacleWalk1 from './Assets/06_walk1.png';
+import obstacleWalk2 from './Assets/06_walk2.png';
+import obstacleWalk3 from './Assets/06_walk3.png';
 
 interface GameProps {
   onClose: () => void;
@@ -20,9 +22,14 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
   const walkImagesRef = useRef<HTMLImageElement[]>([]);
   const imagesLoadedRef = useRef(false);
   const animationFrameRef = useRef(0);
-  // 障碍物图片
-  const obstacleImageRef = useRef<HTMLImageElement | null>(null);
-  const obstacleImageLoadedRef = useRef(false);
+  // 障碍物图片（行走动画）
+  const obstacleImagesRef = useRef<HTMLImageElement[]>([]);
+  const obstacleImagesLoadedRef = useRef(false);
+  // 障碍物尺寸（固定 38x43 px）
+  const obstacleSizeRef = useRef<{ width: number; height: number }>({
+    width: 38,
+    height: 43,
+  });
   
   // 游戏状态
   const gameState = useRef({
@@ -42,34 +49,49 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
 
   // 加载图片
   useEffect(() => {
-    const images: HTMLImageElement[] = [];
-    let loadedCount = 0;
+    // 主角行走动画
+    const walkImages: HTMLImageElement[] = [];
+    let walkLoadedCount = 0;
     
     const loadImage = (src: string, index: number) => {
       const img = new Image();
       img.onload = () => {
-        loadedCount++;
-        if (loadedCount === 3) {
+        walkLoadedCount++;
+        if (walkLoadedCount === 3) {
           imagesLoadedRef.current = true;
         }
       };
       img.src = src;
-      images[index] = img;
+      walkImages[index] = img;
     };
     
     loadImage(walk1Image, 0);
     loadImage(walk2Image, 1);
     loadImage(walk3Image, 2);
     
-    walkImagesRef.current = images;
+    walkImagesRef.current = walkImages;
 
-    // 加载障碍物图片
-    const obstacleImg = new Image();
-    obstacleImg.onload = () => {
-      obstacleImageLoadedRef.current = true;
+    // 障碍物行走动画
+    const obstacleImages: HTMLImageElement[] = [];
+    let obstacleLoadedCount = 0;
+
+    const loadObstacleImage = (src: string, index: number) => {
+      const img = new Image();
+      img.onload = () => {
+        obstacleLoadedCount++;
+        if (obstacleLoadedCount === 3) {
+          obstacleImagesLoadedRef.current = true;
+        }
+      };
+      img.src = src;
+      obstacleImages[index] = img;
     };
-    obstacleImg.src = obstacleImageSrc;
-    obstacleImageRef.current = obstacleImg;
+
+    loadObstacleImage(obstacleWalk1, 0);
+    loadObstacleImage(obstacleWalk2, 1);
+    loadObstacleImage(obstacleWalk3, 2);
+
+    obstacleImagesRef.current = obstacleImages;
   }, []);
 
   // 初始化游戏
@@ -96,7 +118,12 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
 
       // 绘制地面
       ctx.fillStyle = '#E8F9F6';
-      ctx.fillRect(0, gameState.current.groundY + 44, canvas.width, 10);
+      ctx.fillRect(
+        0,
+        gameState.current.groundY + gameState.current.dino.height,
+        canvas.width,
+        10
+      );
 
       const state = gameState.current;
 
@@ -117,12 +144,16 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         ctx.fillRect(state.dino.x, state.dino.y, state.dino.width, state.dino.height);
       }
 
-      // 绘制障碍物（使用图片，如果未加载则回退为薄荷绿矩形）
+      // 绘制障碍物（使用图片行走动画，如果未加载则回退为薄荷绿矩形）
       state.obstacles.forEach(obstacle => {
-        if (obstacleImageLoadedRef.current && obstacleImageRef.current) {
+        if (obstacleImagesLoadedRef.current && obstacleImagesRef.current.length === 3) {
+          const frameIndex =
+            Math.floor(animationFrameRef.current / state.animationFrameInterval) % 3;
+          const currentObstacleImage =
+            obstacleImagesRef.current[frameIndex] ?? obstacleImagesRef.current[0];
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(
-            obstacleImageRef.current,
+            currentObstacleImage,
             obstacle.x,
             obstacle.y,
             obstacle.width,
@@ -213,11 +244,15 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
                           (canvas.width - state.lastObstacleX) >= state.minObstacleDistance;
       
       if (shouldSpawn) {
+        const obstacleWidth = obstacleSizeRef.current.width;
+        const obstacleHeight = obstacleSizeRef.current.height;
+        // 让障碍物底部与主角脚下的地面对齐
+        const groundBottomY = state.groundY + state.dino.height;
         state.obstacles.push({
           x: canvas.width,
-          y: state.groundY,
-          width: 28,
-          height: 44, // 与主角尺寸相同
+          y: groundBottomY - obstacleHeight,
+          width: obstacleWidth,
+          height: obstacleHeight,
         });
         state.lastObstacleX = canvas.width;
       }
