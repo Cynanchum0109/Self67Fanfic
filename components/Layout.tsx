@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { BookOpen, List, Home, X } from 'lucide-react';
 import { AppState } from '../types';
 
+// 使用相对路径，适配本地、Vercel 和 GitHub Pages（项目根为 /Self67Fanfic/）
+const MOMO67_ICON_URL = 'assets/icons/momo67.png';
+
 interface LayoutProps {
   children: React.ReactNode;
   activeView: AppState;
@@ -31,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
           <X size={24} className="text-[#7B5B89]" />
         ) : (
           <img 
-            src="/assets/icons/momo67.png" 
+            src={MOMO67_ICON_URL}
             alt="Menu" 
             className="w-8 h-8"
             style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }}
@@ -61,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
               <span><span className="text-[#6BD4C0]">Hong</span><span className="text-[#7B5B89]">Cliff</span></span>
             </div>
             <img 
-              src="/assets/icons/momo67.png" 
+              src={MOMO67_ICON_URL}
               alt="Logo" 
               className="w-8 h-8"
               style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }}
