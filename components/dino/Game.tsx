@@ -4,6 +4,7 @@ import { X, ArrowUp } from 'lucide-react';
 import walk1Image from './Assets/07_walk1.png';
 import walk2Image from './Assets/07_walk2.png';
 import walk3Image from './Assets/07_walk3.png';
+import obstacleImageSrc from './Assets/06_walk1.png';
 
 interface GameProps {
   onClose: () => void;
@@ -15,10 +16,13 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // 图片引用
+  // 图片引用（主角行走动画）
   const walkImagesRef = useRef<HTMLImageElement[]>([]);
   const imagesLoadedRef = useRef(false);
   const animationFrameRef = useRef(0);
+  // 障碍物图片
+  const obstacleImageRef = useRef<HTMLImageElement | null>(null);
+  const obstacleImageLoadedRef = useRef(false);
   
   // 游戏状态
   const gameState = useRef({
@@ -58,6 +62,14 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
     loadImage(walk3Image, 2);
     
     walkImagesRef.current = images;
+
+    // 加载障碍物图片
+    const obstacleImg = new Image();
+    obstacleImg.onload = () => {
+      obstacleImageLoadedRef.current = true;
+    };
+    obstacleImg.src = obstacleImageSrc;
+    obstacleImageRef.current = obstacleImg;
   }, []);
 
   // 初始化游戏
@@ -105,10 +117,21 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         ctx.fillRect(state.dino.x, state.dino.y, state.dino.width, state.dino.height);
       }
 
-      // 绘制障碍物（薄荷绿矩形）
+      // 绘制障碍物（使用图片，如果未加载则回退为薄荷绿矩形）
       state.obstacles.forEach(obstacle => {
-        ctx.fillStyle = '#6BD4C0';
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        if (obstacleImageLoadedRef.current && obstacleImageRef.current) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(
+            obstacleImageRef.current,
+            obstacle.x,
+            obstacle.y,
+            obstacle.width,
+            obstacle.height
+          );
+        } else {
+          ctx.fillStyle = '#6BD4C0';
+          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
       });
 
       // 绘制分数（根据数字改变颜色）
