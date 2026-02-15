@@ -102,7 +102,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
             <button
               onClick={() => handleNavigate(AppState.READER)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-              activeView === AppState.READER 
+                activeView === AppState.READER 
               ? 'bg-[#D4F4EC] text-[#7B5B89] font-medium' 
               : 'text-gray-600 hover:bg-[#E8F9F6] hover:text-[#7B5B89]'
               }`}

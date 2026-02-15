@@ -140,8 +140,8 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
         }
       } else {
         // 如果图片未加载，显示占位矩形
-        ctx.fillStyle = '#7B5B89';
-        ctx.fillRect(state.dino.x, state.dino.y, state.dino.width, state.dino.height);
+      ctx.fillStyle = '#7B5B89';
+      ctx.fillRect(state.dino.x, state.dino.y, state.dino.width, state.dino.height);
       }
 
       // 绘制障碍物（使用图片行走动画，如果未加载则回退为薄荷绿矩形）
@@ -160,8 +160,8 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
             obstacle.height
           );
         } else {
-          ctx.fillStyle = '#6BD4C0';
-          ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        ctx.fillStyle = '#6BD4C0';
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         }
       });
 
@@ -376,15 +376,15 @@ const Game: React.FC<GameProps> = ({ onClose }) => {
       setScore(0);
       setIsPlaying(true);
       const now = Date.now();
-        state.dino.y = state.groundY;
-        state.dino.velocityY = 0;
-        state.dino.isJumping = false;
-        state.obstacles = [];
-        state.speed = 2.5;
+      state.dino.y = state.groundY;
+      state.dino.velocityY = 0;
+      state.dino.isJumping = false;
+      state.obstacles = [];
+      state.speed = 2.5;
         state.animationFrameInterval = 12;
-        state.lastObstacleX = 0;
-        state.gameStartTime = now;
-        state.lastScoreUpdate = now;
+      state.lastObstacleX = 0;
+      state.gameStartTime = now;
+      state.lastScoreUpdate = now;
         animationFrameRef.current = 0;
     } else if (!isPlaying) {
       setIsPlaying(true);

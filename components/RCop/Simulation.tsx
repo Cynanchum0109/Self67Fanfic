@@ -502,7 +502,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
             const shouldKill = Math.abs(powerDiff) > aggressiveness || Math.random() < 0.2;
             
             if (shouldKill) {
-              if (powerDiff > 0) {
+            if (powerDiff > 0) {
                 // other更强，杀agent
                 // 如果是驯鹿击杀，获得更多战力加成
                 const killBonus = other.team === 0 ? 0.65 : 0.5;
@@ -517,7 +517,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                   y: other.y,
                   time: now,
                 });
-              } else {
+            } else {
                 // agent更强，杀other
                 // 如果是驯鹿击杀，获得更多战力加成
                 const killBonus = agent.team === 0 ? 0.65 : 0.5;
@@ -659,21 +659,21 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
             // 战力差距 <= aggressiveness，触发共同增强（提高阈值让更多情况触发）
             // 只要在阈值内就触发共同增强，不需要再检查 CROSS_TEAM_GROWTH_THRESHOLD
             if (Math.abs(powerDiff) <= CROSS_TEAM_GROWTH_THRESHOLD) {
-              // 力量相近（使用扩大的阈值），都增长
+            // 力量相近（使用扩大的阈值），都增长
               agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
               other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
-              
-              // 检查爱心特效冷却时间
-              const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
-              const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
-              
-              // 爱心特效固定在原位置，不跟随agent移动
-              const heartX = agent.x;
-              const heartY = agent.y;
-              const otherHeartX = other.x;
-              const otherHeartY = other.y;
-              
-              pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
+            
+            // 检查爱心特效冷却时间
+            const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
+            const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
+            
+            // 爱心特效固定在原位置，不跟随agent移动
+            const heartX = agent.x;
+            const heartY = agent.y;
+            const otherHeartX = other.x;
+            const otherHeartY = other.y;
+            
+            pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
               // 50%概率生成BOOST事件，位置跟随粉红烟雾
               if (Math.random() < 0.5) {
                 speechEventsRef.current.push({
@@ -684,7 +684,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                   time: now,
                 });
               }
-              pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
+            pinkMistEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, radius: 0 });
               // 50%概率生成BOOST事件，位置跟随粉红烟雾
               if (Math.random() < 0.5) {
                 speechEventsRef.current.push({
@@ -695,14 +695,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                   time: now,
                 });
               }
-              
-              if (agentCanTriggerHeart) {
-                heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
-                agent.lastHeartEffectTime = now; // 更新冷却时间
-              }
-              if (otherCanTriggerHeart) {
-                heartEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, scale: 0 });
-                other.lastHeartEffectTime = now; // 更新冷却时间
+            
+            if (agentCanTriggerHeart) {
+              heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+              agent.lastHeartEffectTime = now; // 更新冷却时间
+            }
+            if (otherCanTriggerHeart) {
+              heartEffectsRef.current.push({ x: otherHeartX, y: otherHeartY, time: now, scale: 0 });
+              other.lastHeartEffectTime = now; // 更新冷却时间
               }
             }
           }
@@ -835,7 +835,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       break; // 每tick最多添加一个气泡
     }
   };
-
+  
   // 处理缩圈
   const processArenaShrink = (deltaTime: number) => {
     const now = Date.now();
@@ -876,7 +876,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     const collisionDistance = AGENT_SIZE * 2;
     const maxSpeed = Math.max(REINDEER_MAX_SPEED, RABBIT_MAX_SPEED);
     const relativeSpeed = maxSpeed * 2;
-
+    
     // 碰撞：触发终局结算（四结局）
     if (dist0 <= collisionDistance + relativeSpeed) {
       const now = Date.now();
@@ -941,22 +941,22 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         return;
       }
     }
-
+    
     // 还没碰撞：继续互相靠近
     if (dist0 > 0) {
       a0.velocityX = (dx0 / dist0) * maxSpeed;
       a0.velocityY = (dy0 / dist0) * maxSpeed;
     }
-
+    
     const dx1 = a0.x - a1.x;
     const dy1 = a0.y - a1.y;
     const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-
+    
     if (dist1 > 0) {
       a1.velocityX = (dx1 / dist1) * maxSpeed;
       a1.velocityY = (dy1 / dist1) * maxSpeed;
     }
-
+    
     a0.x += a0.velocityX;
     a0.y += a0.velocityY;
     a1.x += a1.velocityX;
@@ -969,7 +969,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
 
     const team0 = agentsRef.current.filter(a => a.team === 0);
     const team1 = agentsRef.current.filter(a => a.team === 1);
-
+    
     // 1) 先判定终局战斗（只要 1v1 就进入）
     if (team0.length === 1 && team1.length === 1) {
       const a0 = team0[0];
@@ -978,15 +978,15 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       // 关闭保护，避免影响终局
       a0.protected = false;
       a1.protected = false;
-
+      
       if (!finalBattleRef.current.started) {
         finalBattleRef.current = { a0, a1, started: true };
       } else {
         finalBattleRef.current.a0 = a0;
         finalBattleRef.current.a1 = a1;
       }
-
-      processFinalBattle(a0, a1);
+      
+        processFinalBattle(a0, a1);
       return; // ⚠️ 关键：1v1 直接返回，绝不走归0结局
     } else {
       finalBattleRef.current = { a0: null, a1: null, started: false };
@@ -1401,7 +1401,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
 
   // 监听gameEnded状态变化，重新绘制以显示或清除结局文字
   useEffect(() => {
-    draw();
+      draw();
   }, [gameEnded, ending, endingText, endingPreText]);
 
   // 初始化

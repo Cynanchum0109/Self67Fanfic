@@ -9,14 +9,14 @@ const base = process.env.GITHUB_PAGES === 'true' ? '/Self67Fanfic/' : '/';
 
 export default defineConfig({
   base,
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-  },
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
-    }
-  }
+      server: {
+        port: 3000,
+        host: '0.0.0.0',
+      },
+      plugins: [react()],
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, '.'),
+        }
+      }
 });

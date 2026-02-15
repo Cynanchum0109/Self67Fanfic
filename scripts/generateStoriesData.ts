@@ -15,9 +15,11 @@ interface StoryData {
   isChinese: boolean;
   fileName: string;
   wordCount: number;
+  order: number;
+  uploadDate: string; // 日期字符串（格式：YYYY-MM-DD 或 YYYY）
 }
 
-function parseMarkdownFile(filePath: string, fileName: string): StoryData {
+function parseMarkdownFile(filePath: string, fileName: string): Omit<StoryData, 'order' | 'uploadDate'> {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
   
@@ -106,6 +108,16 @@ function parseMarkdownFile(filePath: string, fileName: string): StoryData {
   };
 }
 
+// 手动指定每个文件的更新日期（格式：YYYY-MM-DD 或 YYYY）
+function getUploadDate(fileName: string): string {
+  // 破溃点使用具体日期，其他都使用 "2025"
+  if (fileName === '破溃点.md') {
+    return '2026-02-14';
+  }
+  
+  return '2025';
+}
+
 function generateStoriesData() {
   const textDir = path.join(__dirname, '../text');
   const outputFile = path.join(__dirname, '../src/storiesData.ts');
@@ -121,12 +133,76 @@ function generateStoriesData() {
   
   const storiesData: StoryData[] = files.map(file => {
     const filePath = path.join(textDir, file);
-    return parseMarkdownFile(filePath, file);
+    const parsed = parseMarkdownFile(filePath, file);
+    const uploadDate = getUploadDate(file);
+    return {
+      ...parsed,
+      uploadDate,
+      order: 0, // 临时值，稍后会重新分配
+    };
+  });
+  
+  // 尝试读取现有文件，保留手动编辑的 order 和 uploadDate
+  let existingData: Map<string, { order: number; uploadDate: string }> = new Map();
+  try {
+    const existingContent = fs.readFileSync(outputFile, 'utf-8');
+    // 解析现有文件中的 order 和 uploadDate（支持字符串格式）
+    const existingMatches = existingContent.matchAll(/"fileName":\s*"([^"]+)",[\s\S]*?"order":\s*(\d+),[\s\S]*?"uploadDate":\s*"([^"]+)"/g);
+    for (const match of existingMatches) {
+      const fileName = match[1];
+      const order = parseInt(match[2]);
+      const uploadDate = match[3];
+      existingData.set(fileName, { order, uploadDate });
+    }
+  } catch (e) {
+    // 文件不存在或无法读取，使用默认值
+  }
+  
+  // 如果存在手动编辑的数据，使用它们；否则按语言分别自动分配 order
+  const chineseStories: StoryData[] = [];
+  const englishStories: StoryData[] = [];
+  
+  storiesData.forEach(story => {
+    const existing = existingData.get(story.fileName);
+    if (existing) {
+      // 保留手动编辑的数据
+      story.order = existing.order;
+      story.uploadDate = existing.uploadDate;
+    } else {
+      // 自动分配：根据语言分别管理
+      if (story.isChinese) {
+        chineseStories.push(story);
+      } else {
+        englishStories.push(story);
+      }
+    }
+  });
+  
+  // 分别按 uploadDate 排序并分配 order（中文和英文分开）
+  chineseStories.sort((a, b) => a.uploadDate.localeCompare(b.uploadDate));
+  chineseStories.forEach((story, index) => {
+    story.order = index + 1;
+  });
+  
+  englishStories.sort((a, b) => a.uploadDate.localeCompare(b.uploadDate));
+  englishStories.forEach((story, index) => {
+    story.order = index + 1;
+  });
+  
+  // 合并所有数据（手动编辑的 + 自动分配的）
+  const allStories = [...storiesData.filter(s => existingData.has(s.fileName)), ...chineseStories, ...englishStories];
+  
+  // 按语言和 order 排序（用于生成文件，但实际显示时会分开）
+  allStories.sort((a, b) => {
+    if (a.isChinese !== b.isChinese) {
+      return a.isChinese ? -1 : 1; // 中文在前
+    }
+    return b.order - a.order; // 同语言内按 order 降序
   });
   
   // 生成 TypeScript 文件
-  const content = `// 此文件由 scripts/generateStoriesData.ts 自动生成
-// 请勿手动编辑此文件
+  const content = `// 此文件由 scripts/generateStoriesData.ts 自动生成基础数据
+// 可以手动编辑 order 和 uploadDate 字段来管理文章顺序和日期
 
 export interface StoryData {
   id: string;
@@ -138,16 +214,23 @@ export interface StoryData {
   isChinese: boolean;
   fileName: string;
   wordCount: number;
+  order: number; // 顺序，越大越新（可以手动修改）
+  uploadDate: string; // 更新日期字符串（格式：YYYY-MM-DD 或 YYYY），可以手动修改
 }
 
-export const storiesData: StoryData[] = ${JSON.stringify(storiesData, null, 2)};
+export const storiesData: StoryData[] = ${JSON.stringify(allStories, null, 2)};
 `;
   
   fs.writeFileSync(outputFile, content, 'utf-8');
-  console.log(`✅ 成功生成 ${storiesData.length} 个故事数据到 ${outputFile}`);
-  console.log('📊 统计信息:');
-  storiesData.forEach(s => {
-    console.log(`  - ${s.title} (${s.language}): ${s.wordCount} ${s.isChinese ? '字符' : 'words'}`);
+  console.log(`✅ 成功生成 ${allStories.length} 个故事数据到 ${outputFile}`);
+  console.log('📊 统计信息（中文和英文分开管理顺序）:');
+  console.log('  中文:');
+  allStories.filter(s => s.isChinese).sort((a, b) => b.order - a.order).forEach(s => {
+    console.log(`    - [Order ${s.order}] ${s.title}: ${s.wordCount} 字符, 更新日期: ${s.uploadDate}`);
+  });
+  console.log('  英文:');
+  allStories.filter(s => !s.isChinese).sort((a, b) => b.order - a.order).forEach(s => {
+    console.log(`    - [Order ${s.order}] ${s.title}: ${s.wordCount} words, 更新日期: ${s.uploadDate}`);
   });
 }
 

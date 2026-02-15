@@ -25,7 +25,7 @@ const App: React.FC = () => {
     console.log('Markdown modules keys:', Object.keys(markdownModules));
     console.log('Stories data:', storiesData.length);
     
-    return storiesData.map(data => {
+    const mappedStories = storiesData.map(data => {
       // 根据文件名找到对应的markdown内容
       const filePath = `./text/${data.fileName}`;
       const content = markdownModules[filePath] as string | undefined;
@@ -46,12 +46,16 @@ const App: React.FC = () => {
         version: data.version,
         content: bodyContent,
         fileName: data.fileName,
-        uploadDate: Date.now(),
+        uploadDate: data.uploadDate, // 使用数据中的 uploadDate
         isChinese: data.isChinese,
         language: data.language,
-        wordCount: data.wordCount
+        wordCount: data.wordCount,
+        order: data.order, // 添加 order 字段
       };
     });
+    
+    // 不在这里排序，在 renderTOC 中分别对中文和英文排序
+    return mappedStories;
   }, []);
 
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
@@ -126,13 +130,13 @@ const App: React.FC = () => {
       </p>
 
       <div className="space-y-4">
-        <button 
-          onClick={() => setCurrentView(AppState.TOC)}
+      <button 
+        onClick={() => setCurrentView(AppState.TOC)}
           className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#9D8AB5] to-[#7B5B89] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#9D8AB5]/40 hover:shadow-[#7B5B89]/50"
-        >
-          <span className="relative z-10">Enter the Garden</span>
-          <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
-        </button>
+      >
+        <span className="relative z-10">Enter the Garden</span>
+        <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
+      </button>
         
         <button
           onClick={() => setShowSimulation(true)}
@@ -152,15 +156,16 @@ const App: React.FC = () => {
   );
 
   const renderTOC = () => {
-    const chineseStories = stories.filter(s => s.isChinese === true);
-    const englishStories = stories.filter(s => s.isChinese === false);
+    // 分别对中文和英文按 order 降序排序（最新的在前）
+    const chineseStories = stories.filter(s => s.isChinese === true).sort((a, b) => (b.order || 0) - (a.order || 0));
+    const englishStories = stories.filter(s => s.isChinese === false).sort((a, b) => (b.order || 0) - (a.order || 0));
 
     return (
-      <div className="space-y-12 animate-in fade-in duration-700">
+    <div className="space-y-12 animate-in fade-in duration-700">
         <header className="border-b border-[#E8F9F6] pb-10">
-          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-[#6BD4C0] mb-2">Table of Contents</h2>
-          <h1 className="text-5xl font-bold text-[#7B5B89]">Collection of Works</h1>
-        </header>
+          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-[#6BD4C0] mb-2">Content</h2>
+          <h1 className="text-5xl font-bold text-[#7B5B89]">Fanfic</h1>
+      </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* 中文栏 */}
@@ -169,28 +174,28 @@ const App: React.FC = () => {
               <>
                 <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#D4F4EC] pb-2">CN</h3>
                 {chineseStories.map((story, index) => (
-                  <div 
-                    key={story.id}
-                    onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
+          <div 
+            key={story.id}
+            onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
                     className="group cursor-pointer flex flex-col gap-6 items-start"
-                  >
+          >
                     <div className="text-4xl font-black text-[#9D8AB5] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
-                      {(index + 1).toString().padStart(2, '0')}
-                    </div>
-                    <div className="flex-1 space-y-3">
+              {(index + 1).toString().padStart(2, '0')}
+            </div>
+            <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
-                          {story.title}
-                        </h3>
+                {story.title}
+              </h3>
                         {story.tags && (
                           <span className="text-xs px-3 py-1 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
                             {story.tags}
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
+              <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
                         {getStoryPreview(story)}
-                      </p>
+              </p>
                     </div>
                   </div>
                 ))}
@@ -220,14 +225,14 @@ const App: React.FC = () => {
                         {story.tags && (
                           <span className="text-xs px-3 py-1 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
                             {story.tags}
-                          </span>
+                </span>
                         )}
                       </div>
                       <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
                         {getStoryPreview(story)}
                       </p>
-                    </div>
-                  </div>
+              </div>
+            </div>
                 ))}
               </>
             )}
@@ -239,8 +244,8 @@ const App: React.FC = () => {
             <p>The garden is currently resting. Please check back later.</p>
           </div>
         )}
-      </div>
-    );
+    </div>
+  );
   };
 
   const renderReader = () => (
@@ -303,7 +308,21 @@ const App: React.FC = () => {
         <div className="space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Chapters</h4>
           <div className="space-y-1">
-            {stories.map(s => (
+            {/* 分别显示中文和英文，各自按 order 排序 */}
+            {stories.filter(s => s.isChinese === true).sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
+              <button
+                key={s.id}
+                onClick={() => { setActiveStoryId(s.id); }}
+                className={`w-full text-left px-4 py-2 text-sm rounded-lg truncate transition-all ${
+                  activeStoryId === s.id 
+                  ? 'bg-[#7B5B89] text-white font-medium shadow-sm' 
+                  : 'text-gray-600 hover:bg-[#E8E0ED] hover:text-[#7B5B89]'
+                }`}
+              >
+                {s.title}
+              </button>
+            ))}
+            {stories.filter(s => s.isChinese === false).sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
               <button
                 key={s.id}
                 onClick={() => { setActiveStoryId(s.id); }}
