@@ -96,9 +96,9 @@ export const storiesData: StoryData[] = [
   },
   {
     "id": "tirhzol3u",
-    "title": "破溃点",
+    "title": "破溃点（1）",
     "tags": "lcb67",
-    "summary": "深夜卫生间崩溃事件",
+    "summary": "他确实喜欢这个，喜欢希斯克利夫的颤抖、他的呜咽，这种剧烈地被爱的残渣磋磨的样子。",
     "version": "none",
     "language": "CN",
     "isChinese": true,
