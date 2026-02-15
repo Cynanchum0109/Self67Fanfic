@@ -56,7 +56,7 @@ const App: React.FC = () => {
     
     // 不在这里排序，在 renderTOC 中分别对中文和英文排序
     return mappedStories;
-  }, []);
+  }, [storiesData]); // 依赖 storiesData，当它改变时重新计算
 
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);

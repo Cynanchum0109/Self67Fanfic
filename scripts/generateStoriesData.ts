@@ -142,17 +142,30 @@ function generateStoriesData() {
     };
   });
   
-  // 尝试读取现有文件，保留手动编辑的 order 和 uploadDate
-  let existingData: Map<string, { order: number; uploadDate: string }> = new Map();
+  // 尝试读取现有文件，保留手动编辑的字段（order, uploadDate, summary, title 等）
+  let existingData: Map<string, Partial<StoryData>> = new Map();
   try {
     const existingContent = fs.readFileSync(outputFile, 'utf-8');
-    // 解析现有文件中的 order 和 uploadDate（支持字符串格式）
-    const existingMatches = existingContent.matchAll(/"fileName":\s*"([^"]+)",[\s\S]*?"order":\s*(\d+),[\s\S]*?"uploadDate":\s*"([^"]+)"/g);
-    for (const match of existingMatches) {
-      const fileName = match[1];
-      const order = parseInt(match[2]);
-      const uploadDate = match[3];
-      existingData.set(fileName, { order, uploadDate });
+    // 提取 storiesData 数组部分
+    const arrayMatch = existingContent.match(/export const storiesData: StoryData\[\] = (\[[\s\S]*?\]);/);
+    if (arrayMatch) {
+      try {
+        // 移除单行注释（// 开头的注释）
+        let jsonContent = arrayMatch[1].replace(/\/\/.*$/gm, '');
+        // 解析 JSON 数组
+        const existingStories: StoryData[] = JSON.parse(jsonContent);
+        existingStories.forEach(story => {
+          existingData.set(story.fileName, {
+            title: story.title,
+            summary: story.summary,
+            order: story.order,
+            uploadDate: story.uploadDate,
+          });
+        });
+        console.log(`✅ 成功读取 ${existingData.size} 个现有故事的手动编辑内容`);
+      } catch (e) {
+        console.warn('⚠️ 无法解析现有文件，将使用默认值:', e);
+      }
     }
   } catch (e) {
     // 文件不存在或无法读取，使用默认值
@@ -165,9 +178,11 @@ function generateStoriesData() {
   storiesData.forEach(story => {
     const existing = existingData.get(story.fileName);
     if (existing) {
-      // 保留手动编辑的数据
-      story.order = existing.order;
-      story.uploadDate = existing.uploadDate;
+      // 保留手动编辑的数据（如果存在）
+      if (existing.title !== undefined) story.title = existing.title;
+      if (existing.summary !== undefined) story.summary = existing.summary;
+      if (existing.order !== undefined) story.order = existing.order;
+      if (existing.uploadDate !== undefined) story.uploadDate = existing.uploadDate;
     } else {
       // 自动分配：根据语言分别管理
       if (story.isChinese) {
@@ -202,7 +217,7 @@ function generateStoriesData() {
   
   // 生成 TypeScript 文件
   const content = `// 此文件由 scripts/generateStoriesData.ts 自动生成基础数据
-// 可以手动编辑 order 和 uploadDate 字段来管理文章顺序和日期
+// 可以手动编辑 order、uploadDate、summary、title 等字段，脚本会保留这些手动编辑的内容
 
 export interface StoryData {
   id: string;
