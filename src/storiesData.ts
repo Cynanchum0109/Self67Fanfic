@@ -17,8 +17,21 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
+    "id": "hjts8k2m1",
+    "title": "黄金台上 Lord's Pawn",
+    "tags": "君主/酉鸡，连载中",
+    "summary": "超放纵主人与超僭越鸡的不堪入目小故事",
+    "version": "none",
+    "language": "CN",
+    "isChinese": true,
+    "fileName": "黄金台上.md",
+    "wordCount": 2356,
+    "uploadDate": "2025",
+    "order": 5
+  },
+  {
     "id": "157d19j38",
-    "title": "Ambrosial!!爱莫若食!!",
+    "title": "Ambrosial!! 爱莫若食!!",
     "tags": "lcb67, 连载中",
     "summary": "鸿璐的自我伤害与希斯克利夫的自投罗网。",
     "version": "none",
@@ -26,8 +39,8 @@ export const storiesData: StoryData[] = [
     "isChinese": true,
     "fileName": "爱莫若食.md",
     "wordCount": 15831,
-    "uploadDate": "2026-02-19",
-    "order": 5
+    "uploadDate": "2025",
+    "order": 4
   },
   {
     "id": "6b1p1z3c9",
@@ -40,7 +53,7 @@ export const storiesData: StoryData[] = [
     "fileName": "破溃点.md",
     "wordCount": 5817,
     "uploadDate": "2026-02-14",
-    "order": 4
+    "order": 6
   },
   {
     "id": "itzhk1qrc",
