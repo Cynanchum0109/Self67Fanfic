@@ -27,8 +27,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md hover:bg-[#D4F4EC] transition-colors"
+        className="fixed top-4 left-4 z-50 flex items-center justify-center p-2 bg-white rounded-lg shadow-md hover:bg-[#D4F4EC] transition-colors"
         aria-label="Toggle menu"
+        style={{ width: '30px', height: '30px' }}
       >
         {isSidebarOpen ? (
           <X size={24} className="text-[#7B5B89]" />

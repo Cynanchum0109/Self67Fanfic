@@ -1,8 +1,3 @@
-Kurokumo 67
-Heathcliff drowned Hong Lu in his （i）.
-求仁得仁
-EN
-
 Heathcliff had pinned himself against the wall of the parlor in a posture of deliberate provocation. His shirt hung open at the collar, generously displaying the tattooed musculature beneath. Ever since that woman Ishmael had ascended to the vice-captain's position, Heathcliff had grown increasingly brazen under her indulgent patronage. Missing meetings had become routine, outright insubordination during missions commonplace, and even casually ordering around fellow Wakashu or summoning them alone after victory banquets—all of it he did as if it were his natural right. Hong Lu sat in the middle of the room, holding a small cup of sake, wearing that smile that never failed to ignite Heathcliff's temper.
 
 "Did Heathcliff call me here for some particular instruction?" Hong Lu's voice was light, almost eager, as though he'd been anticipating this meeting all along—yet anyone could detect the flippant facade beneath. Heathcliff didn't like it, and what irritated him even more was that this bastard never bothered with honorifics. Heathcliff narrowed his eyes, that inexplicable restlessness fermenting in his veins alongside the alcohol. He pulled his collar open wider, exposing more tattooed skin, and stared directly at Hong Lu with the intent of a predator evaluating prey.

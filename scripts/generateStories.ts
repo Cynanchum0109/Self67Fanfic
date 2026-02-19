@@ -17,28 +17,16 @@ interface Story {
 }
 
 function parseMarkdownFile(filePath: string, fileName: string): Story {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
-  
-  // 解析格式：第一行标签，第二行简介，第三行版本，之后是正文
-  const tags = lines[0]?.trim() || '';
-  const summary = lines[1]?.trim() || '';
-  const version = lines[2]?.trim() || '';
-  
-  // 从第4行（index 3）开始查找第一个非空行作为正文开始
-  let contentStartIndex = 3;
-  for (let i = 3; i < lines.length; i++) {
-    if (lines[i].trim() !== '') {
-      contentStartIndex = i;
-      break;
-    }
-  }
-  
-  // 提取正文内容
-  const bodyContent = lines.slice(contentStartIndex).join('\n').trim();
-  
-  // 使用标签作为标题，如果没有标签则使用文件名
-  const title = tags || fileName.replace('.md', '');
+  const content = fs.readFileSync(filePath, 'utf-8').trim();
+
+  // 现在不再从 Markdown 前几行解析元数据，
+  // 整个文件内容都视为正文，元数据在代码中维护
+  const tags = '';
+  const summary = '';
+  const version = 'none';
+
+  // 使用文件名（去掉扩展名）作为默认标题
+  const title = fileName.replace('.md', '');
   
   return {
     id: Math.random().toString(36).substr(2, 9),
@@ -46,7 +34,7 @@ function parseMarkdownFile(filePath: string, fileName: string): Story {
     tags,
     summary,
     version,
-    content: bodyContent,
+    content,
     fileName,
     uploadDate: Date.now()
   };

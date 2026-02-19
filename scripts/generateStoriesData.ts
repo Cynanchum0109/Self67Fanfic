@@ -20,87 +20,30 @@ interface StoryData {
 }
 
 function parseMarkdownFile(filePath: string, fileName: string): Omit<StoryData, 'order' | 'uploadDate'> {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
-  
-  // 解析格式：
-  // 第一行：标签
-  // 第二行：简介
-  // 第三行：版本信息（对应文件名或none，可能带前缀如"Chinese:"或"English:"）
-  // 第四行：语言标识（CN或EN）
-  // 第五行：空行
-  // 第六行开始：正文
-  
-  // 找到第一个非空行作为正文开始（跳过前4行元数据和可能的空行）
-  let bodyStartIndex = 4;
-  for (let i = 4; i < lines.length; i++) {
-    if (lines[i].trim() !== '') {
-      bodyStartIndex = i;
-      break;
-    }
-  }
-  
-  const tags = lines[0]?.trim() || '';
-  const summary = lines[1]?.trim() || '';
-  let version = lines[2]?.trim() || '';
-  let language = lines[3]?.trim().toUpperCase() || '';
-  
-  console.log(`\n解析文件: ${fileName}`);
-  console.log(`  第1行(标签): "${tags}"`);
-  console.log(`  第2行(简介): "${summary}"`);
-  console.log(`  第3行(版本): "${version}"`);
-  console.log(`  第4行(语言): "${language}"`);
-  
-  // 处理版本信息：可能包含 "Chinese:" 或 "English:" 前缀
-  if (version.toLowerCase().startsWith('chinese:')) {
-    version = version.substring(8).trim();
-  } else if (version.toLowerCase().startsWith('english:')) {
-    version = version.substring(8).trim();
-  }
-  
-  // 检查第四行是否是语言标识（CN或EN）
-  if (language === 'CN' || language === 'EN') {
-    // 标准格式：第三行是版本，第四行是语言
-    bodyStartIndex = 5; // 前4行元数据 + 第5行空行，第6行开始正文
-    console.log(`  ✅ 标准格式: 版本="${version}", 语言="${language}"`);
-  } else {
-    // 如果第四行不是语言标识，检查第三行是否是语言标识
-    if (lines[2]?.trim().toUpperCase() === 'CN' || lines[2]?.trim().toUpperCase() === 'EN') {
-      language = lines[2].trim().toUpperCase();
-      version = ''; // 如果第三行是语言，版本信息可能在第二行
-      bodyStartIndex = 4; // 语言标识 + 空行 + 正文
-      console.log(`  ⚠️  非标准格式: 第三行是语言，版本为空`);
-    } else {
-      // 根据文件名判断语言
-      const hasChinese = /[\u4e00-\u9fa5]/.test(fileName);
-      language = hasChinese ? 'CN' : 'EN';
-      bodyStartIndex = 5; // 默认从第6行开始
-      console.log(`  ⚠️  未找到语言标识，根据文件名判断: ${language}`);
-    }
-  }
-  
-  console.log(`  最终: 版本="${version}", 语言="${language}", 正文从第${bodyStartIndex + 1}行开始`);
-  
-  // 从bodyStartIndex开始是正文
-  const bodyContent = lines.slice(bodyStartIndex).join('\n').trim();
-  
-  // 使用文件名作为标题（去掉路径和扩展名）
+  const content = fs.readFileSync(filePath, 'utf-8').trim();
+
+  // 现在不再从 Markdown 前几行解析元数据，
+  // 整个文件内容都视为正文，元数据在 storiesData.ts 中维护
+
+  // 根据文件名是否包含中文字符粗略判断语言
+  const hasChinese = /[\u4e00-\u9fa5]/.test(fileName);
+  const language = hasChinese ? 'CN' : 'EN';
+  const isChinese = hasChinese;
+
+  // 使用文件名作为默认标题（去掉扩展名），之后可以在 storiesData.ts 中手动修改
   const title = fileName.replace('.md', '');
-  
-  // 根据语言标识判断（CN=中文，EN=英文）
-  const isChinese = language === 'CN';
-  
+
   // 统计字数（中文统计字符，英文统计单词）
-  const wordCount = isChinese 
-    ? bodyContent.length 
-    : bodyContent.split(/\s+/).filter(w => w.length > 0).length;
-  
+  const wordCount = isChinese
+    ? content.length
+    : content.split(/\s+/).filter(w => w.length > 0).length;
+
   return {
     id: Math.random().toString(36).substr(2, 9),
     title,
-    tags,
-    summary,
-    version,
+    tags: '',
+    summary: '',
+    version: 'none',
     language,
     isChinese,
     fileName,
@@ -156,8 +99,10 @@ function generateStoriesData() {
         const existingStories: StoryData[] = JSON.parse(jsonContent);
         existingStories.forEach(story => {
           existingData.set(story.fileName, {
+            tags: story.tags,
             title: story.title,
             summary: story.summary,
+            version: story.version,
             order: story.order,
             uploadDate: story.uploadDate,
           });
@@ -179,8 +124,10 @@ function generateStoriesData() {
     const existing = existingData.get(story.fileName);
     if (existing) {
       // 保留手动编辑的数据（如果存在）
+      if (existing.tags !== undefined) story.tags = existing.tags;
       if (existing.title !== undefined) story.title = existing.title;
       if (existing.summary !== undefined) story.summary = existing.summary;
+      if (existing.version !== undefined) story.version = existing.version;
       if (existing.order !== undefined) story.order = existing.order;
       if (existing.uploadDate !== undefined) story.uploadDate = existing.uploadDate;
     } else {

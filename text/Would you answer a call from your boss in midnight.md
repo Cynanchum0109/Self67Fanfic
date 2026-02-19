@@ -1,8 +1,3 @@
-Full-Stop Office 67
-Established relationship.
-老板半夜打电话你接不接
-EN
-
 The sound of sheets rubbing against each other was irritatingly clear in the empty bedroom, and Heathcliff gripped the blanket and turned over. Unable to sleep, he stared intently at the ceiling, trying to swallow down the restlessness rising within him.
 
 

@@ -17,7 +17,7 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
-    "id": "o0m2j7q6u",
+    "id": "9wx2bcmvg",
     "title": "破溃点（1）",
     "tags": "lcb67",
     "summary": "他确实喜欢这个，喜欢希斯克利夫的颤抖、他的呜咽，这种剧烈地被爱的残渣磋磨的样子。",
@@ -30,7 +30,7 @@ export const storiesData: StoryData[] = [
     "order": 4
   },
   {
-    "id": "t05b10760",
+    "id": "vvfhbeil4",
     "title": "老板半夜打电话你接不接",
     "tags": "句点67",
     "summary": "交往前提的半夜骚扰事件",
@@ -43,7 +43,7 @@ export const storiesData: StoryData[] = [
     "order": 3
   },
   {
-    "id": "lyg60zucy",
+    "id": "gaf7k26hn",
     "title": "总之是想看兔子把驯鹿榨空这种事",
     "tags": "驯鹿/兔子",
     "summary": "鹿打了兔子后被报复事件。",
@@ -56,7 +56,7 @@ export const storiesData: StoryData[] = [
     "order": 2
   },
   {
-    "id": "p9axib0f7",
+    "id": "scibcj63b",
     "title": "求仁得仁",
     "tags": "黑云67",
     "summary": "黑云宝溺水事件",
@@ -69,7 +69,7 @@ export const storiesData: StoryData[] = [
     "order": 1
   },
   {
-    "id": "x2pgmciv2",
+    "id": "k5rpv58n5",
     "title": "Would you answer a call from your boss in midnight",
     "tags": "Full-Stop Office 67",
     "summary": "Established relationship.",
@@ -82,7 +82,7 @@ export const storiesData: StoryData[] = [
     "order": 3
   },
   {
-    "id": "ft9vaeoig",
+    "id": "5rtlhn809",
     "title": "Rabbit riding on Reindeer",
     "tags": "Reindeer/Rabbit.",
     "summary": "Sex and a little warm",
@@ -95,7 +95,7 @@ export const storiesData: StoryData[] = [
     "order": 2
   },
   {
-    "id": "8p1ltjgyg",
+    "id": "a77jvacgp",
     "title": "Ask and you shall recieve",
     "tags": "Kurokumo 67",
     "summary": "Heathcliff drowned Hong Lu in his （i）.",

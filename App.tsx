@@ -11,11 +11,9 @@ import { storiesData } from './src/storiesData';
 // 使用 Vite 的 import.meta.glob 直接读取 text 文件夹中的所有 .md 文件（仅用于获取正文内容）
 const markdownModules = import.meta.glob('./text/*.md', { query: '?raw', import: 'default', eager: true });
 
-// 从markdown文件中提取正文内容（跳过前5行）
+// 从 markdown 文件中提取正文内容（正文即整个文件内容）
 function extractBodyContent(content: string): string {
-  const lines = content.split('\n');
-  // 从第6行（index 5）开始是正文
-  return lines.slice(5).join('\n').trim();
+  return content.trim();
 }
 
 const App: React.FC = () => {

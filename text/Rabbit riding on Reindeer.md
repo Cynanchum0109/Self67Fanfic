@@ -1,8 +1,3 @@
-Reindeer/Rabbit.
-Sex and a little warm
-总之是想看兔子把驯鹿榨空这种事
-EN
-
 Before the Reindeer's sluggish brain could react, the Rabbit sat astride his lap. One hand pressed against the Reindeer's chest, restraining any possible resistance, while the other pulled out his usual dagger. His butt pressed tightly against the Reindeer's penis.
 
 "Mr. Heathcliff, are you going to prey on me?" The Reindeer's fighting instincts tensed reflexively, but due to "after all, he's Mr. Heathcliff" and a variety of complex reasons that couldn't be generalized, his clenched fists opened again, leaving him defenseless and vulnerable. "Then the next Hong Lu will take some time cleaning the dormitory. After all, Mr. Heathcliff probably won't help mop the floor—"
