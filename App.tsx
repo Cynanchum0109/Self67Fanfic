@@ -16,10 +16,20 @@ function extractBodyContent(content: string): string {
   return content.trim();
 }
 
-// 解析 tags 字符串为标签数组（按逗号分隔），「连载中」使用薄荷绿样式
+// 标签格式：逗号分隔，如 lcb67, 连载中
 function parseTags(tagsStr: string | undefined): string[] {
   if (!tagsStr || !tagsStr.trim()) return [];
   return tagsStr.split(',').map((t) => t.trim()).filter(Boolean);
+}
+
+// 各标签对应的样式（可扩展）
+const TAG_STYLES: Record<string, string> = {
+  '连载中': 'bg-[#6BD4C0]/25 text-[#0D9488]',
+};
+const DEFAULT_TAG_STYLE = 'bg-[#E8E0ED] text-[#7B5B89]';
+
+function getTagClassName(tag: string): string {
+  return TAG_STYLES[tag] ?? DEFAULT_TAG_STYLE;
 }
 
 // 从正文中解析 Chapter N 得到章节目录（用于长篇）
@@ -218,11 +228,7 @@ const App: React.FC = () => {
                             {parseTags(story.tags).map((tag) => (
                               <span
                                 key={tag}
-                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
-                                  tag === '连载中'
-                                    ? 'bg-[#6BD4C0]/25 text-[#0D9488]'
-                                    : 'bg-[#E8E0ED] text-[#7B5B89]'
-                                }`}
+                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
                               >
                                 {tag}
                               </span>
@@ -264,11 +270,7 @@ const App: React.FC = () => {
                             {parseTags(story.tags).map((tag) => (
                               <span
                                 key={tag}
-                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
-                                  tag === '连载中'
-                                    ? 'bg-[#6BD4C0]/25 text-[#0D9488]'
-                                    : 'bg-[#E8E0ED] text-[#7B5B89]'
-                                }`}
+                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
                               >
                                 {tag}
                               </span>
@@ -322,11 +324,7 @@ const App: React.FC = () => {
                     {parseTags(activeStory.tags).map((tag) => (
                       <span
                         key={tag}
-                        className={`text-sm px-4 py-2 rounded-full font-medium whitespace-nowrap ${
-                          tag === '连载中'
-                            ? 'bg-[#6BD4C0]/25 text-[#0D9488]'
-                            : 'bg-[#E8E0ED] text-[#7B5B89]'
-                        }`}
+                        className={`text-sm px-4 py-2 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
                       >
                         {tag}
                       </span>

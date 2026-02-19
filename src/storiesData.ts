@@ -19,7 +19,7 @@ export const storiesData: StoryData[] = [
   {
     "id": "hjts8k2m1",
     "title": "黄金台上 Lord's Pawn",
-    "tags": "君主/酉鸡，连载中",
+    "tags": "君主/酉鸡, 连载中",
     "summary": "超放纵主人与超僭越鸡的不堪入目小故事",
     "version": "none",
     "language": "CN",
