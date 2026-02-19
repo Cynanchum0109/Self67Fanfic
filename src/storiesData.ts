@@ -17,7 +17,7 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
-    "id": "4i0psktbu",
+    "id": "157d19j38",
     "title": "Ambrosial!!爱莫若食!!",
     "tags": "lcb67, 连载中",
     "summary": "鸿璐的自我伤害与希斯克利夫的自投罗网。",
@@ -30,7 +30,7 @@ export const storiesData: StoryData[] = [
     "order": 5
   },
   {
-    "id": "cxt37x2d3",
+    "id": "6b1p1z3c9",
     "title": "破溃点",
     "tags": "lcb67, 连载中",
     "summary": "他确实喜欢这个，喜欢希斯克利夫的颤抖、他的呜咽，这种剧烈地被爱的残渣磋磨的样子。",
@@ -43,7 +43,7 @@ export const storiesData: StoryData[] = [
     "order": 4
   },
   {
-    "id": "8ynia8049",
+    "id": "itzhk1qrc",
     "title": "老板半夜打电话你接不接",
     "tags": "句点67",
     "summary": "交往前提的半夜骚扰事件",
@@ -56,7 +56,7 @@ export const storiesData: StoryData[] = [
     "order": 3
   },
   {
-    "id": "4sgrms08m",
+    "id": "yco9ucvfl",
     "title": "总之是想看兔子把驯鹿榨空这种事",
     "tags": "驯鹿/兔子",
     "summary": "鹿打了兔子后被报复事件。",
@@ -69,7 +69,7 @@ export const storiesData: StoryData[] = [
     "order": 2
   },
   {
-    "id": "tdr28m4kj",
+    "id": "z9dya4lzn",
     "title": "求仁得仁",
     "tags": "黑云67",
     "summary": "黑云宝溺水事件",
@@ -82,7 +82,7 @@ export const storiesData: StoryData[] = [
     "order": 1
   },
   {
-    "id": "ipygp5vvu",
+    "id": "wg0z9wddc",
     "title": "Would you answer a call from your boss in midnight",
     "tags": "Full-Stop Office 67",
     "summary": "Established relationship.",
@@ -95,7 +95,7 @@ export const storiesData: StoryData[] = [
     "order": 3
   },
   {
-    "id": "1m7m66wdv",
+    "id": "uzoehkhhk",
     "title": "Rabbit riding on Reindeer",
     "tags": "Reindeer/Rabbit.",
     "summary": "Sex and a little warm",
@@ -108,7 +108,7 @@ export const storiesData: StoryData[] = [
     "order": 2
   },
   {
-    "id": "9wg48qbyw",
+    "id": "kvno1zu48",
     "title": "Ask and you shall recieve",
     "tags": "Kurokumo 67",
     "summary": "Heathcliff drowned Hong Lu in his （i）.",

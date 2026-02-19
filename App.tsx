@@ -315,10 +315,10 @@ const App: React.FC = () => {
               <div className="flex items-center gap-2 text-xs text-[#6BD4C0] font-bold uppercase tracking-widest mb-4">
                 <Quote size={14} /> Chapter Reading
               </div>
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <h1 className="text-5xl font-bold text-[#7B5B89]">{activeStory.title}</h1>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4 mb-2">
+                <h1 className="text-4xl md:text-5xl font-bold text-[#7B5B89] min-w-0 break-words">{activeStory.title}</h1>
                 {parseTags(activeStory.tags).length > 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 min-w-0 max-w-full md:flex-shrink-0">
                     {parseTags(activeStory.tags).map((tag) => (
                       <span
                         key={tag}
