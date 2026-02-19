@@ -17,9 +17,22 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
-    "id": "9wx2bcmvg",
-    "title": "破溃点（1）",
-    "tags": "lcb67",
+    "id": "4i0psktbu",
+    "title": "Ambrosial!!爱莫若食!!",
+    "tags": "lcb67, 连载中",
+    "summary": "鸿璐的自我伤害与希斯克利夫的自投罗网。",
+    "version": "none",
+    "language": "CN",
+    "isChinese": true,
+    "fileName": "爱莫若食.md",
+    "wordCount": 15831,
+    "uploadDate": "2026-02-19",
+    "order": 5
+  },
+  {
+    "id": "cxt37x2d3",
+    "title": "破溃点",
+    "tags": "lcb67, 连载中",
     "summary": "他确实喜欢这个，喜欢希斯克利夫的颤抖、他的呜咽，这种剧烈地被爱的残渣磋磨的样子。",
     "version": "none",
     "language": "CN",
@@ -30,7 +43,7 @@ export const storiesData: StoryData[] = [
     "order": 4
   },
   {
-    "id": "vvfhbeil4",
+    "id": "8ynia8049",
     "title": "老板半夜打电话你接不接",
     "tags": "句点67",
     "summary": "交往前提的半夜骚扰事件",
@@ -43,7 +56,7 @@ export const storiesData: StoryData[] = [
     "order": 3
   },
   {
-    "id": "gaf7k26hn",
+    "id": "4sgrms08m",
     "title": "总之是想看兔子把驯鹿榨空这种事",
     "tags": "驯鹿/兔子",
     "summary": "鹿打了兔子后被报复事件。",
@@ -56,7 +69,7 @@ export const storiesData: StoryData[] = [
     "order": 2
   },
   {
-    "id": "scibcj63b",
+    "id": "tdr28m4kj",
     "title": "求仁得仁",
     "tags": "黑云67",
     "summary": "黑云宝溺水事件",
@@ -69,7 +82,7 @@ export const storiesData: StoryData[] = [
     "order": 1
   },
   {
-    "id": "k5rpv58n5",
+    "id": "ipygp5vvu",
     "title": "Would you answer a call from your boss in midnight",
     "tags": "Full-Stop Office 67",
     "summary": "Established relationship.",
@@ -82,7 +95,7 @@ export const storiesData: StoryData[] = [
     "order": 3
   },
   {
-    "id": "5rtlhn809",
+    "id": "1m7m66wdv",
     "title": "Rabbit riding on Reindeer",
     "tags": "Reindeer/Rabbit.",
     "summary": "Sex and a little warm",
@@ -95,7 +108,7 @@ export const storiesData: StoryData[] = [
     "order": 2
   },
   {
-    "id": "a77jvacgp",
+    "id": "9wg48qbyw",
     "title": "Ask and you shall recieve",
     "tags": "Kurokumo 67",
     "summary": "Heathcliff drowned Hong Lu in his （i）.",

@@ -16,6 +16,23 @@ function extractBodyContent(content: string): string {
   return content.trim();
 }
 
+// 解析 tags 字符串为标签数组（按逗号分隔），「连载中」使用薄荷绿样式
+function parseTags(tagsStr: string | undefined): string[] {
+  if (!tagsStr || !tagsStr.trim()) return [];
+  return tagsStr.split(',').map((t) => t.trim()).filter(Boolean);
+}
+
+// 从正文中解析 Chapter N 得到章节目录（用于长篇）
+function parseChapters(content: string): { index: number }[] {
+  const chapters: { index: number }[] = [];
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const m = line.match(/^Chapter\s*(\d+)\s*$/i);
+    if (m) chapters.push({ index: parseInt(m[1], 10) });
+  }
+  return chapters.sort((a, b) => a.index - b.index);
+}
+
 const App: React.FC = () => {
   // 合并统计数据和正文内容
   const stories = useMemo<Story[]>(() => {
@@ -69,6 +86,17 @@ const App: React.FC = () => {
   }, [stories, activeStoryId]);
 
   const activeStory = stories.find(s => s.id === activeStoryId);
+
+  // 当前长篇的章节目录（有 Chapter N 时才有）
+  const readerChapters = useMemo(() => {
+    return activeStory ? parseChapters(activeStory.content) : [];
+  }, [activeStory?.id, activeStory?.content]);
+
+  const handleJumpToChapter = (index: number) => {
+    requestAnimationFrame(() => {
+      document.getElementById(`chapter-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const getStoryPreview = (story: Story) => {
     // 只显示简介，不显示版本信息
@@ -185,10 +213,21 @@ const App: React.FC = () => {
                         <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
                 {story.title}
               </h3>
-                        {story.tags && (
-                          <span className="text-xs px-3 py-1 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
-                            {story.tags}
-                          </span>
+                        {parseTags(story.tags).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {parseTags(story.tags).map((tag) => (
+                              <span
+                                key={tag}
+                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
+                                  tag === '连载中'
+                                    ? 'bg-[#6BD4C0]/25 text-[#0D9488]'
+                                    : 'bg-[#E8E0ED] text-[#7B5B89]'
+                                }`}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
               <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
@@ -220,10 +259,21 @@ const App: React.FC = () => {
                         <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
                           {story.title}
                         </h3>
-                        {story.tags && (
-                          <span className="text-xs px-3 py-1 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
-                            {story.tags}
-                </span>
+                        {parseTags(story.tags).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {parseTags(story.tags).map((tag) => (
+                              <span
+                                key={tag}
+                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
+                                  tag === '连载中'
+                                    ? 'bg-[#6BD4C0]/25 text-[#0D9488]'
+                                    : 'bg-[#E8E0ED] text-[#7B5B89]'
+                                }`}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                       <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
@@ -252,15 +302,36 @@ const App: React.FC = () => {
         {activeStory ? (
           <div className="space-y-12">
             <header className="border-b border-[#E8F9F6] pb-8">
+              {activeStory.fileName === '爱莫若食.md' && (
+                <div className="flex justify-center mb-6">
+                  <img
+                    src="assets/icons/ambrosial.png"
+                    alt=""
+                    className="w-36 h-36 object-contain"
+                    style={{ imageRendering: 'auto' }}
+                  />
+                </div>
+              )}
               <div className="flex items-center gap-2 text-xs text-[#6BD4C0] font-bold uppercase tracking-widest mb-4">
                 <Quote size={14} /> Chapter Reading
               </div>
               <div className="flex items-start justify-between gap-4 mb-2">
                 <h1 className="text-5xl font-bold text-[#7B5B89]">{activeStory.title}</h1>
-                {activeStory.tags && (
-                  <span className="text-sm px-4 py-2 bg-[#E8E0ED] text-[#7B5B89] rounded-full font-medium whitespace-nowrap">
-                    {activeStory.tags}
-                  </span>
+                {parseTags(activeStory.tags).length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {parseTags(activeStory.tags).map((tag) => (
+                      <span
+                        key={tag}
+                        className={`text-sm px-4 py-2 rounded-full font-medium whitespace-nowrap ${
+                          tag === '连载中'
+                            ? 'bg-[#6BD4C0]/25 text-[#0D9488]'
+                            : 'bg-[#E8E0ED] text-[#7B5B89]'
+                        }`}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
               {activeStory.summary && (
@@ -340,7 +411,12 @@ const App: React.FC = () => {
   );
 
   return (
-    <Layout activeView={currentView} onNavigate={(view) => setCurrentView(view)}>
+    <Layout
+      activeView={currentView}
+      onNavigate={(view) => setCurrentView(view)}
+      chapters={currentView === AppState.READER ? readerChapters : []}
+      onJumpToChapter={handleJumpToChapter}
+    >
       {currentView === AppState.HOME && renderHome()}
       {currentView === AppState.TOC && renderTOC()}
       {currentView === AppState.READER && renderReader()}

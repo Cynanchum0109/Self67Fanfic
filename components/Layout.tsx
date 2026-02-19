@@ -10,9 +10,13 @@ interface LayoutProps {
   children: React.ReactNode;
   activeView: AppState;
   onNavigate: (view: AppState) => void;
+  /** 当前长篇的章节目录（仅 READER 且有 Chapter N 时传入） */
+  chapters?: { index: number }[];
+  /** 点击章节时滚动到对应位置并关闭侧栏 */
+  onJumpToChapter?: (index: number) => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapters = [], onJumpToChapter }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // We keep the library view hidden for the general user, but accessible if they know where to look (or for the author)
   const isReaderOrToc = activeView === AppState.READER || activeView === AppState.TOC;
@@ -27,19 +31,20 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 flex items-center justify-center p-2 bg-white rounded-lg shadow-md hover:bg-[#D4F4EC] transition-colors"
+        className="fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white rounded-lg shadow-md hover:bg-[#D4F4EC] transition-colors aspect-square w-10 h-10"
         aria-label="Toggle menu"
-        style={{ width: '30px', height: '30px' }}
       >
         {isSidebarOpen ? (
-          <X size={24} className="text-[#7B5B89]" />
+          <X size={24} className="text-[#7B5B89] shrink-0" />
         ) : (
-          <img 
-            src={MOMO67_ICON_URL}
-            alt="Menu" 
-            className="w-8 h-8"
-            style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }}
-          />
+          <span className="aspect-square w-7 h-7 flex items-center justify-center overflow-hidden">
+            <img 
+              src={MOMO67_ICON_URL}
+              alt="Menu" 
+              className="w-full h-full object-contain"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </span>
         )}
       </button>
 
@@ -64,12 +69,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
               <div className="w-3 h-3 rounded-full bg-[#6BD4C0] group-hover:bg-[#5FC4B0] transition-colors animate-pulse"></div>
               <span><span className="text-[#6BD4C0]">Hong</span><span className="text-[#7B5B89]">Cliff</span></span>
             </div>
-            <img 
-              src={MOMO67_ICON_URL}
-              alt="Logo" 
-              className="w-8 h-8"
-              style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }}
-            />
+            <span className="aspect-square w-8 h-8 flex items-center justify-center overflow-hidden shrink-0">
+              <img 
+                src={MOMO67_ICON_URL}
+                alt="Logo" 
+                className="w-full h-full object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </span>
           </h1>
           <p className="text-xs text-[#9D8AB5] mt-1 uppercase tracking-widest font-semibold">by BQCynanchum</p>
         </div>
@@ -111,6 +118,26 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate }) => 
               <BookOpen size={20} />
               <span>Reading</span>
             </button>
+          )}
+
+          {activeView === AppState.READER && chapters.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-[#E8F9F6]">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-4 mb-2">章节目录</h4>
+              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                {chapters.map((ch) => (
+                  <button
+                    key={ch.index}
+                    onClick={() => {
+                      onJumpToChapter?.(ch.index);
+                      setIsSidebarOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-[#E8F9F6] hover:text-[#7B5B89] transition-colors"
+                  >
+                    第{ch.index}章
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </nav>
 
