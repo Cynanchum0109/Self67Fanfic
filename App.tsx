@@ -72,7 +72,6 @@ const App: React.FC = () => {
         content: bodyContent,
         fileName: data.fileName,
         uploadDate: data.uploadDate, // 使用数据中的 uploadDate
-        isChinese: data.isChinese,
         language: data.language,
         wordCount: data.wordCount,
         order: data.order, // 添加 order 字段
@@ -87,6 +86,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
   const [showGame, setShowGame] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
+  const [showRTokenTooltip, setShowRTokenTooltip] = useState(false);
 
   // 初始化：设置第一个故事为活动故事
   useEffect(() => {
@@ -145,12 +145,12 @@ const App: React.FC = () => {
   // 统计字数（使用预计算的值）
   const getWordCount = (story: Story): string => {
     if (story.wordCount !== undefined) {
-      return story.isChinese 
+      return story.language === 'CN' 
         ? `${story.wordCount} 字符`
         : `${story.wordCount} words`;
     }
     // 后备方案：如果没有预计算值，实时计算
-    if (story.isChinese) {
+    if (story.language === 'CN') {
       return `${story.content.length} 字符`;
     } else {
       const words = story.content.split(/\s+/).filter(w => w.length > 0);
@@ -165,7 +165,7 @@ const App: React.FC = () => {
         "那呼唤爱的样子如此美丽……"
       </p>
 
-      <div className="space-y-4">
+      <div className="flex flex-col items-center space-y-4">
       <button 
         onClick={() => setCurrentView(AppState.TOC)}
           className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#9D8AB5] to-[#7B5B89] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#9D8AB5]/40 hover:shadow-[#7B5B89]/50"
@@ -174,16 +174,44 @@ const App: React.FC = () => {
         <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
       </button>
         
-        <button
-          onClick={() => setShowSimulation(true)}
-          className="block mx-auto mt-8 text-orange-500 hover:text-orange-600 transition-colors cursor-pointer text-base font-medium underline"
-        >
-          R公司孵化场观测（施工中）
-        </button>
+        <div className="relative flex justify-center">
+          {showRTokenTooltip && (
+            <span
+              id="r-token-tooltip"
+              role="tooltip"
+              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-sm text-white bg-gray-800 rounded shadow-lg whitespace-nowrap z-50"
+            >
+              R公司孵化场观测（施工中）
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowSimulation(true)}
+            onMouseEnter={() => setShowRTokenTooltip(true)}
+            onMouseLeave={() => setShowRTokenTooltip(false)}
+            onFocus={() => setShowRTokenTooltip(true)}
+            onBlur={() => setShowRTokenTooltip(false)}
+            className="group relative block p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded-full"
+            aria-label="R公司孵化场观测（施工中）"
+          >
+            <span className="relative flex items-center justify-center w-10 h-10">
+              <img
+                src="assets/icons/Rtoken1.png"
+                alt=""
+                className="w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
+              />
+              <img
+                src="assets/icons/Rtoken2.png"
+                alt=""
+                className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              />
+            </span>
+          </button>
+        </div>
         
         <button
           onClick={() => setShowGame(true)}
-          className="block mx-auto mt-12 text-[#6BD4C0] hover:text-[#5FC4B0] transition-colors cursor-pointer text-sm font-light underline"
+          className="block mx-auto text-[#6BD4C0] hover:text-[#5FC4B0] transition-colors cursor-pointer text-sm font-light underline"
         >
           碰到就要结婚喔～
         </button>
@@ -193,8 +221,8 @@ const App: React.FC = () => {
 
   const renderTOC = () => {
     // 分别对中文和英文按 order 降序排序（最新的在前）
-    const chineseStories = stories.filter(s => s.isChinese === true).sort((a, b) => (b.order || 0) - (a.order || 0));
-    const englishStories = stories.filter(s => s.isChinese === false).sort((a, b) => (b.order || 0) - (a.order || 0));
+    const chineseStories = stories.filter(s => s.language === 'CN').sort((a, b) => (b.order || 0) - (a.order || 0));
+    const englishStories = stories.filter(s => s.language === 'EN').sort((a, b) => (b.order || 0) - (a.order || 0));
 
     return (
     <div className="space-y-12 animate-in fade-in duration-700">
@@ -339,7 +367,7 @@ const App: React.FC = () => {
                 const relatedStory = findStoryByVersion(activeStory.version, activeStory);
                 if (relatedStory) {
                   // 显示对应的语言版本标签
-                  const versionLabel = relatedStory.isChinese ? '中文版' : 'English Version';
+                  const versionLabel = relatedStory.language === 'CN' ? '中文版' : 'English Version';
                   return (
                     <button
                       onClick={() => { setActiveStoryId(relatedStory.id); }}
@@ -376,7 +404,7 @@ const App: React.FC = () => {
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Chapters</h4>
           <div className="space-y-1">
             {/* 分别显示中文和英文，各自按 order 排序 */}
-            {stories.filter(s => s.isChinese === true).sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
+            {stories.filter(s => s.language === 'CN').sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
               <button
                 key={s.id}
                 onClick={() => { setActiveStoryId(s.id); }}
@@ -389,7 +417,7 @@ const App: React.FC = () => {
                 {s.title}
               </button>
             ))}
-            {stories.filter(s => s.isChinese === false).sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
+            {stories.filter(s => s.language === 'EN').sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
               <button
                 key={s.id}
                 onClick={() => { setActiveStoryId(s.id); }}

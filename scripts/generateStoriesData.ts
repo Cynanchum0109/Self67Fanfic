@@ -11,8 +11,7 @@ interface StoryData {
   tags: string;
   summary: string;
   version: string;
-  language: string;
-  isChinese: boolean;
+  language: string; // CN | EN
   fileName: string;
   wordCount: number;
   order: number;
@@ -28,13 +27,12 @@ function parseMarkdownFile(filePath: string, fileName: string): Omit<StoryData, 
   // 根据文件名是否包含中文字符粗略判断语言
   const hasChinese = /[\u4e00-\u9fa5]/.test(fileName);
   const language = hasChinese ? 'CN' : 'EN';
-  const isChinese = hasChinese;
 
   // 使用文件名作为默认标题（去掉扩展名），之后可以在 storiesData.ts 中手动修改
   const title = fileName.replace('.md', '');
 
   // 统计字数（中文统计字符，英文统计单词）
-  const wordCount = isChinese
+  const wordCount = language === 'CN'
     ? content.length
     : content.split(/\s+/).filter(w => w.length > 0).length;
 
@@ -45,7 +43,6 @@ function parseMarkdownFile(filePath: string, fileName: string): Omit<StoryData, 
     summary: '',
     version: 'none',
     language,
-    isChinese,
     fileName,
     wordCount
   };
@@ -132,7 +129,7 @@ function generateStoriesData() {
       if (existing.uploadDate !== undefined) story.uploadDate = existing.uploadDate;
     } else {
       // 自动分配：根据语言分别管理
-      if (story.isChinese) {
+      if (story.language === 'CN') {
         chineseStories.push(story);
       } else {
         englishStories.push(story);
@@ -156,8 +153,8 @@ function generateStoriesData() {
   
   // 按语言和 order 排序（用于生成文件，但实际显示时会分开）
   allStories.sort((a, b) => {
-    if (a.isChinese !== b.isChinese) {
-      return a.isChinese ? -1 : 1; // 中文在前
+    if (a.language !== b.language) {
+      return a.language === 'CN' ? -1 : 1; // 中文在前
     }
     return b.order - a.order; // 同语言内按 order 降序
   });
@@ -172,8 +169,7 @@ export interface StoryData {
   tags: string;
   summary: string;
   version: string;
-  language: string;
-  isChinese: boolean;
+  language: string; // CN | EN
   fileName: string;
   wordCount: number;
   order: number; // 顺序，越大越新（可以手动修改）
@@ -187,11 +183,11 @@ export const storiesData: StoryData[] = ${JSON.stringify(allStories, null, 2)};
   console.log(`✅ 成功生成 ${allStories.length} 个故事数据到 ${outputFile}`);
   console.log('📊 统计信息（中文和英文分开管理顺序）:');
   console.log('  中文:');
-  allStories.filter(s => s.isChinese).sort((a, b) => b.order - a.order).forEach(s => {
+  allStories.filter(s => s.language === 'CN').sort((a, b) => b.order - a.order).forEach(s => {
     console.log(`    - [Order ${s.order}] ${s.title}: ${s.wordCount} 字符, 更新日期: ${s.uploadDate}`);
   });
   console.log('  英文:');
-  allStories.filter(s => !s.isChinese).sort((a, b) => b.order - a.order).forEach(s => {
+  allStories.filter(s => s.language === 'EN').sort((a, b) => b.order - a.order).forEach(s => {
     console.log(`    - [Order ${s.order}] ${s.title}: ${s.wordCount} words, 更新日期: ${s.uploadDate}`);
   });
 }
