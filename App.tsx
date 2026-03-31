@@ -46,10 +46,6 @@ function parseChapters(content: string): { index: number }[] {
 const App: React.FC = () => {
   // 合并统计数据和正文内容
   const stories = useMemo<Story[]>(() => {
-    // 调试信息
-    console.log('Markdown modules keys:', Object.keys(markdownModules));
-    console.log('Stories data:', storiesData.length);
-    
     const mappedStories = storiesData.map(data => {
       // 根据文件名找到对应的markdown内容
       const filePath = `./text/${data.fileName}`;
@@ -71,7 +67,6 @@ const App: React.FC = () => {
         version: data.version,
         content: bodyContent,
         fileName: data.fileName,
-        uploadDate: data.uploadDate, // 使用数据中的 uploadDate
         language: data.language,
         wordCount: data.wordCount,
         order: data.order, // 添加 order 字段

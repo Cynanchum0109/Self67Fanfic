@@ -4,12 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "generate:data": "tsx scripts/generateStoriesData.ts",
-    "dev": "npm run generate:data && vite",
-    "build": "npm run generate:data && vite build",
-    "preview": "vite preview",
-    "local-deploy": "node scripts/local/local-deploy.js",
-    "push": "node scripts/local/push-to-github.js"
+    "push": "node scripts/push-to-github.js"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",

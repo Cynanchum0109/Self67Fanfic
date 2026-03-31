@@ -1,5 +1,5 @@
-// 此文件由 scripts/generateStoriesData.ts 自动生成基础数据
-// 可以手动编辑 order、uploadDate、summary、title 等字段，脚本会保留这些手动编辑的内容
+// 此文件由 scripts/generateStoriesData.py 自动生成基础数据
+// 可以手动编辑 order、summary、title 等字段，脚本会保留这些手动编辑的内容
 
 export interface StoryData {
   id: string;
@@ -11,7 +11,6 @@ export interface StoryData {
   fileName: string;
   wordCount: number;
   order: number; // 顺序，越大越新（可以手动修改）
-  uploadDate: string; // 更新日期字符串（格式：YYYY-MM-DD 或 YYYY），可以手动修改
 }
 
 export const storiesData: StoryData[] = [
@@ -23,8 +22,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "破溃点.md",
-    "wordCount": 5817,
-    "uploadDate": "2026-02-14",
+    "wordCount": 7350,
     "order": 6
   },
   {
@@ -35,8 +33,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "黄金台上.md",
-    "wordCount": 2356,
-    "uploadDate": "2025",
+    "wordCount": 5502,
     "order": 5
   },
   {
@@ -48,7 +45,6 @@ export const storiesData: StoryData[] = [
     "language": "CN",
     "fileName": "爱莫若食.md",
     "wordCount": 15831,
-    "uploadDate": "2025",
     "order": 4
   },
   {
@@ -60,7 +56,6 @@ export const storiesData: StoryData[] = [
     "language": "CN",
     "fileName": "老板半夜打电话你接不接.md",
     "wordCount": 3363,
-    "uploadDate": "2025",
     "order": 3
   },
   {
@@ -72,7 +67,6 @@ export const storiesData: StoryData[] = [
     "language": "CN",
     "fileName": "总之是想看兔子把驯鹿榨空这种事.md",
     "wordCount": 3390,
-    "uploadDate": "2025",
     "order": 2
   },
   {
@@ -84,7 +78,6 @@ export const storiesData: StoryData[] = [
     "language": "CN",
     "fileName": "求仁得仁.md",
     "wordCount": 5322,
-    "uploadDate": "2025",
     "order": 1
   },
   {
@@ -96,7 +89,6 @@ export const storiesData: StoryData[] = [
     "language": "EN",
     "fileName": "Would you answer a call from your boss in midnight.md",
     "wordCount": 1989,
-    "uploadDate": "2025",
     "order": 3
   },
   {
@@ -108,7 +100,6 @@ export const storiesData: StoryData[] = [
     "language": "EN",
     "fileName": "Rabbit riding on Reindeer.md",
     "wordCount": 1899,
-    "uploadDate": "2025",
     "order": 2
   },
   {
@@ -120,7 +111,6 @@ export const storiesData: StoryData[] = [
     "language": "EN",
     "fileName": "Ask and you shall recieve.md",
     "wordCount": 2705,
-    "uploadDate": "2025",
     "order": 1
   }
 ];
