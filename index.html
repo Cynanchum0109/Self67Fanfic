@@ -16,28 +16,41 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
         .serif-text {
             font-family: 'Noto Serif SC', serif;
         }
-        /* Custom scrollbar for a clean look */
+        /* Text selection color */
+        ::selection {
+            background-color: #C5EDE6;
+            color: #2D6B62;
+        }
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: #E8F9F6;
+            background: #F0EDF5;
         }
         ::-webkit-scrollbar-thumb {
-            background: #81E5D0;
+            background: #C4B5D4;
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #6BD4C0;
+            background: #9D8AB5;
+        }
+        /* Smooth focus rings */
+        :focus-visible {
+            outline: 2px solid #6BD4C0;
+            outline-offset: 2px;
         }
     </style>
 </head>

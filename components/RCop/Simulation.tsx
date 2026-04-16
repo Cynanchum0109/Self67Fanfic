@@ -477,10 +477,13 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
 
   // 处理agent交互
   const processAgentInteractions = () => {
+    // 终局1v1战斗已开始时，跳过所有普通交互，避免干扰processFinalBattle的碰撞结算
+    if (finalBattleRef.current.started) return;
+
     const now = Date.now();
     const agentsToRemove: number[] = [];
     let hasEncounter = false;
-    
+
     agentsRef.current.forEach(agent => {
       if (agentsToRemove.includes(agent.id)) return;
       
@@ -1238,7 +1241,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       // 绘制前置文本（黑色粗体，带引号）
       if (endingPreText) {
         ctx.fillStyle = '#000000';
-        ctx.font = '500 48px "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif';
+        ctx.font = '400 48px "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         
@@ -1400,8 +1403,13 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   };
 
   // 监听gameEnded状态变化，重新绘制以显示或清除结局文字
+  // 结局画面需等待 web font 载入 canvas 上下文，避免 fallback 到系统粗体
   useEffect(() => {
+    if (gameEnded) {
+      document.fonts.ready.then(() => draw());
+    } else {
       draw();
+    }
   }, [gameEnded, ending, endingText, endingPreText]);
 
   // 初始化

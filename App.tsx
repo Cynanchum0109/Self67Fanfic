@@ -155,26 +155,29 @@ const App: React.FC = () => {
 
   // Render Functions
   const renderHome = () => (
-    <div className="text-center space-y-8 animate-in zoom-in duration-1000">
-      <p className="text-xl text-gray-400 font-light italic max-w-lg mx-auto">
-        "那呼唤爱的样子如此美丽……"
-      </p>
+    <div className="text-center space-y-10 animate-in zoom-in duration-1000">
+      <div className="space-y-3">
+        <p className="text-[1.4rem] text-gray-400 font-light italic max-w-md mx-auto leading-[1.8] serif-text tracking-[0.04em]">
+          "那呼唤爱的样子如此美丽……"
+        </p>
+        <div className="mx-auto w-8 h-px bg-gradient-to-r from-transparent via-[#C5EDE6] to-transparent" />
+      </div>
 
-      <div className="flex flex-col items-center space-y-4">
-      <button 
-        onClick={() => setCurrentView(AppState.TOC)}
-          className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#9D8AB5] to-[#7B5B89] text-white rounded-full font-bold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-2xl shadow-[#9D8AB5]/40 hover:shadow-[#7B5B89]/50"
-      >
-        <span className="relative z-10">Enter the Garden</span>
-        <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={20} />
-      </button>
-        
+      <div className="flex flex-col items-center space-y-5">
+        <button
+          onClick={() => setCurrentView(AppState.TOC)}
+          className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#9D8AB5] to-[#7B5B89] text-white rounded-full font-semibold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-xl shadow-[#9D8AB5]/30 hover:shadow-[#7B5B89]/40 text-[0.95rem] tracking-wide"
+        >
+          <span className="relative z-10">Enter the Garden</span>
+          <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={18} />
+        </button>
+
         <div className="relative flex justify-center">
           {showRTokenTooltip && (
             <span
               id="r-token-tooltip"
               role="tooltip"
-              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-sm text-white bg-gray-800 rounded shadow-lg whitespace-nowrap z-50"
+              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-xs text-white bg-[#3D3344] rounded-lg shadow-lg whitespace-nowrap z-50"
             >
               R公司孵化场观测（施工中）
             </span>
@@ -186,7 +189,7 @@ const App: React.FC = () => {
             onMouseLeave={() => setShowRTokenTooltip(false)}
             onFocus={() => setShowRTokenTooltip(true)}
             onBlur={() => setShowRTokenTooltip(false)}
-            className="group relative block p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded-full"
+            className="group relative block p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-110 active:scale-95 focus:outline-none rounded-full"
             aria-label="R公司孵化场观测（施工中）"
           >
             <span className="relative flex items-center justify-center w-10 h-10">
@@ -203,10 +206,10 @@ const App: React.FC = () => {
             </span>
           </button>
         </div>
-        
+
         <button
           onClick={() => setShowGame(true)}
-          className="block mx-auto text-[#6BD4C0] hover:text-[#5FC4B0] transition-colors cursor-pointer text-sm font-light underline"
+          className="block mx-auto text-[#9DCFC7] hover:text-[#6BD4C0] transition-colors cursor-pointer text-sm font-light"
         >
           碰到就要结婚喔～
         </button>
@@ -220,38 +223,36 @@ const App: React.FC = () => {
     const englishStories = stories.filter(s => s.language === 'EN').sort((a, b) => (b.order || 0) - (a.order || 0));
 
     return (
-    <div className="space-y-12 animate-in fade-in duration-700">
-        <header className="border-b border-[#E8F9F6] pb-10">
-          <h2 className="text-xs font-bold uppercase tracking-[0.3em] text-[#6BD4C0] mb-2">Content</h2>
-          <h1 className="text-5xl font-bold text-[#7B5B89]">Fanfic</h1>
-      </header>
+      <div className="space-y-14 animate-in fade-in duration-700">
+        <header className="pb-10">
+          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6BD4C0] mb-3">Content</p>
+          <h1 className="text-5xl font-bold text-[#7B5B89] tracking-tight">Fanfic</h1>
+          <div className="mt-4 w-12 h-0.5 bg-gradient-to-r from-[#6BD4C0] to-[#9D8AB5]" />
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
           {/* 中文栏 */}
-          <div className="space-y-12">
+          <div className="space-y-1">
             {chineseStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#D4F4EC] pb-2">CN</h3>
-                {chineseStories.map((story, index) => (
-          <div 
-            key={story.id}
-            onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
-                    className="group cursor-pointer flex flex-col gap-6 items-start"
-          >
-                    <div className="text-4xl font-black text-[#9D8AB5] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
-              {(index + 1).toString().padStart(2, '0')}
-            </div>
-            <div className="flex-1 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-[#9D8AB5] pb-4 border-b border-[#EAE4F0] mb-8">CN</h3>
+                <div className="space-y-8">
+                  {chineseStories.map((story, index) => (
+                    <div
+                      key={story.id}
+                      onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
+                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#6BD4C0] transition-all duration-300 space-y-2.5"
+                    >
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
-                {story.title}
-              </h3>
+                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#3D8C80] transition-colors duration-200 leading-snug">
+                          {story.title}
+                        </h3>
                         {parseTags(story.tags).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5 shrink-0">
                             {parseTags(story.tags).map((tag) => (
                               <span
                                 key={tag}
-                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
+                                className={`text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
                               >
                                 {tag}
                               </span>
@@ -259,41 +260,38 @@ const App: React.FC = () => {
                           </div>
                         )}
                       </div>
-              <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
+                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors">
                         {getStoryPreview(story)}
-              </p>
+                      </p>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </>
             )}
           </div>
 
           {/* 英文栏 */}
-          <div className="space-y-12">
+          <div className="space-y-1">
             {englishStories.length > 0 && (
               <>
-                <h3 className="text-2xl font-bold text-[#7B5B89] border-b border-[#8AE7CC] pb-2">EN</h3>
-                {englishStories.map((story, index) => (
-                  <div 
-                    key={story.id}
-                    onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
-                    className="group cursor-pointer flex flex-col gap-6 items-start"
-                  >
-                    <div className="text-4xl font-black text-[#9D8AB5] opacity-0 group-hover:opacity-100 transition-all duration-500 serif-text">
-                      {(index + 1).toString().padStart(2, '0')}
-                    </div>
-                    <div className="flex-1 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-[#6BD4C0] pb-4 border-b border-[#D4F4EC] mb-8">EN</h3>
+                <div className="space-y-8">
+                  {englishStories.map((story, index) => (
+                    <div
+                      key={story.id}
+                      onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
+                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#9D8AB5] transition-all duration-300 space-y-2.5"
+                    >
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-2xl font-bold text-gray-700 group-hover:text-[#6BD4C0] transition-colors">
+                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#7B5B89] transition-colors duration-200 leading-snug">
                           {story.title}
                         </h3>
                         {parseTags(story.tags).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5 shrink-0">
                             {parseTags(story.tags).map((tag) => (
                               <span
                                 key={tag}
-                                className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
+                                className={`text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
                               >
                                 {tag}
                               </span>
@@ -301,53 +299,53 @@ const App: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <p className="text-gray-500 leading-relaxed serif-text line-clamp-2 italic">
+                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors">
                         {getStoryPreview(story)}
                       </p>
-              </div>
-            </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </>
             )}
           </div>
         </div>
 
         {stories.length === 0 && (
-          <div className="py-32 text-center text-gray-400 border-2 border-dashed border-[#D4F4EC] rounded-3xl bg-[#E8F9F6]/30">
-            <p>The garden is currently resting. Please check back later.</p>
+          <div className="py-32 text-center text-gray-400 border border-dashed border-[#D4F4EC] rounded-2xl bg-[#E8F9F6]/20">
+            <p className="text-sm">The garden is currently resting. Please check back later.</p>
           </div>
         )}
-    </div>
-  );
+      </div>
+    );
   };
 
   const renderReader = () => (
     <div className="flex gap-12 animate-in slide-in-from-right duration-500">
       <div className="flex-1 max-w-3xl">
         {activeStory ? (
-          <div className="space-y-12">
-            <header className="border-b border-[#E8F9F6] pb-8">
+          <div className="space-y-10">
+            <header className="pb-8 border-b border-[#EAE4F0]">
               {activeStory.fileName === '爱莫若食.md' && (
                 <div className="flex justify-center mb-6">
                   <img
                     src="assets/icons/ambrosial.png"
                     alt=""
-                    className="w-36 h-36 object-contain"
+                    className="w-36 h-36 object-contain opacity-90"
                     style={{ imageRendering: 'auto' }}
                   />
                 </div>
               )}
-              <div className="flex items-center gap-2 text-xs text-[#6BD4C0] font-bold uppercase tracking-widest mb-4">
-                <Quote size={14} /> Chapter Reading
+              <div className="flex items-center gap-2 text-[10px] text-[#6BD4C0] font-bold uppercase tracking-[0.3em] mb-5">
+                <Quote size={12} /> Reading
               </div>
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4 mb-2">
-                <h1 className="text-4xl md:text-5xl font-bold text-[#7B5B89] min-w-0 break-words">{activeStory.title}</h1>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4 mb-3">
+                <h1 className="text-3xl md:text-4xl font-bold text-[#7B5B89] min-w-0 break-words tracking-tight leading-tight">{activeStory.title}</h1>
                 {parseTags(activeStory.tags).length > 0 && (
-                  <div className="flex flex-wrap gap-2 min-w-0 max-w-full md:flex-shrink-0">
+                  <div className="flex flex-wrap gap-2 min-w-0 max-w-full md:flex-shrink-0 mt-1">
                     {parseTags(activeStory.tags).map((tag) => (
                       <span
                         key={tag}
-                        className={`text-sm px-4 py-2 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
+                        className={`text-xs px-3 py-1.5 rounded-full font-medium whitespace-nowrap ${getTagClassName(tag)}`}
                       >
                         {tag}
                       </span>
@@ -356,17 +354,16 @@ const App: React.FC = () => {
                 )}
               </div>
               {activeStory.summary && (
-                <p className="text-lg text-gray-600 italic mb-4 serif-text">{activeStory.summary}</p>
+                <p className="text-[1rem] text-gray-500 italic mb-4 serif-text leading-[1.8] tracking-[0.02em]">{activeStory.summary}</p>
               )}
               {activeStory.version && activeStory.version.toLowerCase() !== 'none' && (() => {
                 const relatedStory = findStoryByVersion(activeStory.version, activeStory);
                 if (relatedStory) {
-                  // 显示对应的语言版本标签
                   const versionLabel = relatedStory.language === 'CN' ? '中文版' : 'English Version';
                   return (
                     <button
                       onClick={() => { setActiveStoryId(relatedStory.id); }}
-                      className="text-sm text-[#6BD4C0] mb-4 hover:text-[#5FC4B0] hover:underline transition-colors cursor-pointer"
+                      className="text-sm text-[#6BD4C0] mb-4 hover:text-[#5FC4B0] hover:underline transition-colors cursor-pointer block"
                     >
                       {versionLabel}: {relatedStory.title}
                     </button>
@@ -374,39 +371,38 @@ const App: React.FC = () => {
                 }
                 return null;
               })()}
-              <div className="flex items-center gap-4 text-gray-400 text-sm">
+              <div className="flex items-center gap-4 text-gray-300 text-xs tracking-widest">
+                <Clock size={12} />
                 <span>{getWordCount(activeStory)}</span>
               </div>
             </header>
 
-            <article className="pb-32">
+            <article className="pb-36">
               <MarkdownRenderer content={activeStory.content} />
             </article>
           </div>
         ) : (
           <div className="h-96 flex flex-col items-center justify-center text-gray-400 space-y-4">
-            <BookOpen size={64} className="opacity-20" />
-            <p className="text-lg">Please select a story from the library to begin reading.</p>
-            <button onClick={() => setCurrentView(AppState.TOC)} className="text-[#6BD4C0] font-bold underline hover:text-[#5FC4B0] transition-colors">Go to Contents</button>
+            <BookOpen size={48} className="opacity-20" />
+            <p className="text-base">Please select a story from the library to begin reading.</p>
+            <button onClick={() => setCurrentView(AppState.TOC)} className="text-[#6BD4C0] font-medium hover:text-[#5FC4B0] transition-colors text-sm">Go to Contents →</button>
           </div>
         )}
       </div>
 
       {/* Reading Sidebar - Chapters List */}
-      <aside className="w-64 sticky top-12 h-fit space-y-8 hidden xl:block">
-        {/* Local TOC */}
-        <div className="space-y-4">
-          <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Chapters</h4>
-          <div className="space-y-1">
-            {/* 分别显示中文和英文，各自按 order 排序 */}
+      <aside className="w-56 sticky top-12 h-fit space-y-6 hidden xl:block">
+        <div className="space-y-3">
+          <h4 className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-300">All Stories</h4>
+          <div className="space-y-0.5">
             {stories.filter(s => s.language === 'CN').sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
               <button
                 key={s.id}
                 onClick={() => { setActiveStoryId(s.id); }}
-                className={`w-full text-left px-4 py-2 text-sm rounded-lg truncate transition-all ${
-                  activeStoryId === s.id 
-                  ? 'bg-[#7B5B89] text-white font-medium shadow-sm' 
-                  : 'text-gray-600 hover:bg-[#E8E0ED] hover:text-[#7B5B89]'
+                className={`w-full text-left px-3 py-2 text-[0.8rem] rounded-md truncate transition-all duration-200 ${
+                  activeStoryId === s.id
+                  ? 'bg-[#EEE8F5] text-[#7B5B89] font-semibold border-l-2 border-[#9D8AB5]'
+                  : 'text-gray-400 hover:bg-[#F4F0FA] hover:text-[#7B5B89]'
                 }`}
               >
                 {s.title}
@@ -416,10 +412,10 @@ const App: React.FC = () => {
               <button
                 key={s.id}
                 onClick={() => { setActiveStoryId(s.id); }}
-                className={`w-full text-left px-4 py-2 text-sm rounded-lg truncate transition-all ${
-                  activeStoryId === s.id 
-                  ? 'bg-[#7B5B89] text-white font-medium shadow-sm' 
-                  : 'text-gray-600 hover:bg-[#E8E0ED] hover:text-[#7B5B89]'
+                className={`w-full text-left px-3 py-2 text-[0.8rem] rounded-md truncate transition-all duration-200 ${
+                  activeStoryId === s.id
+                  ? 'bg-[#E3F7F3] text-[#3D8C80] font-semibold border-l-2 border-[#6BD4C0]'
+                  : 'text-gray-400 hover:bg-[#F0FAF8] hover:text-[#3D8C80]'
                 }`}
               >
                 {s.title}

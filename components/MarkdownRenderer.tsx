@@ -45,35 +45,41 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   const lines = content.split('\n');
 
   return (
-    <div className="serif-text space-y-6 text-lg leading-relaxed text-gray-700 max-w-2xl mx-auto">
+    <div className="serif-text space-y-7 text-[1.1rem] leading-[2] text-gray-700 max-w-[680px] mx-auto tracking-[0.02em]">
       {lines.map((line, idx) => {
         if (line.startsWith('# ')) {
-          return <h1 key={idx} className="text-4xl font-bold text-[#7B5B89] pt-8 pb-4">{line.replace('# ', '')}</h1>;
+          return <h1 key={idx} className="text-3xl font-bold text-[#7B5B89] pt-12 pb-5 tracking-normal">{line.replace('# ', '')}</h1>;
         }
         if (line.startsWith('## ')) {
-          return <h2 key={idx} className="text-2xl font-bold text-[#6BD4C0] pt-6 pb-2 border-b border-[#E8F9F6]">{line.replace('## ', '')}</h2>;
+          return <h2 key={idx} className="text-xl font-bold text-[#5CB8A8] pt-8 pb-3 border-b border-[#D4F4EC] tracking-normal">{line.replace('## ', '')}</h2>;
         }
         if (line.startsWith('### ')) {
-          return <h3 key={idx} className="text-xl font-semibold text-[#9D8AB5] pt-4">{line.replace('### ', '')}</h3>;
+          return <h3 key={idx} className="text-lg font-semibold text-[#9D8AB5] pt-6 pb-1 tracking-normal">{line.replace('### ', '')}</h3>;
         }
         // 长篇章节标题：Chapter1 / Chapter 1（带 id 供目录跳转）
         const chapterMatch = line.match(/^Chapter\s*(\d+)\s*$/i);
         if (chapterMatch) {
           const num = chapterMatch[1];
           return (
-            <h2 key={idx} id={`chapter-${num}`} className="text-2xl font-bold text-[#6BD4C0] pt-8 pb-2 border-b border-[#E8F9F6] scroll-mt-24">
+            <h2 key={idx} id={`chapter-${num}`} className="text-xl font-bold text-[#5CB8A8] pt-10 pb-3 border-b border-[#D4F4EC] scroll-mt-24 tracking-normal">
               第{num}章
             </h2>
           );
         }
         if (line.trim() === '---') {
-          return <hr key={idx} className="my-10 border-[#D4F4EC]" />;
+          return (
+            <div key={idx} className="my-12 flex items-center gap-4">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[#C5EDE6]" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#6BD4C0] opacity-70" />
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#C5EDE6]" />
+            </div>
+          );
         }
         if (line.trim() === '') {
-          return <div key={idx} className="h-4" />;
+          return <div key={idx} className="h-2" />;
         }
         return (
-          <p key={idx} className="text-gray-700">
+          <p key={idx} className="text-[#3D3D4A]">
             {parseSpoilers(line, `line-${idx}`)}
           </p>
         );
