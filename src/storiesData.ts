@@ -17,12 +17,12 @@ export const storiesData: StoryData[] = [
   {
     "id": "xjpd8c0n0",
     "title": "破溃点",
-    "tags": "lcb67, 连载中",
+    "tags": "lcb67",
     "summary": "他确实喜欢这个，喜欢希斯克利夫的颤抖、他的呜咽，这种剧烈地被爱的残渣磋磨的样子。",
     "version": "none",
     "language": "CN",
     "fileName": "破溃点.md",
-    "wordCount": 7350,
+    "wordCount": 12496,
     "order": 6
   },
   {
@@ -33,18 +33,18 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "黄金台上.md",
-    "wordCount": 5502,
+    "wordCount": 10000,
     "order": 5
   },
   {
     "id": "lm3mewxqx",
     "title": "Ambrosial!! 爱莫若食!!",
     "tags": "lcb67, 连载中",
-    "summary": "鸿璐的自我伤害与希斯克利夫的自投罗网。",
+    "summary": "鸿璐的自我伤害与希斯克利夫的自投罗网。Fork&Cake",
     "version": "none",
     "language": "CN",
     "fileName": "爱莫若食.md",
-    "wordCount": 15831,
+    "wordCount": 19082,
     "order": 4
   },
   {

@@ -25,6 +25,7 @@ function parseTags(tagsStr: string | undefined): string[] {
 // 各标签对应的样式（可扩展）
 const TAG_STYLES: Record<string, string> = {
   '连载中': 'bg-[#6BD4C0]/25 text-[#0D9488]',
+  '完结': 'bg-gray-100 text-gray-500',
 };
 const DEFAULT_TAG_STYLE = 'bg-[#E8E0ED] text-[#7B5B89]';
 
@@ -156,6 +157,9 @@ const App: React.FC = () => {
   // Render Functions
   const renderHome = () => (
     <div className="text-center space-y-10 animate-in zoom-in duration-1000">
+      <p className="text-[11px] font-light text-gray-400/90 tracking-wide max-w-lg mx-auto leading-relaxed px-2">
+        最新更新：5/14/2026，爱莫若食第7章，破溃点完结，黄金台上第3章
+      </p>
       <div className="space-y-3">
         <p className="text-[1.4rem] text-gray-400 font-light italic max-w-md mx-auto leading-[1.8] serif-text tracking-[0.04em]">
           "那呼唤爱的样子如此美丽……"
