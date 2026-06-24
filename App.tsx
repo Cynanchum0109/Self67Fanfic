@@ -160,7 +160,7 @@ const App: React.FC = () => {
   const renderHome = () => (
     <div className="text-center space-y-10 animate-in zoom-in duration-1000">
       <p className="text-[11px] font-light text-gray-400/90 tracking-wide max-w-lg mx-auto leading-relaxed px-2">
-        最新更新：5/14/2026，爱莫若食第7章，破溃点完结，黄金台上第3章
+        最新更新：6/24/2026，任随你便！S08E4前2章，外星人抓狗小游戏
       </p>
       <div className="space-y-3">
         <p className="text-[1.4rem] text-gray-400 font-light italic max-w-md mx-auto leading-[1.8] serif-text tracking-[0.04em]">
