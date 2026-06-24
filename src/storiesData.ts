@@ -18,7 +18,7 @@ export const storiesData: StoryData[] = [
     "id": "6qoj0wrqx",
     "title": "Season 08 Episode 4",
     "tags": "蜘蛛巢67, 连载中",
-    "summary": "没有地方是可以找到幸福的。/n 全员向，现代au",
+    "summary": "没有地方是可以找到幸福的。\n全员向，现代au",
     "version": "none",
     "language": "CN",
     "fileName": "S08E4.md",

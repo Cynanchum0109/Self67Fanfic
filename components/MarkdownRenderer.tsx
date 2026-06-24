@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { normalizeNewlines } from '../utils/text';
 
 interface MarkdownRendererProps {
   content: string;
@@ -16,8 +17,8 @@ function SpoilerSpan({ children }: { children: string }) {
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRevealed(true); } }}
       className={
         revealed
-          ? 'text-gray-700'
-          : 'text-gray-300 bg-gray-200/60 cursor-pointer rounded-sm px-0.5 select-none hover:bg-gray-300/70 transition-colors'
+          ? 'text-gray-700 whitespace-pre-line'
+          : 'text-gray-300 bg-gray-200/60 cursor-pointer rounded-sm px-0.5 select-none hover:bg-gray-300/70 transition-colors whitespace-pre-line'
       }
       aria-label={revealed ? undefined : '点击显示'}
     >
@@ -73,8 +74,8 @@ function StoryImage({ url, caption }: { url: string; caption: string }) {
         />
       </div>
       {caption && (
-        <figcaption className="mt-2 text-sm text-gray-400 italic tracking-wide">
-          {caption}
+        <figcaption className="mt-2 text-sm text-gray-400 italic tracking-wide whitespace-pre-line">
+          {normalizeNewlines(caption)}
         </figcaption>
       )}
     </figure>
@@ -82,19 +83,19 @@ function StoryImage({ url, caption }: { url: string; caption: string }) {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-  const lines = content.split('\n');
+  const lines = normalizeNewlines(content).split('\n');
 
   return (
     <div className="serif-text space-y-7 text-[1.1rem] leading-[2] text-gray-700 max-w-[680px] mx-auto tracking-[0.02em]">
       {lines.map((line, idx) => {
         if (line.startsWith('# ')) {
-          return <h1 key={idx} className="text-3xl font-bold text-[#7B5B89] pt-12 pb-5 tracking-normal">{line.replace('# ', '')}</h1>;
+          return <h1 key={idx} className="text-3xl font-bold text-[#7B5B89] pt-12 pb-5 tracking-normal whitespace-pre-line">{line.replace('# ', '')}</h1>;
         }
         if (line.startsWith('## ')) {
-          return <h2 key={idx} className="text-xl font-bold text-[#5CB8A8] pt-8 pb-3 border-b border-[#D4F4EC] tracking-normal">{line.replace('## ', '')}</h2>;
+          return <h2 key={idx} className="text-xl font-bold text-[#5CB8A8] pt-8 pb-3 border-b border-[#D4F4EC] tracking-normal whitespace-pre-line">{line.replace('## ', '')}</h2>;
         }
         if (line.startsWith('### ')) {
-          return <h3 key={idx} className="text-lg font-semibold text-[#9D8AB5] pt-6 pb-1 tracking-normal">{line.replace('### ', '')}</h3>;
+          return <h3 key={idx} className="text-lg font-semibold text-[#9D8AB5] pt-6 pb-1 tracking-normal whitespace-pre-line">{line.replace('### ', '')}</h3>;
         }
         // 长篇章节标题：Chapter1 / Chapter 1（带 id 供目录跳转）
         const chapterMatch = line.match(/^Chapter\s*(\d+)\s*$/i);
@@ -124,7 +125,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
           return <React.Fragment key={idx}><StoryImage url={imgData.url} caption={imgData.caption} /></React.Fragment>;
         }
         return (
-          <p key={idx} className="text-[#3D3D4A]">
+          <p key={idx} className="text-[#3D3D4A] whitespace-pre-line">
             {parseSpoilers(line, `line-${idx}`)}
           </p>
         );

@@ -8,6 +8,7 @@ import UFOGame from './components/ufo/UFOGame';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
+import { normalizeNewlines } from './utils/text';
 
 // 使用 Vite 的 import.meta.glob 直接读取 text 文件夹中的所有 .md 文件（仅用于获取正文内容）
 const markdownModules = import.meta.glob('./text/*.md', { query: '?raw', import: 'default', eager: true });
@@ -108,7 +109,7 @@ const App: React.FC = () => {
 
   const getStoryPreview = (story: Story) => {
     // 只显示简介，不显示版本信息
-    return story.summary || "No preview available.";
+    return normalizeNewlines(story.summary || "No preview available.");
   };
 
   // 根据版本信息找到对应的文章
@@ -260,8 +261,8 @@ const App: React.FC = () => {
                       className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#6BD4C0] transition-all duration-300 space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#3D8C80] transition-colors duration-200 leading-snug">
-                          {story.title}
+                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#3D8C80] transition-colors duration-200 leading-snug whitespace-pre-line">
+                          {normalizeNewlines(story.title)}
                         </h3>
                         {parseTags(story.tags).length > 0 && (
                           <div className="flex flex-wrap gap-1.5 shrink-0">
@@ -276,7 +277,7 @@ const App: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors">
+                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors whitespace-pre-line">
                         {getStoryPreview(story)}
                       </p>
                     </div>
@@ -299,8 +300,8 @@ const App: React.FC = () => {
                       className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#9D8AB5] transition-all duration-300 space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#7B5B89] transition-colors duration-200 leading-snug">
-                          {story.title}
+                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#7B5B89] transition-colors duration-200 leading-snug whitespace-pre-line">
+                          {normalizeNewlines(story.title)}
                         </h3>
                         {parseTags(story.tags).length > 0 && (
                           <div className="flex flex-wrap gap-1.5 shrink-0">
@@ -315,7 +316,7 @@ const App: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors">
+                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors whitespace-pre-line">
                         {getStoryPreview(story)}
                       </p>
                     </div>
@@ -355,7 +356,7 @@ const App: React.FC = () => {
                 <Quote size={12} /> Reading
               </div>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4 mb-3">
-                <h1 className="text-3xl md:text-4xl font-bold text-[#7B5B89] min-w-0 break-words tracking-tight leading-tight">{activeStory.title}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-[#7B5B89] min-w-0 break-words tracking-tight leading-tight whitespace-pre-line">{normalizeNewlines(activeStory.title)}</h1>
                 {parseTags(activeStory.tags).length > 0 && (
                   <div className="flex flex-wrap gap-2 w-full min-w-0 md:w-auto md:flex-shrink-0 mt-1">
                     {parseTags(activeStory.tags).map((tag) => (
@@ -370,7 +371,7 @@ const App: React.FC = () => {
                 )}
               </div>
               {activeStory.summary && (
-                <p className="text-[1rem] text-gray-500 italic mb-4 serif-text leading-[1.8] tracking-[0.02em]">{activeStory.summary}</p>
+                <p className="text-[1rem] text-gray-500 italic mb-4 serif-text leading-[1.8] tracking-[0.02em] whitespace-pre-line">{normalizeNewlines(activeStory.summary)}</p>
               )}
               {activeStory.version && activeStory.version.toLowerCase() !== 'none' && (() => {
                 const relatedStory = findStoryByVersion(activeStory.version, activeStory);
