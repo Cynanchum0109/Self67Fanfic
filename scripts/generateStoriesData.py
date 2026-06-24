@@ -37,9 +37,13 @@ def _rand_id(n: int = 9) -> str:
   return "".join(random.choice(alphabet) for _ in range(n))
 
 
-def _infer_language(file_name: str) -> str:
-  # 通过文件名包含中文字符粗略判断
-  return "CN" if re.search(r"[\u4e00-\u9fa5]", file_name) else "EN"
+def _infer_language(file_name: str, content: str = "") -> str:
+  # 先看文件名，再看正文中文字符比例
+  if re.search(r"[\u4e00-\u9fa5]", file_name):
+    return "CN"
+  cn_chars = len(re.findall(r"[\u4e00-\u9fa5]", content))
+  en_chars  = len(re.findall(r"[a-zA-Z]", content))
+  return "CN" if cn_chars > en_chars else "EN"
 
 
 def _count_word(content: str, language: str) -> int:
@@ -132,7 +136,7 @@ def generate_base_story(file_path: Path) -> StoryData:
   file_name = file_path.name
   content = file_path.read_text("utf-8").strip()
 
-  language = _infer_language(file_name)
+  language = _infer_language(file_name, content)
   title = file_name[:-3] if file_name.endswith(".md") else file_name
   word_count = _count_word(content, language)
 

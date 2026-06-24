@@ -46,6 +46,10 @@ const UFOGame: React.FC<GameProps> = ({ onClose }) => {
   const imgRun  = useRef<HTMLImageElement[]>([]);
   const runLoaded = useRef(false);
 
+  // Joystick
+  const [joyKnob, setJoyKnob] = useState({ x: 0 });
+  const joyStart = useRef<number | null>(null);
+
   const S = useRef({
     dog: { x: CW/2-DOG_W/2, y: GROUND_LEVEL, vy: 0, onGround: true },
     facingRight: false,
@@ -114,6 +118,33 @@ const UFOGame: React.FC<GameProps> = ({ onClose }) => {
   const handleJump = useCallback(() => {
     const d = S.current.dog;
     if (d.onGround) { d.vy = JUMP_POWER; d.onGround = false; }
+  }, []);
+
+  const handleJoyDown = useCallback((e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    joyStart.current = e.clientX;
+    if (!isPlaying || gameOver) handleAction();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying, gameOver]);
+
+  const handleJoyMove = useCallback((e: React.PointerEvent) => {
+    if (joyStart.current === null) return;
+    const dx = e.clientX - joyStart.current;
+    const MAX = 30;
+    const clamped = Math.max(-MAX, Math.min(MAX, dx));
+    setJoyKnob({ x: clamped });
+    const DEAD = 8;
+    leftHeld.current  = clamped < -DEAD;
+    rightHeld.current = clamped >  DEAD;
+    if (leftHeld.current  && !rightHeld.current) S.current.facingRight = false;
+    if (rightHeld.current && !leftHeld.current)  S.current.facingRight = true;
+  }, []);
+
+  const handleJoyUp = useCallback(() => {
+    joyStart.current  = null;
+    setJoyKnob({ x: 0 });
+    leftHeld.current  = false;
+    rightHeld.current = false;
   }, []);
 
   const handleAction = useCallback(() => {
@@ -496,23 +527,40 @@ const UFOGame: React.FC<GameProps> = ({ onClose }) => {
         <div className="rounded-xl overflow-hidden border border-[#3D2860]">
           <canvas ref={canvasRef} className="w-full h-auto block cursor-pointer" onClick={handleAction} />
         </div>
-        <div className="md:hidden flex gap-2 mt-4">
-          <button
-            onPointerDown={() => { leftHeld.current=true;  if (!isPlaying||gameOver) handleAction(); }}
-            onPointerUp={()    => { leftHeld.current=false; }}
-            onPointerLeave={() => { leftHeld.current=false; }}
-            className="flex-1 py-4 bg-[#2D1B4E] hover:bg-[#3D2860] active:bg-[#4D3870] text-[#9D8AB5] rounded-xl font-bold text-2xl transition-all active:scale-95 select-none"
-          >◀</button>
-          <button
-            onPointerDown={() => { if (!isPlaying||gameOver) handleAction(); else handleJump(); }}
-            className="flex-1 py-4 bg-[#3D1B6E] hover:bg-[#4D2B7E] active:bg-[#5D3B8E] text-[#D4A8FF] rounded-xl font-bold text-xl transition-all active:scale-95 select-none"
-          >↑ 跳</button>
-          <button
-            onPointerDown={() => { rightHeld.current=true; if (!isPlaying||gameOver) handleAction(); }}
-            onPointerUp={()    => { rightHeld.current=false; }}
-            onPointerLeave={() => { rightHeld.current=false; }}
-            className="flex-1 py-4 bg-[#2D1B4E] hover:bg-[#3D2860] active:bg-[#4D3870] text-[#9D8AB5] rounded-xl font-bold text-2xl transition-all active:scale-95 select-none"
-          >▶</button>
+        {/* Mobile controls — joystick left, jump right */}
+        <div
+          className="md:hidden flex items-center justify-between px-4 mt-4 select-none"
+          style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+        >
+          {/* Joystick */}
+          <div
+            className="relative w-24 h-24 rounded-full bg-[#2D1B4E] border-2 border-[#3D2860] touch-none flex-shrink-0 flex items-center justify-center"
+            style={{ touchAction: 'none' }}
+            onPointerDown={handleJoyDown}
+            onPointerMove={handleJoyMove}
+            onPointerUp={handleJoyUp}
+            onPointerLeave={handleJoyUp}
+            onPointerCancel={handleJoyUp}
+          >
+            {/* rail hints */}
+            <span className="absolute left-2 text-[#3D2860] text-sm pointer-events-none">◀</span>
+            <span className="absolute right-2 text-[#3D2860] text-sm pointer-events-none">▶</span>
+            {/* knob */}
+            <div
+              className="absolute w-10 h-10 rounded-full bg-[#5D3B8E] border-2 border-[#9D8AB5] pointer-events-none"
+              style={{ transform: `translate(${joyKnob.x}px, 0)` }}
+            />
+          </div>
+
+          {/* Jump */}
+          <div
+            className="w-24 h-24 rounded-full bg-[#3D1B6E] border-2 border-[#5D3B8E] touch-none flex-shrink-0 flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform cursor-pointer"
+            style={{ touchAction: 'none' }}
+            onPointerDown={() => { if (!isPlaying || gameOver) handleAction(); else handleJump(); }}
+          >
+            <span className="text-2xl pointer-events-none">↑</span>
+            <span className="text-xs text-[#D4A8FF] pointer-events-none">跳</span>
+          </div>
         </div>
         <div className="mt-3 text-center">
           <p className="hidden md:block text-xs text-[#5D4A6E]">

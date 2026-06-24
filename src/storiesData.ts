@@ -15,6 +15,17 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
+    "id": "34kjefbv7",
+    "title": "任随你便！ À votre guise！",
+    "tags": "lcb67",
+    "summary": "鸿璐的脑子真的被他用不知道什么科技弄坏了，希斯克利夫无比悲戚地确认了这个事实。",
+    "version": "none",
+    "language": "CN",
+    "fileName": "任随你便.md",
+    "wordCount": 11286,
+    "order": 7
+  },
+  {
     "id": "xjpd8c0n0",
     "title": "破溃点",
     "tags": "lcb67",
@@ -24,6 +35,17 @@ export const storiesData: StoryData[] = [
     "fileName": "破溃点.md",
     "wordCount": 12496,
     "order": 6
+  },
+  {
+    "id": "6qoj0wrqx",
+    "title": "Season 08 Episode 4",
+    "tags": "蜘蛛巢67, 连载中, 全员向, 现代au",
+    "summary": "没有地方是可以找到幸福的。",
+    "version": "none",
+    "language": "CN",
+    "fileName": "S08E4.md",
+    "wordCount": 6001,
+    "order": 8
   },
   {
     "id": "3wftatbuy",
