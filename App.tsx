@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import Game from './components/dino/Game';
 import Simulation from './components/RCop/Simulation';
+import UFOGame from './components/ufo/UFOGame';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
@@ -82,6 +83,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
   const [showGame, setShowGame] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
+  const [showUFOGame, setShowUFOGame] = useState(false);
   const [showRTokenTooltip, setShowRTokenTooltip] = useState(false);
 
   // 初始化：设置第一个故事为活动故事
@@ -176,47 +178,57 @@ const App: React.FC = () => {
           <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={18} />
         </button>
 
-        <div className="relative flex justify-center">
-          {showRTokenTooltip && (
-            <span
-              id="r-token-tooltip"
-              role="tooltip"
-              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-xs text-white bg-[#3D3344] rounded-lg shadow-lg whitespace-nowrap z-50"
+        <div className="flex items-center gap-5 justify-center">
+          <div className="relative">
+            {showRTokenTooltip && (
+              <span
+                id="r-token-tooltip"
+                role="tooltip"
+                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-xs text-white bg-[#3D3344] rounded-lg shadow-lg whitespace-nowrap z-50"
+              >
+                R公司孵化场观测（施工中）
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSimulation(true)}
+              onMouseEnter={() => setShowRTokenTooltip(true)}
+              onMouseLeave={() => setShowRTokenTooltip(false)}
+              onFocus={() => setShowRTokenTooltip(true)}
+              onBlur={() => setShowRTokenTooltip(false)}
+              className="group relative block p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-110 active:scale-95 focus:outline-none rounded-full"
+              aria-label="R公司孵化场观测（施工中）"
             >
-              R公司孵化场观测（施工中）
-            </span>
-          )}
+              <span className="relative flex items-center justify-center w-10 h-10">
+                <img
+                  src="assets/icons/Rtoken1.png"
+                  alt=""
+                  className="w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
+                />
+                <img
+                  src="assets/icons/Rtoken2.png"
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                />
+              </span>
+            </button>
+          </div>
+
           <button
-            type="button"
-            onClick={() => setShowSimulation(true)}
-            onMouseEnter={() => setShowRTokenTooltip(true)}
-            onMouseLeave={() => setShowRTokenTooltip(false)}
-            onFocus={() => setShowRTokenTooltip(true)}
-            onBlur={() => setShowRTokenTooltip(false)}
-            className="group relative block p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-110 active:scale-95 focus:outline-none rounded-full"
-            aria-label="R公司孵化场观测（施工中）"
+            onClick={() => setShowUFOGame(true)}
+            className="text-2xl transition-transform hover:scale-125 active:scale-95 cursor-pointer select-none"
+            aria-label="UFO抓狗游戏"
           >
-            <span className="relative flex items-center justify-center w-10 h-10">
-              <img
-                src="assets/icons/Rtoken1.png"
-                alt=""
-                className="w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
-              />
-              <img
-                src="assets/icons/Rtoken2.png"
-                alt=""
-                className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              />
-            </span>
+            👽
+          </button>
+
+          <button
+            onClick={() => setShowGame(true)}
+            className="text-[#9DCFC7] hover:text-[#6BD4C0] transition-colors cursor-pointer text-sm font-light"
+          >
+            碰到就要结婚喔～
           </button>
         </div>
-
-        <button
-          onClick={() => setShowGame(true)}
-          className="block mx-auto text-[#9DCFC7] hover:text-[#6BD4C0] transition-colors cursor-pointer text-sm font-light"
-        >
-          碰到就要结婚喔～
-        </button>
       </div>
     </div>
   );
@@ -443,6 +455,7 @@ const App: React.FC = () => {
       {currentView === AppState.READER && renderReader()}
       {showGame && <Game onClose={() => setShowGame(false)} />}
       {showSimulation && <Simulation onClose={() => setShowSimulation(false)} />}
+      {showUFOGame && <UFOGame onClose={() => setShowUFOGame(false)} />}
     </Layout>
   );
 };
