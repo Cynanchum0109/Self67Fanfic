@@ -73,3 +73,5 @@ One hand suddenly seized Hong Lu's wrist, stopping his continued probing. Having
 "Don't flatter yourself." Heathcliff shoved Hong Lu away roughly, though the motion held no real anger. He stood up, pulling Hong Lu from the floor as well. Milky fluid trickled down from his thighs. Heathcliff staggered, a heavy gasp escaping his nose that he couldn't suppress, and grabbed Hong Lu's arm to barely steady himself. Hong Lu supported his elbow, his gaze following the trail of moisture pooling at the back of his knee, then running down his calf...
 
 "Stop looking, get the hell out!"
+
+https://raw.githubusercontent.com/Cynanchum0109/texture/main/32D18D5C%405F47A77F.3C1C076A00000000.jpg（from 要塞）

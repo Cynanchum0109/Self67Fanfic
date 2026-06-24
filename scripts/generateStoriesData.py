@@ -46,8 +46,30 @@ def _infer_language(file_name: str, content: str = "") -> str:
   return "CN" if cn_chars > en_chars else "EN"
 
 
+# 图片行正则：行内容仅为图片 URL（后可跟全角括号脚注）
+_IMAGE_LINE_RE = re.compile(
+  r'^\s*https?://\S+\.(?:jpg|jpeg|png|gif|webp|svg)(?:[^\n]*)\s*$',
+  re.IGNORECASE,
+)
+# GitHub blob URL 转 raw URL
+_GITHUB_BLOB_RE = re.compile(
+  r'https://github\.com/([^/\s（]+)/([^/\s（]+)/blob/([^\s（]+)',
+)
+
+
+def _convert_image_links(text: str) -> tuple[str, bool]:
+  """把 github.com/.../blob/... 图片链接原地转为 raw.githubusercontent.com 链接。"""
+  def _to_raw(m: re.Match) -> str:
+    user, repo, rest = m.group(1), m.group(2), m.group(3)
+    return f'https://raw.githubusercontent.com/{user}/{repo}/{rest}'
+  new = _GITHUB_BLOB_RE.sub(_to_raw, text)
+  return new, new != text
+
+
 def _count_word(content: str, language: str) -> int:
-  c = content.strip()
+  # 图片行不计入字数
+  lines = [l for l in content.split('\n') if not _IMAGE_LINE_RE.match(l)]
+  c = '\n'.join(lines).strip()
   if language == "CN":
     return len(c)
   # EN：按空白切分
@@ -158,6 +180,15 @@ def main() -> None:
     raise SystemExit(f"找不到目录: {TEXT_DIR}")
 
   files = sorted([p for p in TEXT_DIR.iterdir() if p.is_file() and p.suffix.lower() == ".md"])
+
+  # 原地把 GitHub blob URL 转成 raw URL
+  for p in files:
+    original = p.read_text("utf-8")
+    converted, changed = _convert_image_links(original)
+    if changed:
+      p.write_text(converted, "utf-8")
+      print(f"  🖼  转换图片链接: {p.name}")
+
   existing = load_existing_data()
 
   # 计算现有 order 的最大值（按语言分开）
