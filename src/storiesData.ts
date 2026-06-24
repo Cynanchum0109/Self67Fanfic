@@ -55,7 +55,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "黄金台上.md",
-    "wordCount": 10000,
+    "wordCount": 10001,
     "order": 5
   },
   {
@@ -66,7 +66,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "爱莫若食.md",
-    "wordCount": 19082,
+    "wordCount": 19084,
     "order": 4
   },
   {

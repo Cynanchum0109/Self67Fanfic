@@ -160,7 +160,7 @@ const App: React.FC = () => {
   const renderHome = () => (
     <div className="text-center space-y-10 animate-in zoom-in duration-1000">
       <p className="text-[11px] font-light text-gray-400/90 tracking-wide max-w-lg mx-auto leading-relaxed px-2">
-        最新更新：6/24/2026，任随你便！S08E4前2章，外星人抓狗小游戏
+        最新更新：6/24/2026，任随你便！S08E4前2章，外星人抓狗小游戏，更新大家赠我的插图
       </p>
       <div className="space-y-3">
         <p className="text-[1.4rem] text-gray-400 font-light italic max-w-md mx-auto leading-[1.8] serif-text tracking-[0.04em]">
@@ -337,7 +337,7 @@ const App: React.FC = () => {
 
   const renderReader = () => (
     <div className="flex gap-12 animate-in slide-in-from-right duration-500">
-      <div className="flex-1 max-w-3xl">
+      <div className="flex-1 max-w-3xl min-w-0">
         {activeStory ? (
           <div className="space-y-10">
             <header className="pb-8 border-b border-[#EAE4F0]">
@@ -357,7 +357,7 @@ const App: React.FC = () => {
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4 mb-3">
                 <h1 className="text-3xl md:text-4xl font-bold text-[#7B5B89] min-w-0 break-words tracking-tight leading-tight">{activeStory.title}</h1>
                 {parseTags(activeStory.tags).length > 0 && (
-                  <div className="flex flex-wrap gap-2 min-w-0 max-w-full md:flex-shrink-0 mt-1">
+                  <div className="flex flex-wrap gap-2 w-full min-w-0 md:w-auto md:flex-shrink-0 mt-1">
                     {parseTags(activeStory.tags).map((tag) => (
                       <span
                         key={tag}

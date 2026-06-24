@@ -87,3 +87,7 @@ Hong Lu let out a nasal laugh from across the phone, sticky like nectar. "You wo
 
 
 The room fell into suffocating silence again. The sheets were wet. Heathcliff waited until the fatigue and sleepiness rising from his muscles gradually buried him like sand (perhaps he really did fall asleep for a while) before coming to his senses, turning off the toy, and pulling it out. The dim light of dawn gradually filtered through the curtain gaps. Sour longing gradually seeped out from the depths of his heart again, and Heathcliff rolled over to Hong Lu's side of the bed, burying his still slightly feverish cheek into his pillow, quickly falling into warm, dreamless sleep.
+
+https://raw.githubusercontent.com/Cynanchum0109/texture/main/mmexport1779119294753.jpg（from 涟子）
+
+https://raw.githubusercontent.com/Cynanchum0109/texture/main/mmexport1782196425081.jpg（from 留留）
