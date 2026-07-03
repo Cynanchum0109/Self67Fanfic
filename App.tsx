@@ -103,6 +103,12 @@ const App: React.FC = () => {
 
   const [route, setRoute] = useState<Route>(parseHash);
   const [showRTokenTooltip, setShowRTokenTooltip] = useState(false);
+  // 站点语言（影响小游戏文案），持久化到 localStorage
+  const [lang, setLang] = useState<'zh' | 'en'>(() => (localStorage.getItem('site-lang') === 'en' ? 'en' : 'zh'));
+  const switchLang = (l: 'zh' | 'en') => {
+    setLang(l);
+    localStorage.setItem('site-lang', l);
+  };
   // 记住最后阅读的文章，供侧栏 Reading 按钮返回
   const lastStoryIdRef = React.useRef<string | null>(null);
 
@@ -204,6 +210,23 @@ const App: React.FC = () => {
       <div className="pointer-events-none absolute -top-40 -left-32 w-96 h-96 rounded-full bg-[#A99BC1]/15 blur-3xl" aria-hidden />
       <div className="pointer-events-none absolute -bottom-44 -right-28 w-[26rem] h-[26rem] rounded-full bg-[#6FCBB8]/15 blur-3xl" aria-hidden />
 
+      {/* 语言切换：中文薄荷绿 / English 紫（右上角） */}
+      <div className="fixed top-5 right-6 z-40 flex items-center gap-2.5 text-sm serif-text select-none">
+        <button
+          onClick={() => switchLang('zh')}
+          className={`transition-all text-[#4FAE9C] ${lang === 'zh' ? 'font-bold underline underline-offset-4 decoration-[#6FCBB8]' : 'opacity-50 hover:opacity-80'}`}
+        >
+          中文
+        </button>
+        <span className="text-gray-300">·</span>
+        <button
+          onClick={() => switchLang('en')}
+          className={`transition-all text-[#7A688F] ${lang === 'en' ? 'font-bold underline underline-offset-4 decoration-[#A99BC1]' : 'opacity-50 hover:opacity-80'}`}
+        >
+          English
+        </button>
+      </div>
+
       {/* 站名主视觉 */}
       <header className="relative space-y-4">
         <img
@@ -277,7 +300,7 @@ const App: React.FC = () => {
           <button
             onClick={() => openGame('ufo')}
             className="text-2xl transition-transform hover:scale-125 active:scale-95 cursor-pointer select-none"
-            aria-label="UFO抓狗游戏"
+            aria-label={lang === 'zh' ? 'UFO抓狗游戏' : 'UFO dog-catching game'}
           >
             👽
           </button>
@@ -286,7 +309,7 @@ const App: React.FC = () => {
             onClick={() => openGame('dino')}
             className="text-[#9DCFC7] hover:text-[#6FCBB8] transition-colors cursor-pointer text-sm font-light"
           >
-            碰到就要结婚喔～
+            {lang === 'zh' ? '碰到就要结婚喔～' : 'Touch and you must marry~'}
           </button>
         </div>
 
@@ -518,9 +541,9 @@ const App: React.FC = () => {
       {currentView === AppState.HOME && renderHome()}
       {currentView === AppState.TOC && renderTOC()}
       {currentView === AppState.READER && renderReader()}
-      {route.game === 'dino' && <Game onClose={closeGame} />}
-      {route.game === 'rcop' && <Simulation onClose={closeGame} />}
-      {route.game === 'ufo' && <UFOGame onClose={closeGame} />}
+      {route.game === 'dino' && <Game onClose={closeGame} lang={lang} />}
+      {route.game === 'rcop' && <Simulation onClose={closeGame} lang={lang} />}
+      {route.game === 'ufo' && <UFOGame onClose={closeGame} lang={lang} />}
     </Layout>
   );
 };

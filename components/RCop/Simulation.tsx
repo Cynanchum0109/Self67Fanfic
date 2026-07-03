@@ -1,13 +1,104 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { boostSpeeches } from './speech/boost';
+import { boostSpeeches, boostSpeechesEn } from './speech/boost';
 import { crossKillSpeeches } from './speech/crossKill';
 import { sameTeamKillSpeeches } from './speech/sameTeamKill';
 import { idleSpeeches } from './speech/idle';
 
 interface SimulationProps {
   onClose: () => void;
+  lang?: 'zh' | 'en';
 }
+
+// 界面文案（英文为草译，待审校 → translations-review.md）
+const UI_TEXT = {
+  zh: {
+    title: 'R公司孵化场观测',
+    start: '开始观测',
+    reclone: '重新克隆',
+    pause: '暂停',
+    resume: '继续',
+    hint: '点击场地投放药物',
+    statReindeer: 'Reindeer驯鹿',
+    statRabbit: 'Rabbit兔子',
+    statPower: '战力',
+  },
+  en: {
+    title: 'R Corp Hatchery Observation',
+    start: 'Begin Observation',
+    reclone: 'Re-clone',
+    pause: 'Pause',
+    resume: 'Resume',
+    hint: 'Click the field to drop drugs',
+    statReindeer: 'Reindeer',
+    statRabbit: 'Rabbit',
+    statPower: 'Power',
+  },
+};
+
+// 结局文案（英文为草译，待审校）
+const ENDING_TEXTS: Record<string, { zh: { pre: string; title: string }; en: { pre: string; title: string } }> = {
+  escape: {
+    zh: {
+      pre: '“……我们开了一间小事务所。他还会头疼，我的手也时不时颤抖。我们仍从噩梦中惊醒，然后共享一个夜晚。生活就是这样开始的。”',
+      title: '逃 脱',
+    },
+    en: {
+      pre: '“…We opened a small office. He still gets headaches; my hands still tremble now and then. We still wake from nightmares — and then we share the night. That is how life begins.”',
+      title: 'ESCAPE',
+    },
+  },
+  survive: {
+    zh: {
+      pre: '“两人同行总会好些。\n  如果我们无法前进，\n  就让我们死在途中。\n  让我们死在一起。”',
+      title: '存 活',
+    },
+    en: {
+      pre: '“It is always better, two together.\n  If we cannot go on,\n  let us die on the way.\n  Let us die together.”',
+      title: 'SURVIVE',
+    },
+  },
+  rabbit_kills_reindeer: {
+    zh: {
+      pre: '“你可要痛快咬住我的脖子。\n 红血滴落。\n草脏了，天近了。两颗眼珠上映现出彩虹。\n我淡笑着，死了。\n我一直等候着呢，这一刻。”',
+      title: '兔子 击杀 驯鹿',
+    },
+    en: {
+      pre: '“Bite deep into my neck, and make it clean.\n Red blood drips down.\nThe grass is stained; the sky draws near. Rainbows shimmer in two eyes.\nSmiling faintly, I died.\nI have been waiting for it — this very moment.”',
+      title: 'Rabbit Slays Reindeer',
+    },
+  },
+  reindeer_kills_rabbit: {
+    zh: {
+      pre: '“哈，我输了，你征服了我。我就把自己给你。\n摄食我吧，我们当合为一体。\n你要问我："这是最后的挣扎？假意屈服的计谋？"\n我回答："吃吧，你早已涎水直流了。"”',
+      title: '驯鹿 击杀 兔子',
+    },
+    en: {
+      pre: '“Ha — I lost; you have conquered me. Then I give myself to you.\nDevour me, and let us become one flesh.\nYou will ask: "A final struggle? A ruse of feigned surrender?"\nI answer: "Eat. Your mouth has long been watering."”',
+      title: 'Reindeer Slays Rabbit',
+    },
+  },
+  rabbit_survives: {
+    zh: {
+      pre: '“我们既不想预见结局，\n  又不能一起生存，——\n  哪怕是无休无止的爱，\n  哪怕是报以整个身心的恨。”',
+      title: '兔子 存活',
+    },
+    en: {
+      pre: '“We neither wish to foresee the ending,\n  nor can we live as one —\n  be it a love that knows no end,\n  be it a hatred of the whole body and soul.”',
+      title: 'Rabbit Survives',
+    },
+  },
+  reindeer_survives: {
+    zh: {
+      pre: '“世间仍存在的幸福——\n    被所爱杀死。\n  谁怀着一个疲惫的灵魂，\n  闪烁着半疯半醒的幻想？——\n    你，还是我？”',
+      title: '驯鹿 存活',
+    },
+    en: {
+      pre: '“There is still one happiness left in this world —\n    to be killed by the one you love.\n  Who bears a weary soul,\n  flickering with visions half-mad, half-waking? —\n    You, or I?”',
+      title: 'Reindeer Survives',
+    },
+  },
+};
 
 // 结局展示元数据：标题颜色、覆盖层底色、是否带血色渲染
 const ENDING_META: Record<string, { color: string; backdrop: string; blood?: boolean }> = {
@@ -106,7 +197,8 @@ interface Bubble {
   speakerTeam: 0 | 1; // 说话者队伍，用于确定颜色
 }
 
-const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
+const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
+  const T = UI_TEXT[lang];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -115,12 +207,10 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const speedRef = useRef(1);
   const [gameEnded, setGameEnded] = useState(false);
   const [ending, setEnding] = useState<string | null>(null);
-  const [endingText, setEndingText] = useState<string>('');
-  const [endingPreText, setEndingPreText] = useState<string>('');
   const finalBattleRef = useRef<{ a0: Agent | null; a1: Agent | null; started: boolean }>({ a0: null, a1: null, started: false });
   const gameEndedRef = useRef(false);
   // 碰撞后延迟结算，给观众留出反应时间
-  const clashRef = useRef<{ at: number; opts: { ending: string; preText: string; text: string } } | null>(null);
+  const clashRef = useRef<{ at: number; ending: string } | null>(null);
   const CLASH_DELAY = 1200; // 碰撞特效停留时间（毫秒）
 
   const agentsRef = useRef<Agent[]>([]);
@@ -186,17 +276,11 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     IDLE: 3000,
   };
 
-  // 统一的结束函数（防止覆盖）
-  const endGame = (opts: {
-    ending: string;
-    preText: string;
-    text: string;
-  }) => {
+  // 统一的结束函数（防止覆盖）；文案由 ENDING_TEXTS 按语言渲染
+  const endGame = (endingKey: string) => {
     if (gameEndedRef.current) return;
     gameEndedRef.current = true;
-    setEnding(opts.ending);
-    setEndingPreText(opts.preText);
-    setEndingText(opts.text);
+    setEnding(endingKey);
     setGameEnded(true);
     isRunningRef.current = false;
     setIsRunning(false);
@@ -206,7 +290,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   // 台词选择函数
   const getRandomSpeech = (type: SpeechEventType, team: 0 | 1): string | null => {
     const speeches = {
-      BOOST: boostSpeeches,
+      BOOST: lang === 'en' ? boostSpeechesEn : boostSpeeches,
       CROSS_KILL: crossKillSpeeches,
       SAME_TEAM_KILL: sameTeamKillSpeeches,
       IDLE: idleSpeeches,
@@ -959,14 +1043,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       if (d <= FINAL_BOOST_DIFF) {
         pinkMistEffectsRef.current.push({ x: midX, y: midY, time: now, radius: 0 });
         heartEffectsRef.current.push({ x: midX, y: midY, time: now, scale: 0 });
-        clashRef.current = {
-          at: now,
-          opts: {
-            ending: 'escape',
-            preText: '“……我们开了一间小事务所。他还会头疼，我的手也时不时颤抖。我们仍从噩梦中惊醒，然后共享一个夜晚。生活就是这样开始的。”',
-            text: '逃 脱',
-          },
-        };
+        clashRef.current = { at: now, ending: 'escape' };
         return;
       }
 
@@ -974,14 +1051,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       if (d < FINAL_MID_DIFF) {
         pinkMistEffectsRef.current.push({ x: midX, y: midY, time: now, radius: 0 });
         heartEffectsRef.current.push({ x: midX, y: midY, time: now, scale: 0 });
-        clashRef.current = {
-          at: now,
-          opts: {
-            ending: 'survive',
-            preText: '“两人同行总会好些。\n  如果我们无法前进，\n  就让我们死在途中。\n  让我们死在一起。”',
-            text: '存 活',
-          },
-        };
+        clashRef.current = { at: now, ending: 'survive' };
         return;
       }
 
@@ -991,28 +1061,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
         spawnBloodSplash(a0.x, a0.y, now);
         agentsRef.current = agentsRef.current.filter(a => a.id !== a0.id);
 
-        clashRef.current = {
-          at: now,
-          opts: {
-            ending: 'rabbit_kills_reindeer',
-            preText: '“你可要痛快咬住我的脖子。\n 红血滴落。\n草脏了，天近了。两颗眼珠上映现出彩虹。\n我淡笑着，死了。\n我一直等候着呢，这一刻。”',
-            text: '兔子 击杀 驯鹿',
-          },
-        };
+        clashRef.current = { at: now, ending: 'rabbit_kills_reindeer' };
         return;
       } else {
         // 驯鹿更强 → 鹿杀兔（终局击杀结局）
         spawnBloodSplash(a1.x, a1.y, now);
         agentsRef.current = agentsRef.current.filter(a => a.id !== a1.id);
 
-        clashRef.current = {
-          at: now,
-          opts: {
-            ending: 'reindeer_kills_rabbit',
-            preText: '“哈，我输了，你征服了我。我就把自己给你。\n摄食我吧，我们当合为一体。\n你要问我："这是最后的挣扎？假意屈服的计谋？"\n我回答："吃吧，你早已涎水直流了。"”',
-            text: '驯鹿 击杀 兔子',
-          },
-        };
+        clashRef.current = { at: now, ending: 'reindeer_kills_rabbit' };
         return;
       }
     }
@@ -1045,9 +1101,9 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     // 碰撞已发生：等特效播完再正式结算
     if (clashRef.current) {
       if (Date.now() - clashRef.current.at >= CLASH_DELAY) {
-        const { opts } = clashRef.current;
+        const { ending: pendingEnding } = clashRef.current;
         clashRef.current = null;
-        endGame(opts);
+        endGame(pendingEnding);
       }
       return;
     }
@@ -1081,28 +1137,14 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     if (team0.length === 0 && team1.length > 0) {
       const now = Date.now();
       team1.forEach(agent => spawnBloodSplash(agent.x, agent.y, now));
-      clashRef.current = {
-        at: now,
-        opts: {
-          ending: 'rabbit_survives',
-          preText: '“我们既不想预见结局，\n  又不能一起生存，——\n  哪怕是无休无止的爱，\n  哪怕是报以整个身心的恨。”',
-          text: '兔子 存活',
-        },
-      };
+      clashRef.current = { at: now, ending: 'rabbit_survives' };
       return;
     }
 
     if (team1.length === 0 && team0.length > 0) {
       const now = Date.now();
       team0.forEach(agent => spawnBloodSplash(agent.x, agent.y, now));
-      clashRef.current = {
-        at: now,
-        opts: {
-          ending: 'reindeer_survives',
-          preText: '“世间仍存在的幸福——\n    被所爱杀死。\n  谁怀着一个疲惫的灵魂，\n  闪烁着半疯半醒的幻想？——\n    你，还是我？”',
-          text: '驯鹿 存活',
-        },
-      };
+      clashRef.current = { at: now, ending: 'reindeer_survives' };
       return;
     }
 
@@ -1350,9 +1392,9 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     
     ctx.font = '16px Inter';
     ctx.fillStyle = '#2FB39A';
-    ctx.fillText(`Reindeer驯鹿: ${team0Count} (战力: ${avgPower0.toFixed(1)})`, 20, 30);
+    ctx.fillText(`${T.statReindeer}: ${team0Count} (${T.statPower}: ${avgPower0.toFixed(1)})`, 20, 30);
     ctx.fillStyle = '#7C55B0';
-    ctx.fillText(`Rabbit兔子: ${team1Count} (战力: ${avgPower1.toFixed(1)})`, 20, 50);
+    ctx.fillText(`${T.statRabbit}: ${team1Count} (${T.statPower}: ${avgPower1.toFixed(1)})`, 20, 50);
     
   };
 
@@ -1396,8 +1438,6 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     setIsPaused(false);
     setGameEnded(false);
     setEnding(null);
-    setEndingText('');
-    setEndingPreText('');
     gameEndedRef.current = false;
     finalBattleRef.current = { a0: null, a1: null, started: false };
     clashRef.current = null;
@@ -1418,8 +1458,6 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     setIsPaused(false);
     setGameEnded(false);
     setEnding(null);
-    setEndingText('');
-    setEndingPreText('');
     gameEndedRef.current = false;
     finalBattleRef.current = { a0: null, a1: null, started: false };
     clashRef.current = null;
@@ -1476,7 +1514,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl md:text-2xl font-bold text-[#C96A24] serif-text">R公司孵化场观测</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#C96A24] serif-text">{T.title}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-[#FFF6EC] rounded-lg transition-colors"
@@ -1517,15 +1555,17 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
           {/* 结局覆盖层 */}
           {gameEnded && ending && (() => {
             const meta = ENDING_META[ending] ?? DEFAULT_ENDING_META;
+            const texts = ENDING_TEXTS[ending]?.[lang] ?? ENDING_TEXTS[ending]?.zh;
+            if (!texts) return null;
             return (
               <div
                 className="absolute inset-4 flex items-center justify-center rounded overflow-hidden"
                 style={{ background: meta.backdrop, animation: 'rcopEndingFade 1.2s ease-out both' }}
               >
                 <div className="max-w-2xl px-8 text-center space-y-7">
-                  {endingPreText && (
+                  {texts.pre && (
                     <p className="serif-text text-gray-700 text-sm md:text-lg leading-[2.1] whitespace-pre-line tracking-[0.05em]">
-                      {endingPreText}
+                      {texts.pre}
                     </p>
                   )}
                   <div className="mx-auto w-12 h-px" style={{ backgroundColor: meta.color }} />
@@ -1533,10 +1573,16 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                     className="serif-text font-bold text-2xl md:text-4xl tracking-[0.35em] indent-[0.35em]"
                     style={{ color: meta.color, textShadow: meta.blood ? '0 1px 12px rgba(178,34,34,0.25)' : `0 1px 12px ${meta.color}33` }}
                   >
-                    {endingText.split(' ').map((word, i) => (
+                    {texts.title.split(' ').map((word, i) => (
                       <span
                         key={i}
-                        style={word === '兔子' ? { color: '#7C55B0' } : word === '驯鹿' ? { color: '#2FB39A' } : undefined}
+                        style={
+                          word === '兔子' || word === 'Rabbit'
+                            ? { color: '#7C55B0' }
+                            : word === '驯鹿' || word === 'Reindeer'
+                            ? { color: '#2FB39A' }
+                            : undefined
+                        }
                       >
                         {i > 0 ? ' ' : ''}{word}
                       </span>
@@ -1554,7 +1600,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
               onClick={startSimulation}
               className="px-6 py-2 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-lg font-bold transition-colors"
             >
-              开始观测
+              {T.start}
             </button>
           )}
           {isRunning && !gameEnded && (
@@ -1566,7 +1612,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
                 }}
                 className="px-6 py-2 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-lg font-bold transition-colors"
               >
-                {isPaused ? '继续' : '暂停'}
+                {isPaused ? T.resume : T.pause}
               </button>
             </>
           )}
@@ -1575,13 +1621,13 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
               onClick={resetSimulation}
               className="px-6 py-2 bg-[#E8833A] hover:bg-[#C96A24] text-white rounded-lg font-bold transition-colors"
             >
-              重新克隆
+              {T.reclone}
             </button>
           )}
         </div>
 
         <div className="mt-4 text-sm text-gray-600 text-center">
-          <p>点击场地投放药物</p>
+          <p>{T.hint}</p>
         </div>
       </div>
     </div>

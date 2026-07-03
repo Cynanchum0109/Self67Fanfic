@@ -27,3 +27,32 @@ export const boostSpeeches = {
   ],
 };
 
+// 英文台词（草译，待审校 → 见 translations-review.md）
+export const boostSpeechesEn = {
+  team0: [
+    "So worm… so good, Mr. Heathcliff…",
+    "Mm… Mr. Heathcliff, stop moving, there's really nothing left…",
+    "Mr. Heathcliff, all filthy like this — how adorable.",
+    "Fuhu, only at times like this does Heathcliff get a little obedient.",
+    "But it feels so good inside… may I come in?",
+    "Maybe we really could…",
+    "Relax, Heathcliff.",
+    "I told you to shut up!",
+    "Shh, don't move — someone's watching."
+  ],
+  team1: [
+    "Nn💗— damn it, not here! Are you out of your fucking mind?",
+    "I'm not done yet! Mmh— get… get up! (licks)",
+    "Not moving anymore… dead? Heh, is that all you've got?",
+    "Ngh! Stop— stop it! I'll kill you, I'll kill you…",
+    "Damn it, you bastard reindeer! What the fuck is this thing—!",
+    "What are you even saying right now? Are we fucking doing this or not?",
+    "Ah— it's too much, no, not with that thing!",
+    "Ha, for all we know we're both dead the next second.",
+    "Don't say that! Once we're out, we'll have all the fun we fucking want!",
+    "Hurry up! Can you do it or not— nn💗💗",
+    "Then quit it— stop already, mmh💗💗",
+    "Are you a fucking dog? Don't bite there— ah💗💗"
+  ],
+};
+

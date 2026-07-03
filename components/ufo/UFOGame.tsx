@@ -8,7 +8,7 @@ import run1Png from '../dino/Assets/06_walk1.png';
 import run2Png from '../dino/Assets/06_walk2.png';
 import run3Png from '../dino/Assets/06_walk3.png';
 
-interface GameProps { onClose: () => void; }
+interface GameProps { onClose: () => void; lang?: 'zh' | 'en'; }
 
 const CW = 400, CH = 300, GY = 260;
 const D1W = 56, D1H = 44;
@@ -30,7 +30,11 @@ const overlaps = (ax:number,ay:number,aw:number,ah:number,
                   bx:number,by:number,bw:number,bh:number) =>
   ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
 
-const UFOGame: React.FC<GameProps> = ({ onClose }) => {
+const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
+  // 英文为草译，待审校 → translations-review.md
+  const T = lang === 'en'
+    ? { won: 'Caught the alien!', byHuman: 'Caught by the humans!', byAlien: 'Abducted by the alien!', retry: 'Try again', finalScore: 'Final score', title: 'My Coworker Is an Alien?!', start: 'Click / press Space to start', jump: 'Jump', move: 'Move', jumpWord: 'Jump', hintTail: "You can't be caught while jumping", hintMobile: '\u25c0\u25b6 Move \u00b7 \u2191 Jump \u00b7 Safe while jumping', close: 'Close' }
+    : { won: '抓到外星人了！', byHuman: '被人类抓走了！', byAlien: '被外星人抓走了！', retry: '再试一次', finalScore: '最终得分', title: '同事是外星人？！', start: '点击 / 按空格开始', jump: '跳', move: '移动', jumpWord: '跳', hintTail: '跳跃的时候是不会被抓到的', hintMobile: '\u25c0\u25b6移动 \u00b7 \u2191跳 \u00b7 跳跃时不会被抓', close: '关闭' };
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const [gameOver,  setGameOver]  = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -302,21 +306,21 @@ const UFOGame: React.FC<GameProps> = ({ onClose }) => {
       const wonIt = s.deathCause === 'won';
       ctx.fillStyle = wonIt ? '#6BD4C0' : '#F2B6FB';
       ctx.font='bold 20px monospace'; ctx.textAlign='center';
-      const msg = s.deathCause==='won'   ? '抓到外星人了！'
-                : s.deathCause==='human' ? '被人类抓走了！'
-                :                          '被外星人抓走了！';
+      const msg = s.deathCause==='won'   ? T.won
+                : s.deathCause==='human' ? T.byHuman
+                :                          T.byAlien;
       ctx.fillText(msg, CW/2, CH/2-22);
       ctx.fillStyle='#9D8AB5'; ctx.font='14px monospace';
-      ctx.fillText('再试一次', CW/2, CH/2+10);
+      ctx.fillText(T.retry, CW/2, CH/2+10);
       ctx.fillStyle='#6BD4C0'; ctx.font='12px monospace';
-      ctx.fillText(`最终得分: ${scoreRef.current}`, CW/2, CH/2+34);
+      ctx.fillText(`${T.finalScore}: ${scoreRef.current}`, CW/2, CH/2+34);
       ctx.textAlign='left';
     } else if (!isPlaying) {
       ctx.fillStyle='rgba(26,10,46,0.55)'; ctx.fillRect(0,0,CW,CH);
       ctx.fillStyle='#C8A8FF'; ctx.font='bold 18px monospace'; ctx.textAlign='center';
-      ctx.fillText('同事是外星人？！', CW/2, CH/2-20);
+      ctx.fillText(T.title, CW/2, CH/2-20);
       ctx.fillStyle='#9D8AB5'; ctx.font='13px monospace';
-      ctx.fillText('点击 / 按空格开始', CW/2, CH/2+10);
+      ctx.fillText(T.start, CW/2, CH/2+10);
       ctx.textAlign='left';
     }
   }, [gameOver, isPlaying]);
@@ -520,7 +524,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-[#1A0A2E] border border-[#3D2860] rounded-2xl shadow-2xl p-5 max-w-lg w-full">
         <div className="flex justify-end mb-3">
-          <button onClick={onClose} className="p-2 hover:bg-[#3D2860] rounded-lg transition-colors" aria-label="关闭">
+          <button onClick={onClose} className="p-2 hover:bg-[#3D2860] rounded-lg transition-colors" aria-label={T.close}>
             <X size={20} className="text-[#9D8AB5]" />
           </button>
         </div>
@@ -559,19 +563,19 @@ const UFOGame: React.FC<GameProps> = ({ onClose }) => {
             onPointerDown={() => { if (!isPlaying || gameOver) handleAction(); else handleJump(); }}
           >
             <span className="text-2xl pointer-events-none">↑</span>
-            <span className="text-xs text-[#D4A8FF] pointer-events-none">跳</span>
+            <span className="text-xs text-[#D4A8FF] pointer-events-none">{T.jump}</span>
           </div>
         </div>
         <div className="mt-3 text-center">
           <p className="hidden md:block text-xs text-[#5D4A6E]">
             <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">←</kbd>{' '}
             <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">→</kbd>{' '}
-            移动 ·{' '}
+            {T.move} ·{' '}
             <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">↑</kbd>{' / '}
             <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">W</kbd>{' '}
-            跳 · 跳跃的时候是不会被抓到的
+            {T.jumpWord} · {T.hintTail}
           </p>
-          <p className="md:hidden text-xs text-[#5D4A6E]">◀▶移动 · ↑跳 · 跳跃时不会被抓</p>
+          <p className="md:hidden text-xs text-[#5D4A6E]">{T.hintMobile}</p>
         </div>
       </div>
     </div>
