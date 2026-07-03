@@ -30,7 +30,7 @@ export const boostSpeeches = {
 // 英文台词（草译，待审校 → 见 translations-review.md）
 export const boostSpeechesEn = {
   team0: [
-    "So worm… so good, Mr. Heathcliff…",
+    "So warm… so good, Mr. Heathcliff…",
     "Mm… Mr. Heathcliff, stop moving, there's really nothing left…",
     "Mr. Heathcliff, all filthy like this — how adorable.",
     "Fuhu, only at times like this does Heathcliff get a little obedient.",

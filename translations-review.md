@@ -70,7 +70,7 @@
 
 | 中文 | 英文草译 |
 |---|---|
-| 好热、好舒服，希斯克利夫先生…… | So worm… so good, Mr. Heathcliff… |
+| 好热、好舒服，希斯克利夫先生…… | So warm… so good, Mr. Heathcliff… |
 | 呜……希斯克利夫先生，别动了，真的没有了…… | Mm… Mr. Heathcliff, stop moving, there's really nothing left… |
 | 希斯克利夫先生，脏兮兮的，很可爱。 | Mr. Heathcliff, all filthy like this — how adorable. |
 | 呼呼，只有这种时候希斯克利夫才会变得听话一点。 | Fuhu, only at times like this does Heathcliff get a little obedient. |
