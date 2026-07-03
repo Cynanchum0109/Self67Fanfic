@@ -211,7 +211,7 @@ const App: React.FC = () => {
       <div className="pointer-events-none absolute -bottom-44 -right-28 w-[26rem] h-[26rem] rounded-full bg-[#6FCBB8]/15 blur-3xl" aria-hidden />
 
       {/* 语言切换：中文薄荷绿 / English 紫（右上角） */}
-      <div className="fixed top-5 right-6 z-40 flex items-center gap-2.5 text-sm serif-text select-none">
+      <div className="fixed top-4 right-4 md:top-5 md:right-6 z-40 flex items-center gap-2.5 text-sm serif-text select-none">
         <button
           onClick={() => switchLang('zh')}
           className={`transition-all text-[#4FAE9C] ${lang === 'zh' ? 'font-bold underline underline-offset-4 decoration-[#6FCBB8]' : 'opacity-50 hover:opacity-80'}`}

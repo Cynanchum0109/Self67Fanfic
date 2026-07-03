@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FAF8F1]">
+    <div className="flex min-h-screen bg-[#FAF8F1] overflow-x-clip">
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
