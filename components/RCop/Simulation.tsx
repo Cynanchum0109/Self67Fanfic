@@ -9,6 +9,42 @@ interface SimulationProps {
   onClose: () => void;
 }
 
+// 结局展示元数据：标题颜色、覆盖层底色、是否带血色渲染
+const ENDING_META: Record<string, { color: string; backdrop: string; blood?: boolean }> = {
+  escape: {
+    color: '#E8833A',
+    backdrop: 'radial-gradient(ellipse at center, rgba(255,251,246,0.96) 55%, rgba(232,131,58,0.18) 100%)',
+  },
+  survive: {
+    color: '#D9A02B',
+    backdrop: 'radial-gradient(ellipse at center, rgba(255,251,246,0.96) 55%, rgba(217,160,43,0.16) 100%)',
+  },
+  reindeer_kills_rabbit: {
+    color: '#2FA38C',
+    backdrop: 'radial-gradient(ellipse at center, rgba(253,250,250,0.95) 50%, rgba(178,34,34,0.22) 100%)',
+    blood: true,
+  },
+  rabbit_kills_reindeer: {
+    color: '#7C55B0',
+    backdrop: 'radial-gradient(ellipse at center, rgba(253,250,250,0.95) 50%, rgba(178,34,34,0.22) 100%)',
+    blood: true,
+  },
+  reindeer_survives: {
+    color: '#1F6B58',
+    backdrop: 'radial-gradient(ellipse at center, rgba(252,249,249,0.95) 45%, rgba(139,26,26,0.28) 100%)',
+    blood: true,
+  },
+  rabbit_survives: {
+    color: '#553380',
+    backdrop: 'radial-gradient(ellipse at center, rgba(252,249,249,0.95) 45%, rgba(139,26,26,0.28) 100%)',
+    blood: true,
+  },
+};
+const DEFAULT_ENDING_META: { color: string; backdrop: string; blood?: boolean } = {
+  color: '#E8833A',
+  backdrop: 'rgba(255,251,246,0.95)',
+};
+
 interface Agent {
   id: number;
   x: number;
@@ -73,12 +109,19 @@ interface Bubble {
 const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const pausedRef = useRef(false);
+  const speedRef = useRef(1);
   const [gameEnded, setGameEnded] = useState(false);
   const [ending, setEnding] = useState<string | null>(null);
   const [endingText, setEndingText] = useState<string>('');
   const [endingPreText, setEndingPreText] = useState<string>('');
   const finalBattleRef = useRef<{ a0: Agent | null; a1: Agent | null; started: boolean }>({ a0: null, a1: null, started: false });
   const gameEndedRef = useRef(false);
+  // 碰撞后延迟结算，给观众留出反应时间
+  const clashRef = useRef<{ at: number; opts: { ending: string; preText: string; text: string } } | null>(null);
+  const CLASH_DELAY = 1200; // 碰撞特效停留时间（毫秒）
 
   const agentsRef = useRef<Agent[]>([]);
   const drugPointsRef = useRef<DrugPoint[]>([]);
@@ -847,18 +890,24 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     if (timeSinceLastEncounter > NO_ENCOUNTER_TIME) {
       const shrinkAmount = (SHRINK_RATE * deltaTime) / 1000;
       const bounds = arenaBoundsRef.current;
-      
-      bounds.left += shrinkAmount;
-      bounds.right -= shrinkAmount;
-      bounds.top += shrinkAmount;
-      bounds.bottom -= shrinkAmount;
-      
-      // 确保不会缩到太小
-      if (bounds.right - bounds.left < 200 || bounds.bottom - bounds.top < 200) {
-        bounds.left = (CANVAS_WIDTH - 200) / 2;
-        bounds.right = (CANVAS_WIDTH + 200) / 2;
-        bounds.top = (CANVAS_HEIGHT - 200) / 2;
-        bounds.bottom = (CANVAS_HEIGHT + 200) / 2;
+      const MIN_SIZE = 200;
+
+      // 两轴独立收缩，到达最小尺寸即停在原位，避免跳变
+      if (bounds.right - bounds.left - shrinkAmount * 2 >= MIN_SIZE) {
+        bounds.left += shrinkAmount;
+        bounds.right -= shrinkAmount;
+      } else {
+        const centerX = (bounds.left + bounds.right) / 2;
+        bounds.left = centerX - MIN_SIZE / 2;
+        bounds.right = centerX + MIN_SIZE / 2;
+      }
+      if (bounds.bottom - bounds.top - shrinkAmount * 2 >= MIN_SIZE) {
+        bounds.top += shrinkAmount;
+        bounds.bottom -= shrinkAmount;
+      } else {
+        const centerY = (bounds.top + bounds.bottom) / 2;
+        bounds.top = centerY - MIN_SIZE / 2;
+        bounds.bottom = centerY + MIN_SIZE / 2;
       }
       
       // 将超出边界的agents移回
@@ -869,19 +918,38 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     }
   };
 
-  // 处理终局战斗（让两个agent互相靠近）
+  // 溅血特效：击杀点主血渍 + 附近一两处飞溅
+  const spawnBloodSplash = (x: number, y: number, now: number) => {
+    darkeningEffectsRef.current.push({ x, y, time: now });
+    for (let i = 0; i < 2; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 10 + Math.random() * 14;
+      darkeningEffectsRef.current.push({
+        x: x + Math.cos(angle) * dist,
+        y: y + Math.sin(angle) * dist,
+        time: now + 80 + Math.random() * 150,
+      });
+    }
+  };
+
+  // 处理终局战斗（两个agent慢速对峙靠近，碰撞后延迟结算）
   const processFinalBattle = (a0: Agent, a1: Agent) => {
-    if (gameEndedRef.current) return;
+    if (gameEndedRef.current || clashRef.current) return;
 
     const dx0 = a1.x - a0.x;
     const dy0 = a1.y - a0.y;
     const dist0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
     const collisionDistance = AGENT_SIZE * 2;
-    const maxSpeed = Math.max(REINDEER_MAX_SPEED, RABBIT_MAX_SPEED);
+    // 对峙开始时减速到60%，随着距离拉近逐渐恢复原速
+    const baseSpeed = Math.max(REINDEER_MAX_SPEED, RABBIT_MAX_SPEED);
+    const speedFactor = 0.6 + 0.4 * (1 - Math.min(dist0, 400) / 400);
+    const maxSpeed = baseSpeed * speedFactor;
     const relativeSpeed = maxSpeed * 2;
-    
-    // 碰撞：触发终局结算（四结局）
+
+    // 碰撞：记录结局，特效停留 CLASH_DELAY 后再结算（四结局）
     if (dist0 <= collisionDistance + relativeSpeed) {
+      const midX = (a0.x + a1.x) / 2;
+      const midY = (a0.y + a1.y) / 2;
       const now = Date.now();
 
       const powerDiff = (a1.power - a0.power) / Math.max(a0.power, a1.power);
@@ -889,58 +957,62 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
 
       // 1) 逃脱结局（增强范畴）
       if (d <= FINAL_BOOST_DIFF) {
-        // 你原本的"事务所/逃脱"文本放这里
-        endGame({
-          ending: 'escape',
-          preText: '“……我们开了一间小事务所。他还会头疼，我的手也时不时颤抖。我们仍从噩梦中惊醒，然后共享一个夜晚。生活就是这样开始的。”',
-          text: '逃 脱',
-        });
-
-        // 你想要保留爱心特效的话可以放这
-        const heartX = (a0.x + a1.x) / 2;
-        const heartY = (a0.y + a1.y) / 2;
-        pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
-        heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+        pinkMistEffectsRef.current.push({ x: midX, y: midY, time: now, radius: 0 });
+        heartEffectsRef.current.push({ x: midX, y: midY, time: now, scale: 0 });
+        clashRef.current = {
+          at: now,
+          opts: {
+            ending: 'escape',
+            preText: '“……我们开了一间小事务所。他还会头疼，我的手也时不时颤抖。我们仍从噩梦中惊醒，然后共享一个夜晚。生活就是这样开始的。”',
+            text: '逃 脱',
+          },
+        };
         return;
       }
 
       // 2) 中间范畴（非击杀、非逃脱）
       if (d < FINAL_MID_DIFF) {
-        endGame({
-          ending: 'survive',
-          preText: '“两人同行总会好些。\n  如果我们无法前进，\n  就让我们死在途中。\n  让我们死在一起。”',
-          text: '存 活',
-        });
-
-        const heartX = (a0.x + a1.x) / 2;
-        const heartY = (a0.y + a1.y) / 2;
-        pinkMistEffectsRef.current.push({ x: heartX, y: heartY, time: now, radius: 0 });
-        heartEffectsRef.current.push({ x: heartX, y: heartY, time: now, scale: 0 });
+        pinkMistEffectsRef.current.push({ x: midX, y: midY, time: now, radius: 0 });
+        heartEffectsRef.current.push({ x: midX, y: midY, time: now, scale: 0 });
+        clashRef.current = {
+          at: now,
+          opts: {
+            ending: 'survive',
+            preText: '“两人同行总会好些。\n  如果我们无法前进，\n  就让我们死在途中。\n  让我们死在一起。”',
+            text: '存 活',
+          },
+        };
         return;
       }
 
       // 3) 击杀范畴：谁强谁杀（兔杀鹿 / 鹿杀兔）
       if (powerDiff > 0) {
         // 兔子更强 → 兔杀鹿（终局击杀结局）
-        darkeningEffectsRef.current.push({ x: a0.x, y: a0.y, time: now });
+        spawnBloodSplash(a0.x, a0.y, now);
         agentsRef.current = agentsRef.current.filter(a => a.id !== a0.id);
 
-        endGame({
-          ending: 'rabbit_kills_reindeer',
-          preText: '“你可要痛快咬住我的脖子。\n 红血滴落。\n草脏了，天近了。两颗眼珠上映现出彩虹。\n我淡笑着，死了。\n我一直等候着呢，这一刻。”',
-          text: '兔子 击杀 驯鹿',
-        });
+        clashRef.current = {
+          at: now,
+          opts: {
+            ending: 'rabbit_kills_reindeer',
+            preText: '“你可要痛快咬住我的脖子。\n 红血滴落。\n草脏了，天近了。两颗眼珠上映现出彩虹。\n我淡笑着，死了。\n我一直等候着呢，这一刻。”',
+            text: '兔子 击杀 驯鹿',
+          },
+        };
         return;
       } else {
         // 驯鹿更强 → 鹿杀兔（终局击杀结局）
-        darkeningEffectsRef.current.push({ x: a1.x, y: a1.y, time: now });
+        spawnBloodSplash(a1.x, a1.y, now);
         agentsRef.current = agentsRef.current.filter(a => a.id !== a1.id);
 
-        endGame({
-          ending: 'reindeer_kills_rabbit',
-          preText: '“哈，我输了，你征服了我。我就把自己给你。\n摄食我吧，我们当合为一体。\n你要问我："这是最后的挣扎？假意屈服的计谋？"\n我回答："吃吧，你早已涎水直流了。"”',
-          text: '驯鹿 击杀 兔子',
-        });
+        clashRef.current = {
+          at: now,
+          opts: {
+            ending: 'reindeer_kills_rabbit',
+            preText: '“哈，我输了，你征服了我。我就把自己给你。\n摄食我吧，我们当合为一体。\n你要问我："这是最后的挣扎？假意屈服的计谋？"\n我回答："吃吧，你早已涎水直流了。"”',
+            text: '驯鹿 击杀 兔子',
+          },
+        };
         return;
       }
     }
@@ -970,6 +1042,16 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const checkEndgame = () => {
     if (gameEndedRef.current) return;
 
+    // 碰撞已发生：等特效播完再正式结算
+    if (clashRef.current) {
+      if (Date.now() - clashRef.current.at >= CLASH_DELAY) {
+        const { opts } = clashRef.current;
+        clashRef.current = null;
+        endGame(opts);
+      }
+      return;
+    }
+
     const team0 = agentsRef.current.filter(a => a.team === 0);
     const team1 = agentsRef.current.filter(a => a.team === 1);
     
@@ -998,23 +1080,29 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     // 2) 如果没进入终局战斗，再判定归0 → 存活结局（两个）
     if (team0.length === 0 && team1.length > 0) {
       const now = Date.now();
-      team1.forEach(agent => darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now }));
-      endGame({
-        ending: 'rabbit_survives',
-        preText: '“我们既不想预见结局，\n  又不能一起生存，——\n  哪怕是无休无止的爱，\n  哪怕是报以整个身心的恨。”',
-        text: '兔子 存活',
-      });
+      team1.forEach(agent => spawnBloodSplash(agent.x, agent.y, now));
+      clashRef.current = {
+        at: now,
+        opts: {
+          ending: 'rabbit_survives',
+          preText: '“我们既不想预见结局，\n  又不能一起生存，——\n  哪怕是无休无止的爱，\n  哪怕是报以整个身心的恨。”',
+          text: '兔子 存活',
+        },
+      };
       return;
     }
 
     if (team1.length === 0 && team0.length > 0) {
       const now = Date.now();
-      team0.forEach(agent => darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now }));
-      endGame({
-        ending: 'reindeer_survives',
-        preText: '“世间仍存在的幸福——\n    被所爱杀死。\n  谁怀着一个疲惫的灵魂，\n  闪烁着半疯半醒的幻想？——\n    你，还是我？”',
-        text: '驯鹿 存活',
-      });
+      team0.forEach(agent => spawnBloodSplash(agent.x, agent.y, now));
+      clashRef.current = {
+        at: now,
+        opts: {
+          ending: 'reindeer_survives',
+          preText: '“世间仍存在的幸福——\n    被所爱杀死。\n  谁怀着一个疲惫的灵魂，\n  闪烁着半疯半醒的幻想？——\n    你，还是我？”',
+          text: '驯鹿 存活',
+        },
+      };
       return;
     }
 
@@ -1033,17 +1121,18 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     const deltaTime = currentTime - lastTimeRef.current;
     lastTimeRef.current = currentTime;
     
-    // 如果游戏未结束，更新游戏逻辑
-    if (!gameEnded) {
-      // 更新agents
-      agentsRef.current.forEach(agent => {
-        updateAgentMovement(agent, deltaTime);
-      });
-      
-      // 处理交互
-      processDrugInteractions();
-      processAgentInteractions();
-      processArenaShrink(deltaTime);
+    // 如果游戏未结束且未暂停，更新游戏逻辑
+    if (!gameEnded && !pausedRef.current) {
+      // 按速度档位多次执行移动与交互
+      const steps = speedRef.current;
+      for (let s = 0; s < steps; s++) {
+        agentsRef.current.forEach(agent => {
+          updateAgentMovement(agent, deltaTime);
+        });
+        processDrugInteractions();
+        processAgentInteractions();
+      }
+      processArenaShrink(deltaTime * steps);
       checkEndgame();
       
       // 更新药物TTL
@@ -1053,7 +1142,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       });
       
       // 更新视觉效果
-      darkeningEffectsRef.current = darkeningEffectsRef.current.filter(e => now - e.time < 500);
+      darkeningEffectsRef.current = darkeningEffectsRef.current.filter(e => now - e.time < 1400);
       pinkMistEffectsRef.current = pinkMistEffectsRef.current.map(effect => {
         const age = now - effect.time;
         if (age > 2000) return null;
@@ -1095,7 +1184,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     if (!ctx) return;
     
     // 清空画布
-    ctx.fillStyle = '#F8F6FA';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     const now = Date.now();
@@ -1130,14 +1219,42 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     ctx.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
     ctx.setLineDash([]);
     
-    // 绘制击杀特效（红色）- 在agents下方
+    // 绘制击杀特效：不规则血渍，快速晕开后慢慢干涸淡出 - 在agents下方
     darkeningEffectsRef.current.forEach(effect => {
       const age = now - effect.time;
-      const alpha = 1 - (age / 500);
-      ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.6})`;
-      ctx.beginPath();
-      ctx.arc(effect.x, effect.y, 30, 0, Math.PI * 2);
-      ctx.fill();
+      if (age < 0 || age > 1400) return;
+      const t = age / 1400;
+      const alpha = (1 - t) * 0.75;
+      // 基于位置的确定性伪随机，保证血渍形状每帧稳定
+      const seed = Math.abs(Math.sin(effect.x * 12.9898 + effect.y * 78.233)) * 43758.5453;
+      const rand = (i: number) => {
+        const v = Math.sin(seed + i * 91.17) * 10000;
+        return v - Math.floor(v);
+      };
+      // 晕开：前0.25快速扩张到最大，之后保持
+      const spread = Math.min(t / 0.25, 1);
+      // 主血泊 + 周围数个小血点，整体范围与粉雾相当（~30px 半径）
+      const blobs = 5;
+      for (let i = 0; i < blobs; i++) {
+        const angle = rand(i) * Math.PI * 2;
+        const dist = (i === 0 ? 0 : 8 + rand(i + 10) * 30) * spread;
+        const bx = effect.x + Math.cos(angle) * dist;
+        const by = effect.y + Math.sin(angle) * dist;
+        const r = (i === 0 ? 12 + rand(i + 20) * 6 : 3 + rand(i + 20) * 5) * (0.4 + 0.6 * spread);
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+        g.addColorStop(0, `rgba(150, 15, 25, ${alpha})`);
+        g.addColorStop(0.7, `rgba(130, 10, 20, ${alpha * 0.8})`);
+        g.addColorStop(1, 'rgba(130, 10, 20, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        // 主血泊压扁成椭圆更像积血
+        if (i === 0) {
+          ctx.ellipse(bx, by, r * (1.2 + rand(30) * 0.4), r * 0.8, rand(31) * Math.PI, 0, Math.PI * 2);
+        } else {
+          ctx.arc(bx, by, r, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
     });
     
     // 绘制粉色烟雾（在原地弥漫开逐渐消失）- 在agents下方
@@ -1168,27 +1285,26 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
       const scale = 0.5 + (age / 1500) * 1.0; // 从0.5放大到1.5
       
       ctx.save();
-      ctx.translate(effect.x, effect.y);
+      ctx.translate(effect.x, effect.y - (age / 1500) * 14); // 缓缓上浮
       ctx.scale(scale, scale);
-      ctx.fillStyle = `rgba(255, 105, 180, ${alpha})`;
-      ctx.strokeStyle = `rgba(255, 20, 147, ${alpha * 0.8})`;
-      ctx.lineWidth = 2;
-      
-      // 绘制爱心形状
+      ctx.fillStyle = `rgba(255, 120, 170, ${alpha * 0.9})`;
+      ctx.shadowColor = `rgba(255, 120, 170, ${alpha * 0.6})`;
+      ctx.shadowBlur = 8;
+
+      // 标准爱心形状（两个圆弧+尖底）
+      const s = 5;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(0, -5, -5, -10, -5, -5);
-      ctx.bezierCurveTo(-5, -2, -2, 0, 0, 3);
-      ctx.bezierCurveTo(2, 0, 5, -2, 5, -5);
-      ctx.bezierCurveTo(5, -10, 0, -5, 0, 0);
+      ctx.moveTo(0, s * 0.6);
+      ctx.bezierCurveTo(-s * 1.6, -s * 0.8, -s * 0.6, -s * 1.8, 0, -s * 0.5);
+      ctx.bezierCurveTo(s * 0.6, -s * 1.8, s * 1.6, -s * 0.8, 0, s * 0.6);
+      ctx.closePath();
       ctx.fill();
-      ctx.stroke();
       ctx.restore();
     });
     
     // 绘制agents（在特效上方）
     agentsRef.current.forEach(agent => {
-      ctx.fillStyle = agent.team === 0 ? '#6BD4C0' : '#7B5B89'; // 驯鹿绿色，兔子紫色
+      ctx.fillStyle = agent.team === 0 ? '#2FB39A' : '#7C55B0'; // 驯鹿薄荷绿，兔子紫（白底上清晰）
       if (agent.protected) {
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 2;
@@ -1232,87 +1348,12 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     const avgPower0 = team0Count > 0 ? totalPower0 / team0Count : 0;
     const avgPower1 = team1Count > 0 ? totalPower1 / team1Count : 0;
     
-    ctx.fillStyle = '#333';
     ctx.font = '16px Inter';
+    ctx.fillStyle = '#2FB39A';
     ctx.fillText(`Reindeer驯鹿: ${team0Count} (战力: ${avgPower0.toFixed(1)})`, 20, 30);
+    ctx.fillStyle = '#7C55B0';
     ctx.fillText(`Rabbit兔子: ${team1Count} (战力: ${avgPower1.toFixed(1)})`, 20, 50);
     
-    if (gameEnded && ending && endingText) {
-      // 绘制前置文本（黑色粗体，带引号）
-      if (endingPreText) {
-        ctx.fillStyle = '#000000';
-        ctx.font = '400 48px "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        
-        // 左右边距（减少边距，让每行更长）
-        const margin = 40;
-        const maxWidth = CANVAS_WIDTH - margin * 2;
-        
-        // 自动换行函数：将文本按最大宽度分割成多行
-        const wrapText = (text: string, maxLineWidth: number): string[] => {
-          const words = text.split('');
-          const lines: string[] = [];
-          let currentLine = '';
-          
-          for (let i = 0; i < words.length; i++) {
-            const testLine = currentLine + words[i];
-            const metrics = ctx.measureText(testLine);
-            
-            if (metrics.width > maxLineWidth && currentLine.length > 0) {
-              lines.push(currentLine);
-              currentLine = words[i];
-            } else {
-              currentLine = testLine;
-            }
-          }
-          
-          if (currentLine.length > 0) {
-            lines.push(currentLine);
-          }
-          
-          return lines;
-        };
-        
-        // 先按手动换行分割，然后对每一行进行自动换行
-        const manualLines = endingPreText.split('\n').map(line => line.trim()).filter(line => line);
-        const allLines: string[] = [];
-        
-        manualLines.forEach(line => {
-          const wrappedLines = wrapText(line, maxWidth);
-          allLines.push(...wrappedLines);
-        });
-        
-        const lineHeight = 70; // 正常行距
-        // 计算文本块的总高度
-        const totalHeight = allLines.length * lineHeight;
-        const startY = CANVAS_HEIGHT / 2 - totalHeight / 2 - 60;
-        // 计算最宽行的宽度，用于居中
-        let maxLineWidth = 0;
-        allLines.forEach(line => {
-          const width = ctx.measureText(line).width;
-          if (width > maxLineWidth) maxLineWidth = width;
-        });
-        const textStartX = CANVAS_WIDTH / 2 - maxLineWidth / 2;
-        allLines.forEach((line, index) => {
-          if (line) {
-            ctx.fillText(line, textStartX, startY + index * lineHeight);
-          }
-        });
-        ctx.textBaseline = 'alphabetic';
-      }
-      
-      // 绘制结局文本（左对齐，居中显示）
-      ctx.fillStyle = '#7B5B89';
-      ctx.font = 'bold 48px Inter';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      const endingTextWidth = ctx.measureText(endingText).width;
-      const endingTextX = CANVAS_WIDTH / 2 - endingTextWidth / 2;
-      ctx.fillText(endingText, endingTextX, CANVAS_HEIGHT / 2 + 80 + 48); // 往下移动一个字体高度（48px）
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-    }
   };
 
   // 处理点击添加药物
@@ -1351,12 +1392,15 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     initializeAgents();
     isRunningRef.current = true;
     setIsRunning(true);
+    pausedRef.current = false;
+    setIsPaused(false);
     setGameEnded(false);
     setEnding(null);
     setEndingText('');
     setEndingPreText('');
     gameEndedRef.current = false;
     finalBattleRef.current = { a0: null, a1: null, started: false };
+    clashRef.current = null;
     lastTimeRef.current = performance.now();
     gameStartTimeRef.current = Date.now();
     lastSchedulerTickRef.current = Date.now();
@@ -1370,12 +1414,15 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
   const resetSimulation = () => {
     isRunningRef.current = false;
     setIsRunning(false);
+    pausedRef.current = false;
+    setIsPaused(false);
     setGameEnded(false);
     setEnding(null);
     setEndingText('');
     setEndingPreText('');
     gameEndedRef.current = false;
     finalBattleRef.current = { a0: null, a1: null, started: false };
+    clashRef.current = null;
     drugPointsRef.current = [];
     darkeningEffectsRef.current = [];
     pinkMistEffectsRef.current = [];
@@ -1402,15 +1449,10 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
     draw();
   };
 
-  // 监听gameEnded状态变化，重新绘制以显示或清除结局文字
-  // 结局画面需等待 web font 载入 canvas 上下文，避免 fallback 到系统粗体
+  // 结局展示改由 HTML 覆盖层负责，这里只需保证画布停在最后一帧
   useEffect(() => {
-    if (gameEnded) {
-      document.fonts.ready.then(() => draw());
-    } else {
-      draw();
-    }
-  }, [gameEnded, ending, endingText, endingPreText]);
+    draw();
+  }, [gameEnded]);
 
   // 初始化
   useEffect(() => {
@@ -1432,46 +1474,112 @@ const Simulation: React.FC<SimulationProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-6xl w-full">
+      <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-[#7B5B89]">R公司孵化场观测（施工中）</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#C96A24] serif-text">R公司孵化场观测</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#E8F9F6] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#FFF6EC] rounded-lg transition-colors"
             aria-label="Close simulation"
           >
-            <X size={24} className="text-[#7B5B89]" />
+            <X size={24} className="text-[#C96A24]" />
           </button>
         </div>
         
-        <div className="bg-[#F8F6FA] rounded-lg p-4 border-2 border-[#E8F9F6] mb-4">
+        <div className="relative bg-[#FFFFFF] rounded-lg p-4 border-2 border-[#FFF6EC] mb-4">
+          <style>{`
+            @keyframes rcopEndingFade {
+              from { opacity: 0; transform: scale(0.98); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="w-full h-auto border border-[#D4F4EC] rounded cursor-crosshair"
+            className="w-full h-auto border border-[#F6D8B5] rounded cursor-crosshair"
             style={{ maxHeight: '600px' }}
           />
+
+          {/* 倍速小按钮（画布右上角） */}
+          {isRunning && !gameEnded && (
+            <button
+              onClick={() => {
+                const next = speedRef.current === 1 ? 2 : speedRef.current === 2 ? 4 : 1;
+                speedRef.current = next;
+                setSpeed(next);
+              }}
+              className="absolute top-6 right-6 px-2.5 py-1 text-xs bg-white/85 border border-[#F6D8B5] text-[#C96A24] hover:bg-[#FFF1E2] rounded-md font-bold transition-colors shadow-sm"
+            >
+              ×{speed}
+            </button>
+          )}
+
+          {/* 结局覆盖层 */}
+          {gameEnded && ending && (() => {
+            const meta = ENDING_META[ending] ?? DEFAULT_ENDING_META;
+            return (
+              <div
+                className="absolute inset-4 flex items-center justify-center rounded overflow-hidden"
+                style={{ background: meta.backdrop, animation: 'rcopEndingFade 1.2s ease-out both' }}
+              >
+                <div className="max-w-2xl px-8 text-center space-y-7">
+                  {endingPreText && (
+                    <p className="serif-text text-gray-700 text-sm md:text-lg leading-[2.1] whitespace-pre-line tracking-[0.05em]">
+                      {endingPreText}
+                    </p>
+                  )}
+                  <div className="mx-auto w-12 h-px" style={{ backgroundColor: meta.color }} />
+                  <h3
+                    className="serif-text font-bold text-2xl md:text-4xl tracking-[0.35em] indent-[0.35em]"
+                    style={{ color: meta.color, textShadow: meta.blood ? '0 1px 12px rgba(178,34,34,0.25)' : `0 1px 12px ${meta.color}33` }}
+                  >
+                    {endingText.split(' ').map((word, i) => (
+                      <span
+                        key={i}
+                        style={word === '兔子' ? { color: '#7C55B0' } : word === '驯鹿' ? { color: '#2FB39A' } : undefined}
+                      >
+                        {i > 0 ? ' ' : ''}{word}
+                      </span>
+                    ))}
+                  </h3>
+                </div>
+              </div>
+            );
+          })()}
         </div>
         
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           {!isRunning && !gameEnded && (
             <button
               onClick={startSimulation}
-              className="px-6 py-2 bg-[#6BD4C0] hover:bg-[#5FC4B0] text-white rounded-lg font-bold transition-colors"
+              className="px-6 py-2 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-lg font-bold transition-colors"
             >
               开始观测
             </button>
           )}
+          {isRunning && !gameEnded && (
+            <>
+              <button
+                onClick={() => {
+                  pausedRef.current = !pausedRef.current;
+                  setIsPaused(pausedRef.current);
+                }}
+                className="px-6 py-2 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-lg font-bold transition-colors"
+              >
+                {isPaused ? '继续' : '暂停'}
+              </button>
+            </>
+          )}
           {(isRunning || gameEnded) && (
             <button
               onClick={resetSimulation}
-              className="px-6 py-2 bg-[#9D8AB5] hover:bg-[#7B5B89] text-white rounded-lg font-bold transition-colors"
+              className="px-6 py-2 bg-[#E8833A] hover:bg-[#C96A24] text-white rounded-lg font-bold transition-colors"
             >
               重新克隆
             </button>
           )}
         </div>
-        
+
         <div className="mt-4 text-sm text-gray-600 text-center">
           <p>点击场地投放药物</p>
         </div>

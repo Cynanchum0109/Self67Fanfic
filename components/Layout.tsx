@@ -27,15 +27,15 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F8F6FA]">
+    <div className="flex min-h-screen bg-[#FAF8F1]">
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-[#EAE4F0] hover:bg-[#F0EDF5] transition-colors aspect-square w-10 h-10"
+        className="fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-[#EAE5F0] hover:bg-[#F0EDF5] transition-colors aspect-square w-10 h-10"
         aria-label="Toggle menu"
       >
         {isSidebarOpen ? (
-          <X size={24} className="text-[#7B5B89] shrink-0" />
+          <X size={24} className="text-[#7A688F] shrink-0" />
         ) : (
           <span className="aspect-square w-7 h-7 flex items-center justify-center overflow-hidden">
             <img 
@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
       )}
 
       {/* Fixed Sidebar */}
-      <aside className={`w-64 fixed inset-y-0 left-0 bg-gradient-to-b from-[#FDFBFF] to-white border-r border-[#EAE4F0] shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+      <aside className={`w-64 fixed inset-y-0 left-0 bg-gradient-to-b from-[#FDFCFE] to-white border-r border-[#EAE5F0] shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="p-8 pb-6">
@@ -66,8 +66,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
             className="text-2xl font-bold tracking-tighter flex items-center justify-between cursor-pointer group"
           >
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#6BD4C0] group-hover:bg-[#5FC4B0] transition-colors animate-pulse"></div>
-              <span><span className="text-[#6BD4C0]">Hong</span><span className="text-[#7B5B89]">Cliff</span></span>
+              <div className="w-2.5 h-2.5 rounded-full bg-[#6FCBB8] group-hover:bg-[#58BCA8] transition-colors animate-pulse"></div>
+              <span><span className="text-[#6FCBB8]">Hong</span><span className="text-[#7A688F]">Cliff</span></span>
             </div>
             <span className="aspect-square w-8 h-8 flex items-center justify-center overflow-hidden shrink-0">
               <img
@@ -78,7 +78,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
               />
             </span>
           </h1>
-          <p className="text-[10px] text-[#B8A8CC] mt-1.5 uppercase tracking-[0.2em] font-medium">by BQCynanchum</p>
+          <p className="text-[10px] text-[#B3A5C9] mt-1.5 uppercase tracking-[0.2em] font-medium">by BQCynanchum</p>
         </div>
 
         <nav className="flex-1 px-3 space-y-1">
@@ -86,8 +86,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
             onClick={() => handleNavigate(AppState.HOME)}
             className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
               activeView === AppState.HOME
-              ? 'bg-[#E3F7F3] text-[#3D8C80] font-semibold shadow-[inset_3px_0_0_#6BD4C0]'
-              : 'text-gray-500 hover:bg-[#F4F0FA] hover:text-[#7B5B89]'
+              ? 'bg-[#E7F6F2] text-[#3F9284] font-semibold shadow-[inset_3px_0_0_#6FCBB8]'
+              : 'text-gray-500 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
             }`}
           >
             <Home size={16} className="shrink-0" />
@@ -98,8 +98,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
             onClick={() => handleNavigate(AppState.TOC)}
             className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
               activeView === AppState.TOC
-              ? 'bg-[#EEE8F5] text-[#7B5B89] font-semibold shadow-[inset_3px_0_0_#9D8AB5]'
-              : 'text-gray-500 hover:bg-[#F4F0FA] hover:text-[#7B5B89]'
+              ? 'bg-[#EEEAF4] text-[#7A688F] font-semibold shadow-[inset_3px_0_0_#A99BC1]'
+              : 'text-gray-500 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
             }`}
           >
             <List size={16} className="shrink-0" />
@@ -111,8 +111,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
               onClick={() => handleNavigate(AppState.READER)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
                 activeView === AppState.READER
-              ? 'bg-[#E3F7F3] text-[#3D8C80] font-semibold shadow-[inset_3px_0_0_#6BD4C0]'
-              : 'text-gray-500 hover:bg-[#F4F0FA] hover:text-[#7B5B89]'
+              ? 'bg-[#E7F6F2] text-[#3F9284] font-semibold shadow-[inset_3px_0_0_#6FCBB8]'
+              : 'text-gray-500 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
               }`}
             >
               <BookOpen size={16} className="shrink-0" />
@@ -121,7 +121,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
           )}
 
           {activeView === AppState.READER && chapters.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-[#EAE4F0]">
+            <div className="mt-4 pt-4 border-t border-[#EAE5F0]">
               <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-300 px-4 mb-2">章节目录</h4>
               <div className="space-y-0.5 max-h-64 overflow-y-auto">
                 {chapters.map((ch) => (
@@ -131,7 +131,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
                       onJumpToChapter?.(ch.index);
                       setIsSidebarOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm rounded-lg text-gray-400 hover:bg-[#F4F0FA] hover:text-[#7B5B89] transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm rounded-lg text-gray-400 hover:bg-[#F3F0F8] hover:text-[#7A688F] transition-colors"
                   >
                     第{ch.index}章
                   </button>
@@ -141,7 +141,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
           )}
         </nav>
 
-        <div className="p-6 border-t border-[#EAE4F0]">
+        <div className="p-6 border-t border-[#EAE5F0]">
           <p className="text-[10px] text-center text-gray-300 tracking-widest">© 2026 BQCynanchum</p>
         </div>
       </aside>

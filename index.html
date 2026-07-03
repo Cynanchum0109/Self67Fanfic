@@ -20,6 +20,15 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #FAF8F1;
+            /* 淡纸纹：细微横向罗纹，宣纸质感 */
+            background-image: repeating-linear-gradient(
+                0deg,
+                rgba(150, 130, 180, 0.03) 0px,
+                rgba(150, 130, 180, 0.03) 1px,
+                transparent 1px,
+                transparent 4px
+            );
             scroll-behavior: smooth;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -30,8 +39,8 @@
         }
         /* Text selection color */
         ::selection {
-            background-color: #C5EDE6;
-            color: #2D6B62;
+            background-color: #CBE9E1;
+            color: #4E4462;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
@@ -41,20 +50,20 @@
             background: #F0EDF5;
         }
         ::-webkit-scrollbar-thumb {
-            background: #C4B5D4;
+            background: #C6B8D8;
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #9D8AB5;
+            background: #A99BC1;
         }
         /* Smooth focus rings */
         :focus-visible {
-            outline: 2px solid #6BD4C0;
+            outline: 2px solid #6FCBB8;
             outline-offset: 2px;
         }
     </style>
 </head>
-<body class="bg-white text-gray-900">
+<body class="text-gray-900">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

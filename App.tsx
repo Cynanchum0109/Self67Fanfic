@@ -21,15 +21,15 @@ function extractBodyContent(content: string): string {
 // 标签格式：逗号分隔，如 lcb67, 连载中
 function parseTags(tagsStr: string | undefined): string[] {
   if (!tagsStr || !tagsStr.trim()) return [];
-  return tagsStr.split(',').map((t) => t.trim()).filter(Boolean);
+  return tagsStr.split(/[,，]/).map((t) => t.trim()).filter(Boolean);
 }
 
 // 各标签对应的样式（可扩展）
 const TAG_STYLES: Record<string, string> = {
-  '连载中': 'bg-[#6BD4C0]/25 text-[#0D9488]',
-  '完结': 'bg-gray-100 text-gray-500',
+  '连载中': 'border border-[#6FCBB8] text-[#3F9284] bg-transparent',
+  '完结': 'border border-gray-300 text-gray-500 bg-transparent',
 };
-const DEFAULT_TAG_STYLE = 'bg-[#E8E0ED] text-[#7B5B89]';
+const DEFAULT_TAG_STYLE = 'border border-[#C6B8D8] text-[#8E7BA8] bg-transparent';
 
 function getTagClassName(tag: string): string {
   return TAG_STYLES[tag] ?? DEFAULT_TAG_STYLE;
@@ -44,6 +44,27 @@ function parseChapters(content: string): { index: number }[] {
     if (m) chapters.push({ index: parseInt(m[1], 10) });
   }
   return chapters.sort((a, b) => a.index - b.index);
+}
+
+// —— Hash 路由 ——
+// #/ 首页；#/toc 目录；#/story/<id> 阅读；#/game/dino|rcop|ufo 小游戏弹窗
+type GameKey = 'dino' | 'rcop' | 'ufo';
+
+interface Route {
+  view: AppState;
+  storyId: string | null;
+  game: GameKey | null;
+}
+
+function parseHash(): Route {
+  const hash = window.location.hash.replace(/^#\/?/, '');
+  const [seg, arg] = hash.split('/');
+  if (seg === 'toc') return { view: AppState.TOC, storyId: null, game: null };
+  if (seg === 'story' && arg) return { view: AppState.READER, storyId: decodeURIComponent(arg), game: null };
+  if (seg === 'game' && (arg === 'dino' || arg === 'rcop' || arg === 'ufo')) {
+    return { view: AppState.HOME, storyId: null, game: arg };
+  }
+  return { view: AppState.HOME, storyId: null, game: null };
 }
 
 const App: React.FC = () => {
@@ -80,19 +101,38 @@ const App: React.FC = () => {
     return mappedStories;
   }, [storiesData]); // 依赖 storiesData，当它改变时重新计算
 
-  const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<AppState>(AppState.HOME);
-  const [showGame, setShowGame] = useState(false);
-  const [showSimulation, setShowSimulation] = useState(false);
-  const [showUFOGame, setShowUFOGame] = useState(false);
+  const [route, setRoute] = useState<Route>(parseHash);
   const [showRTokenTooltip, setShowRTokenTooltip] = useState(false);
+  // 记住最后阅读的文章，供侧栏 Reading 按钮返回
+  const lastStoryIdRef = React.useRef<string | null>(null);
 
-  // 初始化：设置第一个故事为活动故事
+  // 监听浏览器前进/回退
   useEffect(() => {
-    if (stories.length > 0 && !activeStoryId) {
-      setActiveStoryId(stories[0].id);
-    }
-  }, [stories, activeStoryId]);
+    const onHashChange = () => setRoute(parseHash());
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const currentView = route.view;
+  const activeStoryId = route.storyId ?? (currentView === AppState.READER ? lastStoryIdRef.current : null);
+
+  useEffect(() => {
+    if (route.storyId) lastStoryIdRef.current = route.storyId;
+    // 切换页面/文章时回到顶部
+    window.scrollTo(0, 0);
+  }, [route.storyId, route.view]);
+
+  // 导航：全部通过修改 hash 完成，回退键即可返回上一页
+  const openStory = (id: string) => { window.location.hash = `#/story/${encodeURIComponent(id)}`; };
+  const openGame = (game: GameKey) => { window.location.hash = `#/game/${game}`; };
+  const closeGame = () => { window.location.hash = '#/'; };
+  const navigateView = (view: AppState) => {
+    if (view === AppState.TOC) window.location.hash = '#/toc';
+    else if (view === AppState.READER) {
+      const target = lastStoryIdRef.current ?? stories[0]?.id;
+      window.location.hash = target ? `#/story/${encodeURIComponent(target)}` : '#/toc';
+    } else window.location.hash = '#/';
+  };
 
   const activeStory = stories.find(s => s.id === activeStoryId);
 
@@ -159,46 +199,65 @@ const App: React.FC = () => {
 
   // Render Functions
   const renderHome = () => (
-    <div className="text-center space-y-10 animate-in zoom-in duration-1000">
-      <p className="text-[11px] font-light text-gray-400/90 tracking-wide max-w-lg mx-auto leading-relaxed px-2">
-        最新更新：6/24/2026，任随你便！S08E4前2章，外星人抓狗小游戏，更新大家赠我的插图
-      </p>
-      <div className="space-y-3">
-        <p className="text-[1.4rem] text-gray-400 font-light italic max-w-md mx-auto leading-[1.8] serif-text tracking-[0.04em]">
-          "那呼唤爱的样子如此美丽……"
+    <div className="relative text-center space-y-12">
+      {/* 背景光晕：极淡的紫与薄荷，增加松弛感 */}
+      <div className="pointer-events-none absolute -top-40 -left-32 w-96 h-96 rounded-full bg-[#A99BC1]/15 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-44 -right-28 w-[26rem] h-[26rem] rounded-full bg-[#6FCBB8]/15 blur-3xl" aria-hidden />
+
+      {/* 站名主视觉 */}
+      <header className="relative space-y-4">
+        <img
+          src="assets/icons/momo67.png"
+          alt=""
+          className="w-14 h-14 mx-auto object-contain"
+          style={{ imageRendering: 'pixelated' }}
+        />
+        <h1 className="text-5xl md:text-6xl font-bold tracking-tight serif-text">
+          <span className="text-[#6FCBB8]">Hong</span>
+          <span className="text-[#7A688F]">Cliff</span>
+        </h1>
+        <p className="text-[10px] text-[#B3A5C9] uppercase tracking-[0.35em] font-medium">by BQCynanchum</p>
+      </header>
+
+      {/* 引文区块 */}
+      <div className="relative max-w-md mx-auto">
+        <p className="relative text-[1.35rem] text-[#4FAE9C] font-light italic leading-[1.9] serif-text tracking-[0.05em]">
+          <span className="text-[#9BD9CC] mr-1" aria-hidden>“</span>
+          那呼唤爱的样子如此美丽……
+          <span className="text-[#9BD9CC] ml-1" aria-hidden>”</span>
         </p>
-        <div className="mx-auto w-8 h-px bg-gradient-to-r from-transparent via-[#C5EDE6] to-transparent" />
+        <div className="mt-5 mx-auto w-10 h-px bg-gradient-to-r from-transparent via-[#A99BC1] to-transparent" />
       </div>
 
-      <div className="flex flex-col items-center space-y-5">
+      <div className="relative flex flex-col items-center space-y-7">
         <button
-          onClick={() => setCurrentView(AppState.TOC)}
-          className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#9D8AB5] to-[#7B5B89] text-white rounded-full font-semibold overflow-hidden transition-all hover:pr-14 active:scale-95 shadow-xl shadow-[#9D8AB5]/30 hover:shadow-[#7B5B89]/40 text-[0.95rem] tracking-wide"
+          onClick={() => navigateView(AppState.TOC)}
+          className="group relative inline-flex items-center gap-3 px-11 py-3.5 bg-[#7A688F] text-[#FAF8F1] rounded-full font-medium serif-text overflow-hidden transition-all hover:pr-14 hover:bg-[#68577F] active:scale-95 shadow-lg shadow-[#7A688F]/25 text-[0.95rem] tracking-[0.15em]"
         >
           <span className="relative z-10">Enter the Garden</span>
           <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={18} />
         </button>
 
-        <div className="flex items-center gap-5 justify-center">
+        <div className="flex items-center gap-6 justify-center">
           <div className="relative">
             {showRTokenTooltip && (
               <span
                 id="r-token-tooltip"
                 role="tooltip"
-                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-xs text-white bg-[#3D3344] rounded-lg shadow-lg whitespace-nowrap z-50"
+                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 text-xs text-white bg-[#4A4152] rounded-lg shadow-lg whitespace-nowrap z-50"
               >
-                R公司孵化场观测（施工中）
+                R公司孵化场观测
               </span>
             )}
             <button
               type="button"
-              onClick={() => setShowSimulation(true)}
+              onClick={() => openGame('rcop')}
               onMouseEnter={() => setShowRTokenTooltip(true)}
               onMouseLeave={() => setShowRTokenTooltip(false)}
               onFocus={() => setShowRTokenTooltip(true)}
               onBlur={() => setShowRTokenTooltip(false)}
               className="group relative block p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-110 active:scale-95 focus:outline-none rounded-full"
-              aria-label="R公司孵化场观测（施工中）"
+              aria-label="R公司孵化场观测"
             >
               <span className="relative flex items-center justify-center w-10 h-10">
                 <img
@@ -216,7 +275,7 @@ const App: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setShowUFOGame(true)}
+            onClick={() => openGame('ufo')}
             className="text-2xl transition-transform hover:scale-125 active:scale-95 cursor-pointer select-none"
             aria-label="UFO抓狗游戏"
           >
@@ -224,12 +283,17 @@ const App: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setShowGame(true)}
-            className="text-[#9DCFC7] hover:text-[#6BD4C0] transition-colors cursor-pointer text-sm font-light"
+            onClick={() => openGame('dino')}
+            className="text-[#9DCFC7] hover:text-[#6FCBB8] transition-colors cursor-pointer text-sm font-light"
           >
             碰到就要结婚喔～
           </button>
         </div>
+
+        {/* 更新说明降级到底部 */}
+        <p className="text-[11px] font-light text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-2">
+          最新更新：6/24/2026，任随你便！S08E4前2章，外星人抓狗小游戏，更新大家赠我的插图
+        </p>
       </div>
     </div>
   );
@@ -242,9 +306,9 @@ const App: React.FC = () => {
     return (
       <div className="space-y-14 animate-in fade-in duration-700">
         <header className="pb-10">
-          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6BD4C0] mb-3">Content</p>
-          <h1 className="text-5xl font-bold text-[#7B5B89] tracking-tight">Fanfic</h1>
-          <div className="mt-4 w-12 h-0.5 bg-gradient-to-r from-[#6BD4C0] to-[#9D8AB5]" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6FCBB8] mb-3">Content</p>
+          <h1 className="text-5xl font-bold text-[#7A688F] tracking-tight serif-text">Fanfic</h1>
+          <div className="mt-5 w-16 h-px bg-[#C6B8D8]" />
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
@@ -252,20 +316,20 @@ const App: React.FC = () => {
           <div className="space-y-1">
             {chineseStories.length > 0 && (
               <>
-                <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-[#9D8AB5] pb-4 border-b border-[#EAE4F0] mb-8">CN</h3>
+                <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-[#A99BC1] pb-4 border-b border-[#EAE5F0] mb-8">CN</h3>
                 <div className="space-y-8">
                   {chineseStories.map((story, index) => (
                     <div
                       key={story.id}
-                      onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
-                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#6BD4C0] transition-all duration-300 space-y-2.5"
+                      onClick={() => openStory(story.id)}
+                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#6FCBB8] transition-all duration-300 space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#3D8C80] transition-colors duration-200 leading-snug whitespace-pre-line">
+                        <h3 className="text-[1.2rem] font-bold text-[#4A4152] serif-text group-hover:text-[#3F9284] transition-colors duration-200 leading-snug whitespace-pre-line min-w-0 break-words flex-1">
                           {normalizeNewlines(story.title)}
                         </h3>
                         {parseTags(story.tags).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 shrink-0">
+                          <div className="flex flex-wrap gap-1.5 justify-end max-w-[45%] min-w-0">
                             {parseTags(story.tags).map((tag) => (
                               <span
                                 key={tag}
@@ -291,20 +355,20 @@ const App: React.FC = () => {
           <div className="space-y-1">
             {englishStories.length > 0 && (
               <>
-                <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-[#6BD4C0] pb-4 border-b border-[#D4F4EC] mb-8">EN</h3>
+                <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-[#6FCBB8] pb-4 border-b border-[#D8F1EA] mb-8">EN</h3>
                 <div className="space-y-8">
                   {englishStories.map((story, index) => (
                     <div
                       key={story.id}
-                      onClick={() => { setActiveStoryId(story.id); setCurrentView(AppState.READER); }}
-                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#9D8AB5] transition-all duration-300 space-y-2.5"
+                      onClick={() => openStory(story.id)}
+                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#A99BC1] transition-all duration-300 space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-[1.2rem] font-bold text-gray-600 group-hover:text-[#7B5B89] transition-colors duration-200 leading-snug whitespace-pre-line">
+                        <h3 className="text-[1.2rem] font-bold text-[#4A4152] serif-text group-hover:text-[#8E7BA8] transition-colors duration-200 leading-snug whitespace-pre-line min-w-0 break-words flex-1">
                           {normalizeNewlines(story.title)}
                         </h3>
                         {parseTags(story.tags).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 shrink-0">
+                          <div className="flex flex-wrap gap-1.5 justify-end max-w-[45%] min-w-0">
                             {parseTags(story.tags).map((tag) => (
                               <span
                                 key={tag}
@@ -328,7 +392,7 @@ const App: React.FC = () => {
         </div>
 
         {stories.length === 0 && (
-          <div className="py-32 text-center text-gray-400 border border-dashed border-[#D4F4EC] rounded-2xl bg-[#E8F9F6]/20">
+          <div className="py-32 text-center text-gray-400 border border-dashed border-[#D8F1EA] rounded-2xl bg-[#F0FAF7]/20">
             <p className="text-sm">The garden is currently resting. Please check back later.</p>
           </div>
         )}
@@ -341,7 +405,7 @@ const App: React.FC = () => {
       <div className="flex-1 max-w-3xl min-w-0">
         {activeStory ? (
           <div className="space-y-10">
-            <header className="pb-8 border-b border-[#EAE4F0]">
+            <header className="pb-8 border-b border-[#EAE5F0]">
               {activeStory.fileName === '爱莫若食.md' && (
                 <div className="flex justify-center mb-6">
                   <img
@@ -352,11 +416,11 @@ const App: React.FC = () => {
                   />
                 </div>
               )}
-              <div className="flex items-center gap-2 text-[10px] text-[#6BD4C0] font-bold uppercase tracking-[0.3em] mb-5">
+              <div className="flex items-center gap-2 text-[10px] text-[#6FCBB8] font-bold uppercase tracking-[0.3em] mb-5">
                 <Quote size={12} /> Reading
               </div>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4 mb-3">
-                <h1 className="text-3xl md:text-4xl font-bold text-[#7B5B89] min-w-0 break-words tracking-tight leading-tight whitespace-pre-line">{normalizeNewlines(activeStory.title)}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-[#7A688F] serif-text min-w-0 break-words tracking-tight leading-tight whitespace-pre-line">{normalizeNewlines(activeStory.title)}</h1>
                 {parseTags(activeStory.tags).length > 0 && (
                   <div className="flex flex-wrap gap-2 w-full min-w-0 md:w-auto md:flex-shrink-0 mt-1">
                     {parseTags(activeStory.tags).map((tag) => (
@@ -379,8 +443,8 @@ const App: React.FC = () => {
                   const versionLabel = relatedStory.language === 'CN' ? '中文版' : 'English Version';
                   return (
                     <button
-                      onClick={() => { setActiveStoryId(relatedStory.id); }}
-                      className="text-sm text-[#6BD4C0] mb-4 hover:text-[#5FC4B0] hover:underline transition-colors cursor-pointer block"
+                      onClick={() => openStory(relatedStory.id)}
+                      className="text-sm text-[#6FCBB8] mb-4 hover:text-[#58BCA8] hover:underline transition-colors cursor-pointer block"
                     >
                       {versionLabel}: {relatedStory.title}
                     </button>
@@ -402,7 +466,7 @@ const App: React.FC = () => {
           <div className="h-96 flex flex-col items-center justify-center text-gray-400 space-y-4">
             <BookOpen size={48} className="opacity-20" />
             <p className="text-base">Please select a story from the library to begin reading.</p>
-            <button onClick={() => setCurrentView(AppState.TOC)} className="text-[#6BD4C0] font-medium hover:text-[#5FC4B0] transition-colors text-sm">Go to Contents →</button>
+            <button onClick={() => navigateView(AppState.TOC)} className="text-[#6FCBB8] font-medium hover:text-[#58BCA8] transition-colors text-sm">Go to Contents →</button>
           </div>
         )}
       </div>
@@ -415,11 +479,11 @@ const App: React.FC = () => {
             {stories.filter(s => s.language === 'CN').sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
               <button
                 key={s.id}
-                onClick={() => { setActiveStoryId(s.id); }}
+                onClick={() => openStory(s.id)}
                 className={`w-full text-left px-3 py-2 text-[0.8rem] rounded-md truncate transition-all duration-200 ${
                   activeStoryId === s.id
-                  ? 'bg-[#EEE8F5] text-[#7B5B89] font-semibold border-l-2 border-[#9D8AB5]'
-                  : 'text-gray-400 hover:bg-[#F4F0FA] hover:text-[#7B5B89]'
+                  ? 'bg-[#EEEAF4] text-[#7A688F] font-semibold border-l-2 border-[#A99BC1]'
+                  : 'text-gray-400 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
                 }`}
               >
                 {s.title}
@@ -428,11 +492,11 @@ const App: React.FC = () => {
             {stories.filter(s => s.language === 'EN').sort((a, b) => (b.order || 0) - (a.order || 0)).map(s => (
               <button
                 key={s.id}
-                onClick={() => { setActiveStoryId(s.id); }}
+                onClick={() => openStory(s.id)}
                 className={`w-full text-left px-3 py-2 text-[0.8rem] rounded-md truncate transition-all duration-200 ${
                   activeStoryId === s.id
-                  ? 'bg-[#E3F7F3] text-[#3D8C80] font-semibold border-l-2 border-[#6BD4C0]'
-                  : 'text-gray-400 hover:bg-[#F0FAF8] hover:text-[#3D8C80]'
+                  ? 'bg-[#E7F6F2] text-[#3F9284] font-semibold border-l-2 border-[#6FCBB8]'
+                  : 'text-gray-400 hover:bg-[#F1F7F5] hover:text-[#3F9284]'
                 }`}
               >
                 {s.title}
@@ -447,16 +511,16 @@ const App: React.FC = () => {
   return (
     <Layout
       activeView={currentView}
-      onNavigate={(view) => setCurrentView(view)}
+      onNavigate={navigateView}
       chapters={currentView === AppState.READER ? readerChapters : []}
       onJumpToChapter={handleJumpToChapter}
     >
       {currentView === AppState.HOME && renderHome()}
       {currentView === AppState.TOC && renderTOC()}
       {currentView === AppState.READER && renderReader()}
-      {showGame && <Game onClose={() => setShowGame(false)} />}
-      {showSimulation && <Simulation onClose={() => setShowSimulation(false)} />}
-      {showUFOGame && <UFOGame onClose={() => setShowUFOGame(false)} />}
+      {route.game === 'dino' && <Game onClose={closeGame} />}
+      {route.game === 'rcop' && <Simulation onClose={closeGame} />}
+      {route.game === 'ufo' && <UFOGame onClose={closeGame} />}
     </Layout>
   );
 };
