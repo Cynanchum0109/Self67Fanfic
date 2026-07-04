@@ -1559,18 +1559,18 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
             if (!texts) return null;
             return (
               <div
-                className="absolute inset-4 flex items-center justify-center rounded overflow-hidden"
+                className="absolute inset-4 flex items-center justify-center rounded overflow-y-auto"
                 style={{ background: meta.backdrop, animation: 'rcopEndingFade 1.2s ease-out both' }}
               >
-                <div className="max-w-2xl px-8 text-center space-y-7">
+                <div className="max-w-2xl px-4 md:px-8 py-3 text-center space-y-3 md:space-y-7 my-auto">
                   {texts.pre && (
-                    <p className="serif-text text-gray-700 text-sm md:text-lg leading-[2.1] whitespace-pre-line tracking-[0.05em]">
+                    <p className="serif-text text-gray-700 text-[11px] md:text-lg leading-[1.7] md:leading-[2.1] whitespace-pre-line tracking-[0.03em] md:tracking-[0.05em]">
                       {texts.pre}
                     </p>
                   )}
                   <div className="mx-auto w-12 h-px" style={{ backgroundColor: meta.color }} />
                   <h3
-                    className="serif-text font-bold text-2xl md:text-4xl tracking-[0.35em] indent-[0.35em]"
+                    className="serif-text font-bold text-base md:text-4xl tracking-[0.25em] md:tracking-[0.35em] indent-[0.25em] md:indent-[0.35em]"
                     style={{ color: meta.color, textShadow: meta.blood ? '0 1px 12px rgba(178,34,34,0.25)' : `0 1px 12px ${meta.color}33` }}
                   >
                     {texts.title.split(' ').map((word, i) => (

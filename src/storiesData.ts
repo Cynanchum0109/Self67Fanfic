@@ -110,7 +110,7 @@ export const storiesData: StoryData[] = [
     "version": "老板半夜打电话你接不接",
     "language": "EN",
     "fileName": "Would you answer a call from your boss in midnight.md",
-    "wordCount": 1989,
+    "wordCount": 2124,
     "order": 3
   },
   {
@@ -121,7 +121,7 @@ export const storiesData: StoryData[] = [
     "version": "总之是想看兔子把驯鹿榨空这种事",
     "language": "EN",
     "fileName": "Rabbit riding on Reindeer.md",
-    "wordCount": 1899,
+    "wordCount": 2073,
     "order": 2
   },
   {
@@ -132,7 +132,7 @@ export const storiesData: StoryData[] = [
     "version": "求仁得仁",
     "language": "EN",
     "fileName": "Ask and you shall recieve.md",
-    "wordCount": 2705,
+    "wordCount": 3132,
     "order": 1
   }
 ];
