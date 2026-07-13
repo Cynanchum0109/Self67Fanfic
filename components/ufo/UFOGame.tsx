@@ -521,14 +521,14 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
   }, [handleAction, handleJump, isPlaying, gameOver]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1A0A2E] border border-[#3D2860] rounded-2xl shadow-2xl p-5 max-w-lg w-full">
+    <div className="fixed inset-0 bg-[#0D0518]/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#1A0A2E] border border-[#3D2860] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-5 max-w-lg w-full animate-float-in">
         <div className="flex justify-end mb-3">
-          <button onClick={onClose} className="p-2 hover:bg-[#3D2860] rounded-lg transition-colors" aria-label={T.close}>
-            <X size={20} className="text-[#9D8AB5]" />
+          <button onClick={onClose} className="p-2 hover:bg-[#3D2860] rounded-full transition-colors duration-300" aria-label={T.close}>
+            <X size={20} strokeWidth={1.5} className="text-[#9D8AB5]" />
           </button>
         </div>
-        <div className="rounded-xl overflow-hidden border border-[#3D2860]">
+        <div className="rounded-3xl overflow-hidden border border-[#3D2860]">
           <canvas ref={canvasRef} className="w-full h-auto block cursor-pointer" onClick={handleAction} />
         </div>
         {/* Mobile controls — joystick left, jump right */}

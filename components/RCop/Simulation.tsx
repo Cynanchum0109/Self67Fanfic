@@ -1373,7 +1373,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
         : `rgba(139, 69, 19, ${alpha})`; // 棕色
       
       // 绘制文本（无背景）
-      ctx.font = '28px Inter';
+      ctx.font = '28px "Source Sans 3"';
       ctx.fillStyle = teamColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1390,7 +1390,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
     const avgPower0 = team0Count > 0 ? totalPower0 / team0Count : 0;
     const avgPower1 = team1Count > 0 ? totalPower1 / team1Count : 0;
     
-    ctx.font = '16px Inter';
+    ctx.font = '16px "Source Sans 3"';
     ctx.fillStyle = '#2FB39A';
     ctx.fillText(`${T.statReindeer}: ${team0Count} (${T.statPower}: ${avgPower0.toFixed(1)})`, 20, 30);
     ctx.fillStyle = '#7C55B0';
@@ -1511,20 +1511,20 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-[#1A1512]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(26,21,18,0.3)] border border-[#F6D8B5]/60 p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto animate-float-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-[#C96A24] serif-text">{T.title}</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#FFF6EC] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#FFF6EC] rounded-full transition-colors duration-300"
             aria-label="Close simulation"
           >
-            <X size={24} className="text-[#C96A24]" />
+            <X size={22} strokeWidth={1.5} className="text-[#C96A24]" />
           </button>
         </div>
-        
-        <div className="relative bg-[#FFFFFF] rounded-lg p-4 border-2 border-[#FFF6EC] mb-4">
+
+        <div className="relative bg-[#FFFFFF] rounded-3xl p-4 border border-[#F6D8B5]/70 mb-4">
           <style>{`
             @keyframes rcopEndingFade {
               from { opacity: 0; transform: scale(0.98); }
@@ -1534,7 +1534,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
           <canvas
             ref={canvasRef}
             onClick={handleCanvasClick}
-            className="w-full h-auto border border-[#F6D8B5] rounded cursor-crosshair"
+            className="w-full h-auto border border-[#F6D8B5] rounded-2xl cursor-crosshair"
             style={{ maxHeight: '600px' }}
           />
 
@@ -1546,7 +1546,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
                 speedRef.current = next;
                 setSpeed(next);
               }}
-              className="absolute top-6 right-6 px-2.5 py-1 text-xs bg-white/85 border border-[#F6D8B5] text-[#C96A24] hover:bg-[#FFF1E2] rounded-md font-bold transition-colors shadow-sm"
+              className="absolute top-6 right-6 px-2.5 py-1 text-xs bg-white/85 border border-[#F6D8B5] text-[#C96A24] hover:bg-[#FFF1E2] rounded-full font-bold transition-colors shadow-sm"
             >
               ×{speed}
             </button>
@@ -1559,7 +1559,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
             if (!texts) return null;
             return (
               <div
-                className="absolute inset-4 flex items-center justify-center rounded overflow-y-auto"
+                className="absolute inset-4 flex items-center justify-center rounded-2xl overflow-y-auto"
                 style={{ background: meta.backdrop, animation: 'rcopEndingFade 1.2s ease-out both' }}
               >
                 <div className="max-w-2xl px-4 md:px-8 py-3 text-center space-y-3 md:space-y-7 my-auto">
@@ -1598,7 +1598,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
           {!isRunning && !gameEnded && (
             <button
               onClick={startSimulation}
-              className="px-6 py-2 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-lg font-bold transition-colors"
+              className="px-8 py-2.5 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-full font-semibold text-sm uppercase tracking-widest transition-all duration-300 shadow-[0_10px_15px_-3px_rgba(232,131,58,0.25)] active:scale-95"
             >
               {T.start}
             </button>
@@ -1610,7 +1610,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
                   pausedRef.current = !pausedRef.current;
                   setIsPaused(pausedRef.current);
                 }}
-                className="px-6 py-2 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-lg font-bold transition-colors"
+                className="px-8 py-2.5 bg-[#E8833A] hover:bg-[#D9741F] text-white rounded-full font-semibold text-sm uppercase tracking-widest transition-all duration-300 shadow-[0_10px_15px_-3px_rgba(232,131,58,0.25)] active:scale-95"
               >
                 {isPaused ? T.resume : T.pause}
               </button>
@@ -1619,7 +1619,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
           {(isRunning || gameEnded) && (
             <button
               onClick={resetSimulation}
-              className="px-6 py-2 bg-[#E8833A] hover:bg-[#C96A24] text-white rounded-lg font-bold transition-colors"
+              className="px-8 py-2.5 bg-[#E8833A] hover:bg-[#C96A24] text-white rounded-full font-semibold text-sm uppercase tracking-widest transition-all duration-300 shadow-[0_10px_15px_-3px_rgba(232,131,58,0.25)] active:scale-95"
             >
               {T.reclone}
             </button>

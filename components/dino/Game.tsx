@@ -191,30 +191,30 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
         ctx.fillStyle = '#796384';
       }
       
-      ctx.font = '20px Inter';
+      ctx.font = '20px "Source Sans 3"';
       ctx.fillText(`Score: ${score}`, 20, 30);
 
       if (gameOver) {
         // 游戏结束界面（去掉变暗效果）
         ctx.fillStyle = 'rgba(251, 182, 206, 0.9)'; // 浅粉色带透明度
-        ctx.font = 'bold 32px Inter';
+        ctx.font = 'bold 32px "Source Sans 3"';
         ctx.textAlign = 'center';
         ctx.fillText(T.win, canvas.width / 2, canvas.height / 2 - 30);
         
         // 按下空格再试一次 - 深紫色
         ctx.fillStyle = '#7B5B89'; // 深紫色
-        ctx.font = '18px Inter';
+        ctx.font = '18px "Source Sans 3"';
         ctx.fillText(T.retry, canvas.width / 2, canvas.height / 2 + 5);
         
         // 希斯克利夫加油～ - 小字细字薄荷绿
         ctx.fillStyle = '#6BD4C0'; // 薄荷绿
-        ctx.font = '14px Inter';
+        ctx.font = '14px "Source Sans 3"';
         ctx.fillText(T.cheer, canvas.width / 2, canvas.height / 2 + 30);
         
         ctx.textAlign = 'left';
       } else if (!isPlaying) {
         ctx.fillStyle = '#7B5B89';
-        ctx.font = '20px Inter';
+        ctx.font = '20px "Source Sans 3"';
         ctx.textAlign = 'center';
         ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2);
         ctx.textAlign = 'left';
@@ -409,34 +409,34 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
   }, [handleKeyPress]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full">
+    <div className="fixed inset-0 bg-[#2D2438]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#FDFCFA] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(45,58,49,0.2)] border border-[#EAE5F0] p-6 max-w-2xl w-full animate-float-in">
         <div className="flex justify-end items-center mb-4">
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#E8F9F6] rounded-lg transition-colors"
+            className="p-2 hover:bg-[#E8F9F6] rounded-full transition-colors duration-300"
             aria-label="Close game"
           >
-            <X size={24} className="text-[#7B5B89]" />
+            <X size={22} strokeWidth={1.5} className="text-[#7B5B89]" />
           </button>
         </div>
-        <div className="bg-[#F8F6FA] rounded-lg p-4 border-2 border-[#E8F9F6]">
+        <div className="bg-[#F8F6FA] rounded-3xl p-4 border border-[#E8F9F6]">
           <canvas
             ref={canvasRef}
-            className="w-full h-auto border border-[#D4F4EC] rounded"
+            className="w-full h-auto border border-[#D4F4EC] rounded-2xl"
             style={{ maxHeight: '400px' }}
           />
         </div>
         {/* 移动端跳跃按钮 */}
         <button
           onClick={handleJump}
-          className="md:hidden w-full mt-4 py-4 bg-[#E8E0ED] hover:bg-[#9D8AB5] active:bg-[#7B5B89] text-[#7B5B89] hover:text-white rounded-xl font-bold text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg active:scale-95"
+          className="md:hidden w-full mt-4 py-4 bg-[#E8E0ED] hover:bg-[#9D8AB5] active:bg-[#7B5B89] text-[#7B5B89] hover:text-white rounded-full font-semibold text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_10px_15px_-3px_rgba(123,91,137,0.15)] active:scale-95"
         >
-          <ArrowUp size={24} />
+          <ArrowUp size={20} strokeWidth={1.5} />
           <span>{T.jump}</span>
         </button>
-        <div className="mt-4 text-sm text-gray-600 text-center">
-          <p className="hidden md:block">{T.hintDesktopPre}<kbd className="px-2 py-1 bg-[#E8F9F6] rounded text-[#7B5B89]">{T.hintDesktopKey}</kbd>{T.hintDesktopPost}</p>
+        <div className="mt-4 text-sm text-gray-500 text-center">
+          <p className="hidden md:block">{T.hintDesktopPre}<kbd className="px-2 py-1 bg-[#E8F9F6] rounded-full text-[#7B5B89]">{T.hintDesktopKey}</kbd>{T.hintDesktopPost}</p>
           <p className="md:hidden">{T.hintMobile}</p>
         </div>
       </div>

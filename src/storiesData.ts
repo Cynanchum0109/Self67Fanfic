@@ -22,7 +22,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "S08E4.md",
-    "wordCount": 6001,
+    "wordCount": 8510,
     "order": 8
   },
   {
@@ -66,7 +66,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "爱莫若食.md",
-    "wordCount": 19084,
+    "wordCount": 19033,
     "order": 4
   },
   {
@@ -96,7 +96,7 @@ export const storiesData: StoryData[] = [
     "title": "求仁得仁",
     "tags": "黑云67",
     "summary": "黑云宝溺水事件",
-    "version": "Ask and you shall recieve",
+    "version": "Ask and you shall receive",
     "language": "CN",
     "fileName": "求仁得仁.md",
     "wordCount": 5322,
@@ -110,7 +110,7 @@ export const storiesData: StoryData[] = [
     "version": "老板半夜打电话你接不接",
     "language": "EN",
     "fileName": "Would you answer a call from your boss in midnight.md",
-    "wordCount": 2124,
+    "wordCount": 2120,
     "order": 3
   },
   {
@@ -126,13 +126,13 @@ export const storiesData: StoryData[] = [
   },
   {
     "id": "pyphh8fjr",
-    "title": "Ask and you shall recieve",
+    "title": "Ask and you shall receive",
     "tags": "Kurokumo 67",
     "summary": "Heathcliff drowned Hong Lu in his （i）.",
     "version": "求仁得仁",
     "language": "EN",
-    "fileName": "Ask and you shall recieve.md",
-    "wordCount": 3132,
+    "fileName": "Ask and you shall receive.md",
+    "wordCount": 3127,
     "order": 1
   }
 ];

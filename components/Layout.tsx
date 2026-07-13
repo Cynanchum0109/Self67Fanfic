@@ -27,25 +27,25 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FAF8F1] overflow-x-clip">
+    <div className="flex min-h-screen bg-[#F9F8F4] overflow-x-clip">
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-[#EAE5F0] hover:bg-[#F0EDF5] transition-colors aspect-square w-10 h-10"
+        className="fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-[0_4px_6px_-1px_rgba(45,58,49,0.05)] border border-[#EAE5F0] hover:bg-[#F0EDF5] hover:shadow-[0_10px_15px_-3px_rgba(45,58,49,0.08)] transition-all duration-300 aspect-square w-10 h-10"
         aria-label="Toggle menu"
       >
-        {isSidebarOpen ? (
-          <X size={24} className="text-[#7A688F] shrink-0" />
-        ) : (
-          <span className="aspect-square w-7 h-7 flex items-center justify-center overflow-hidden">
-            <img 
-              src={MOMO67_ICON_URL}
-              alt="Menu" 
-              className="w-full h-full object-contain"
-              style={{ imageRendering: 'pixelated' }}
-            />
-          </span>
-        )}
+        <span className="relative aspect-square w-7 h-7 flex items-center justify-center">
+          <img
+            src={MOMO67_ICON_URL}
+            alt="Menu"
+            className={`w-full h-full object-contain animate-breathe transition-opacity duration-200 ${isSidebarOpen ? 'opacity-0' : 'opacity-100'}`}
+            style={{ imageRendering: 'pixelated' }}
+          />
+          <X
+            size={24}
+            className={`absolute inset-0 m-auto text-[#7A688F] transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+          />
+        </span>
       </button>
 
       {/* Overlay */}
@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
       )}
 
       {/* Fixed Sidebar */}
-      <aside className={`w-64 fixed inset-y-0 left-0 bg-gradient-to-b from-[#FDFCFE] to-white border-r border-[#EAE5F0] shadow-sm flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+      <aside className={`w-64 fixed inset-y-0 left-0 bg-gradient-to-b from-[#FDFCFE] to-white border-r border-[#EAE5F0] rounded-r-3xl shadow-[0_20px_40px_-10px_rgba(45,58,49,0.08)] flex flex-col z-40 transition-transform duration-500 ease-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="p-8 pb-6">
@@ -69,11 +69,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
               <div className="w-2.5 h-2.5 rounded-full bg-[#6FCBB8] group-hover:bg-[#58BCA8] transition-colors animate-pulse"></div>
               <span><span className="text-[#6FCBB8]">Hong</span><span className="text-[#7A688F]">Cliff</span></span>
             </div>
-            <span className="aspect-square w-8 h-8 flex items-center justify-center overflow-hidden shrink-0">
+            <span className="aspect-square w-8 h-8 flex items-center justify-center shrink-0">
               <img
                 src={MOMO67_ICON_URL}
                 alt="Logo"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain animate-breathe"
                 style={{ imageRendering: 'pixelated' }}
               />
             </span>
@@ -84,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
         <nav className="flex-1 px-3 space-y-1">
           <button
             onClick={() => handleNavigate(AppState.HOME)}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-300 text-sm ${
               activeView === AppState.HOME
               ? 'bg-[#E7F6F2] text-[#3F9284] font-semibold shadow-[inset_3px_0_0_#6FCBB8]'
               : 'text-gray-500 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
@@ -96,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
 
           <button
             onClick={() => handleNavigate(AppState.TOC)}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-300 text-sm ${
               activeView === AppState.TOC
               ? 'bg-[#EEEAF4] text-[#7A688F] font-semibold shadow-[inset_3px_0_0_#A99BC1]'
               : 'text-gray-500 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
@@ -109,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
           {isReaderOrToc && (
             <button
               onClick={() => handleNavigate(AppState.READER)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-300 text-sm ${
                 activeView === AppState.READER
               ? 'bg-[#E7F6F2] text-[#3F9284] font-semibold shadow-[inset_3px_0_0_#6FCBB8]'
               : 'text-gray-500 hover:bg-[#F3F0F8] hover:text-[#7A688F]'
@@ -131,7 +131,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
                       onJumpToChapter?.(ch.index);
                       setIsSidebarOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm rounded-lg text-gray-400 hover:bg-[#F3F0F8] hover:text-[#7A688F] transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm rounded-full text-gray-400 hover:bg-[#F3F0F8] hover:text-[#7A688F] transition-colors"
                   >
                     第{ch.index}章
                   </button>

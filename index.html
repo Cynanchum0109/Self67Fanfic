@@ -16,31 +16,68 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #FAF8F1;
-            /* 淡纸纹：细微横向罗纹，宣纸质感 */
-            background-image: repeating-linear-gradient(
-                0deg,
-                rgba(150, 130, 180, 0.03) 0px,
-                rgba(150, 130, 180, 0.03) 1px,
-                transparent 1px,
-                transparent 4px
-            );
+            font-family: 'Source Sans 3', 'Noto Serif SC', sans-serif;
+            background-color: #F9F8F4;
             scroll-behavior: smooth;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
+        /* 纸纹噪点覆盖层：把冷冰冰的像素变成暖纸质感 */
+        body::after {
+            content: '';
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            opacity: 0.02;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+        }
+        /* 衬线标题：西文 Lora（温和低对比），中文回落 Noto Serif SC */
         .serif-text {
-            font-family: 'Noto Serif SC', serif;
+            font-family: 'Lora', 'Noto Serif SC', serif;
+        }
+        /* momo67 呼吸弹动：只做上下压缩回弹，不整体缩放 */
+        @keyframes momoBreathe {
+            0%   { transform: scaleY(1); }
+            42%  { transform: scaleY(0.88); }
+            62%  { transform: scaleY(1.04); }
+            78%  { transform: scaleY(0.97); }
+            90%  { transform: scaleY(1.01); }
+            100% { transform: scaleY(1); }
+        }
+        .animate-breathe {
+            animation: momoBreathe 3.4s ease-in-out infinite;
+            transform-origin: center bottom;
+            will-change: transform;
+        }
+        /* 入场浮现：像植物般缓慢舒展 */
+        @keyframes fadeFloatUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-float-in {
+            animation: fadeFloatUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .float-delay-1 { animation-delay: 0.12s; }
+        .float-delay-2 { animation-delay: 0.24s; }
+        .float-delay-3 { animation-delay: 0.38s; }
+        @media (prefers-reduced-motion: reduce) {
+            .animate-breathe, .animate-float-in { animation: none; }
         }
         /* Text selection color */
         ::selection {
             background-color: #CBE9E1;
             color: #4E4462;
+        }
+        /* 柔和薄荷绿聚焦环，替代生硬蓝色 */
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #6FCBB8;
         }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
