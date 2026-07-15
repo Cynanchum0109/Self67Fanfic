@@ -65,6 +65,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     beamTimer: 2500, warnDur: 900, onDur: 1500, offDur: 2500,
     track: 0.012, lastScore: 0, lastFrame: 0, animId: 0, diffT: 0,
     deathCause: 'alien' as DeathCause,
+    overFadeStart: 0,
     uid: 0,
     stars: [] as MStar[], flowers: [] as Flower[], runners: [] as Runner[],
     // UFO damage system
@@ -103,6 +104,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     s.warnDur = 900; s.onDur = 1500; s.offDur = 2500;
     s.track = 0.012; s.diffT = 0;
     s.deathCause = 'alien';
+    s.overFadeStart = 0;
     s.stars = []; s.flowers = []; s.runners = [];
     s.ufoHits = 0; s.ufoHitCooldown = 0;
     s.ufoStunned = false; s.ufoStunTimer = 0; s.ufoStunCount = 0;
@@ -305,25 +307,35 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
 
     // Overlays
     if (gameOver) {
+      if (!s.overFadeStart) s.overFadeStart = now;
+      const fadeT = now - s.overFadeStart;
+      // CG 900ms 渐入；文字延迟 400ms 后 600ms 渐入
+      const cgAlpha   = Math.min(1, fadeT / 900);
+      const textAlpha = Math.min(1, Math.max(0, (fadeT - 400) / 600));
       const isAlienEnd = s.deathCause !== 'won' && s.deathCause !== 'human';
       const cg = imgCgAlien.current;
       if (isAlienEnd && cg && cg.complete && cg.naturalWidth > 0) {
         // 结局CG：按高铺满，右对齐，多余部分裁掉左侧
         const sc = CH / cg.naturalHeight;
         const dw = cg.naturalWidth * sc;
+        ctx.globalAlpha = cgAlpha;
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(cg, CW - dw, 0, dw, CH);
         ctx.imageSmoothingEnabled = false;
         // 轻压暗保证文字可读
         ctx.fillStyle='rgba(10,10,40,0.30)'; ctx.fillRect(0,0,CW,CH);
+        ctx.globalAlpha = 1;
       } else {
+        ctx.globalAlpha = cgAlpha;
         ctx.fillStyle='rgba(26,10,46,0.72)'; ctx.fillRect(0,0,CW,CH);
+        ctx.globalAlpha = 1;
       }
       const wonIt = s.deathCause === 'won';
       // 外星人结局文字移到顶部，避免盖住CG人物
       const yMsg   = isAlienEnd ? 34 : CH/2-22;
       const yRetry = isAlienEnd ? 58 : CH/2+10;
       const yScore = isAlienEnd ? 78 : CH/2+34;
+      ctx.globalAlpha = textAlpha;
       if (isAlienEnd) { ctx.shadowBlur = 6; ctx.shadowColor = 'rgba(0,0,30,0.9)'; }
       ctx.fillStyle = wonIt ? '#6BD4C0' : '#F2B6FB';
       ctx.font='bold 20px monospace'; ctx.textAlign='center';
@@ -336,6 +348,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
       ctx.fillStyle='#6BD4C0'; ctx.font='12px monospace';
       ctx.fillText(`${T.finalScore}: ${scoreRef.current}`, CW/2, yScore);
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
       ctx.textAlign='left';
     } else if (!isPlaying) {
       ctx.fillStyle='rgba(26,10,46,0.55)'; ctx.fillRect(0,0,CW,CH);
