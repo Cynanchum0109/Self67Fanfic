@@ -4,6 +4,7 @@ import bgPng   from './asset/background.png';
 import dog1Png from './asset/dog1.png';
 import dog2Png from './asset/dog2.png';
 import ufoPng  from './asset/UFO.png';
+import cgAlienPng from './asset/isei1.png';
 import run1Png from '../dino/Assets/06_walk1.png';
 import run2Png from '../dino/Assets/06_walk2.png';
 import run3Png from '../dino/Assets/06_walk3.png';
@@ -47,6 +48,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
   const imgDog1 = useRef<HTMLImageElement|null>(null);
   const imgDog2 = useRef<HTMLImageElement|null>(null);
   const imgUFO  = useRef<HTMLImageElement|null>(null);
+  const imgCgAlien = useRef<HTMLImageElement|null>(null);
   const imgRun  = useRef<HTMLImageElement[]>([]);
   const runLoaded = useRef(false);
 
@@ -82,6 +84,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
       const img = new Image(); img.src = src; ref.current = img;
     };
     load(bgPng, imgBg); load(dog1Png, imgDog1); load(dog2Png, imgDog2); load(ufoPng, imgUFO);
+    load(cgAlienPng, imgCgAlien);
     let n = 0;
     const runs = [run1Png, run2Png, run3Png].map(src => {
       const img = new Image();
@@ -302,18 +305,37 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
 
     // Overlays
     if (gameOver) {
-      ctx.fillStyle='rgba(26,10,46,0.72)'; ctx.fillRect(0,0,CW,CH);
+      const isAlienEnd = s.deathCause !== 'won' && s.deathCause !== 'human';
+      const cg = imgCgAlien.current;
+      if (isAlienEnd && cg && cg.complete && cg.naturalWidth > 0) {
+        // 结局CG：按高铺满，右对齐，多余部分裁掉左侧
+        const sc = CH / cg.naturalHeight;
+        const dw = cg.naturalWidth * sc;
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(cg, CW - dw, 0, dw, CH);
+        ctx.imageSmoothingEnabled = false;
+        // 轻压暗保证文字可读
+        ctx.fillStyle='rgba(10,10,40,0.30)'; ctx.fillRect(0,0,CW,CH);
+      } else {
+        ctx.fillStyle='rgba(26,10,46,0.72)'; ctx.fillRect(0,0,CW,CH);
+      }
       const wonIt = s.deathCause === 'won';
+      // 外星人结局文字移到顶部，避免盖住CG人物
+      const yMsg   = isAlienEnd ? 34 : CH/2-22;
+      const yRetry = isAlienEnd ? 58 : CH/2+10;
+      const yScore = isAlienEnd ? 78 : CH/2+34;
+      if (isAlienEnd) { ctx.shadowBlur = 6; ctx.shadowColor = 'rgba(0,0,30,0.9)'; }
       ctx.fillStyle = wonIt ? '#6BD4C0' : '#F2B6FB';
       ctx.font='bold 20px monospace'; ctx.textAlign='center';
       const msg = s.deathCause==='won'   ? T.won
                 : s.deathCause==='human' ? T.byHuman
                 :                          T.byAlien;
-      ctx.fillText(msg, CW/2, CH/2-22);
-      ctx.fillStyle='#9D8AB5'; ctx.font='14px monospace';
-      ctx.fillText(T.retry, CW/2, CH/2+10);
+      ctx.fillText(msg, CW/2, yMsg);
+      ctx.fillStyle = isAlienEnd ? '#D8CCE8' : '#9D8AB5'; ctx.font='14px monospace';
+      ctx.fillText(T.retry, CW/2, yRetry);
       ctx.fillStyle='#6BD4C0'; ctx.font='12px monospace';
-      ctx.fillText(`${T.finalScore}: ${scoreRef.current}`, CW/2, CH/2+34);
+      ctx.fillText(`${T.finalScore}: ${scoreRef.current}`, CW/2, yScore);
+      ctx.shadowBlur = 0;
       ctx.textAlign='left';
     } else if (!isPlaying) {
       ctx.fillStyle='rgba(26,10,46,0.55)'; ctx.fillRect(0,0,CW,CH);
