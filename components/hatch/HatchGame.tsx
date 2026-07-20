@@ -296,8 +296,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const isPortrait = vp.h >= vp.w;
   const shellStyle: React.CSSProperties | undefined = isTouch && vp.w > 0
     ? (isPortrait
-        ? { width: vp.h - 8, transform: 'rotate(90deg) scale(1.5)', animation: 'none', maxWidth: 'none' }
-        : { transform: 'scale(1.5)', animation: 'none' })
+        ? { width: vp.h - 8, transform: 'rotate(90deg) scale(1.3)', animation: 'none', maxWidth: 'none' }
+        : { transform: 'scale(1.3)', animation: 'none' })
     : undefined;
   const canvasStyle: React.CSSProperties = isTouch && vp.w > 0
     ? { maxWidth: '100%', maxHeight: (isPortrait ? vp.w : vp.h) - 52, width: 'auto', height: 'auto' }
@@ -1831,8 +1831,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
           {/* 标题：选阵营 */}
           {phase === 'title' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 md:gap-8 bg-[#0D0B09]/70">
-              <div className="flex gap-3 md:gap-6 flex-col md:flex-row px-6">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 bg-[#0D0B09]/70">
+              <div className="flex gap-6 flex-row px-6">
                 <button
                   onClick={() => startGame('rabbit')}
                   className="w-64 p-5 rounded-xl border border-[#7C55B0]/60 bg-[#161020] hover:bg-[#1F1730] hover:border-[#7C55B0] transition-all text-left group"
@@ -1862,7 +1862,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           {phase === 'levelup' && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-[#0D0B09]/80">
               <p className="text-[#E8833A] text-2xl font-bold serif-text tracking-[0.4em]">{T.levelup}</p>
-              <div className="flex gap-4 flex-col md:flex-row px-6">
+              <div className="flex gap-4 flex-row px-6">
                 {upgradeOptions.map((opt, i) => {
                   const cardCls = opt.rarity === 'anomalous'
                     ? 'border-[#F5D061] bg-[#221A0C] hover:bg-[#2E230F] shadow-[0_0_14px_rgba(245,208,97,0.35)]'
