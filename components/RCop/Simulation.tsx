@@ -212,6 +212,10 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
   // 碰撞后延迟结算，给观众留出反应时间
   const clashRef = useRef<{ at: number; ending: string } | null>(null);
   const CLASH_DELAY = 1200; // 碰撞特效停留时间（毫秒）
+  // 配对羁绊：记录每一对agent之间发生过多少次互相增强（按相遇次数去重，不按帧数）
+  const pairBondRef = useRef<Map<string, { count: number; last: number }>>(new Map());
+  const BOND_ENCOUNTER_GAP = 1000; // 同一对1秒内的连续增强只算一次相遇
+  const BOND_ESCAPE_COUNT = 3; // 羁绊达到3次相遇，终局中间档升格为逃脱
 
   const agentsRef = useRef<Agent[]>([]);
   const drugPointsRef = useRef<DrugPoint[]>([]);
@@ -285,6 +289,25 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
     isRunningRef.current = false;
     setIsRunning(false);
     finalBattleRef.current = { a0: null, a1: null, started: false };
+  };
+
+  // 记录一次跨队互相增强的羁绊（1秒内重复触发只算一次相遇）
+  const recordBond = (idA: number, idB: number, now: number) => {
+    const key = idA < idB ? `${idA}-${idB}` : `${idB}-${idA}`;
+    const entry = pairBondRef.current.get(key);
+    if (!entry) {
+      pairBondRef.current.set(key, { count: 1, last: now });
+    } else if (now - entry.last >= BOND_ENCOUNTER_GAP) {
+      entry.count += 1;
+      entry.last = now;
+    } else {
+      entry.last = now;
+    }
+  };
+
+  const getBondCount = (idA: number, idB: number) => {
+    const key = idA < idB ? `${idA}-${idB}` : `${idB}-${idA}`;
+    return pairBondRef.current.get(key)?.count ?? 0;
   };
 
   // 台词选择函数
@@ -690,6 +713,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
                 // 受保护的agent遇到击杀情况，改为共同增强
                 agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
                 other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
+                recordBond(agent.id, other.id, now);
                 const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const heartX = agent.x;
@@ -747,6 +771,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
                 // 受保护的other遇到击杀情况，改为共同增强
                 agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
                 other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
+                recordBond(agent.id, other.id, now);
                 const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const otherCanTriggerHeart = !other.lastHeartEffectTime || (now - other.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
                 const heartX = agent.x;
@@ -792,6 +817,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
             // 力量相近（使用扩大的阈值），都增长
               agent.power += agent.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
               other.power += other.team === 0 ? POWER_GAIN_ON_CROSS_TEAM_REINDEER : POWER_GAIN_ON_CROSS_TEAM;
+              recordBond(agent.id, other.id, now);
             
             // 检查爱心特效冷却时间
             const agentCanTriggerHeart = !agent.lastHeartEffectTime || (now - agent.lastHeartEffectTime) >= HEART_EFFECT_COOLDOWN;
@@ -1038,9 +1064,12 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
 
       const powerDiff = (a1.power - a0.power) / Math.max(a0.power, a1.power);
       const d = Math.abs(powerDiff);
+      const bond = getBondCount(a0.id, a1.id);
+      // 调参观测：终局碰撞时的战力差与羁绊数
+      console.log(`[RCop终局] d=${d.toFixed(3)} bond=${bond} (逃脱: d≤${FINAL_BOOST_DIFF} 或 bond≥${BOND_ESCAPE_COUNT}且d<${FINAL_MID_DIFF})`);
 
-      // 1) 逃脱结局（增强范畴）
-      if (d <= FINAL_BOOST_DIFF) {
+      // 1) 逃脱结局：势均力敌，或这一对有足够羁绊史且差距未到击杀档
+      if (d <= FINAL_BOOST_DIFF || (bond >= BOND_ESCAPE_COUNT && d < FINAL_MID_DIFF)) {
         pinkMistEffectsRef.current.push({ x: midX, y: midY, time: now, radius: 0 });
         heartEffectsRef.current.push({ x: midX, y: midY, time: now, scale: 0 });
         clashRef.current = { at: now, ending: 'escape' };
@@ -1166,6 +1195,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
     // 如果游戏未结束且未暂停，更新游戏逻辑
     if (!gameEnded && !pausedRef.current) {
       // 按速度档位多次执行移动与交互
+      // 每步都检查终局，避免倍速下一帧内穿过1v1状态、终局战斗被跳过
       const steps = speedRef.current;
       for (let s = 0; s < steps; s++) {
         agentsRef.current.forEach(agent => {
@@ -1173,9 +1203,11 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
         });
         processDrugInteractions();
         processAgentInteractions();
+        checkEndgame();
+        // 进入终局战斗/结算延迟/已结束后，终局固定按原速演出，不再倍速推进
+        if (gameEndedRef.current || clashRef.current || finalBattleRef.current.started) break;
       }
       processArenaShrink(deltaTime * steps);
-      checkEndgame();
       
       // 更新药物TTL
       const now = Date.now();
@@ -1441,6 +1473,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
     gameEndedRef.current = false;
     finalBattleRef.current = { a0: null, a1: null, started: false };
     clashRef.current = null;
+    pairBondRef.current.clear();
     lastTimeRef.current = performance.now();
     gameStartTimeRef.current = Date.now();
     lastSchedulerTickRef.current = Date.now();
@@ -1461,6 +1494,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
     gameEndedRef.current = false;
     finalBattleRef.current = { a0: null, a1: null, started: false };
     clashRef.current = null;
+    pairBondRef.current.clear();
     drugPointsRef.current = [];
     darkeningEffectsRef.current = [];
     pinkMistEffectsRef.current = [];
