@@ -1764,19 +1764,39 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
   // ---------- 渲染 ----------
   return (
-    <div className="fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
+    <div className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
       <style>{`
-        /* 竖屏触屏设备：整个游戏窗口旋转90°横过来 */
+        /* 竖屏触屏设备：整个游戏窗口旋转90°横过来并撑满全屏 */
         @media (orientation: portrait) and (pointer: coarse) {
+          .hatch-root { padding: 0; }
           .hatch-shell {
             /* fadeFloatUp动画(fill:both)的transform会覆盖rotate，这里必须禁掉 */
             animation: none;
             transform: rotate(90deg);
-            width: calc(100dvh - 8px);
+            width: 100dvh;
+            height: 100dvw;
             max-width: none !important;
+            border-radius: 0;
+            border: none;
           }
           .hatch-shell canvas {
-            max-height: calc(100dvw - 52px) !important;
+            max-width: 100% !important;
+            max-height: calc(100dvw - 42px) !important;
+          }
+        }
+        /* 横屏触屏设备：去掉留白撑满全屏 */
+        @media (orientation: landscape) and (pointer: coarse) {
+          .hatch-root { padding: 0; }
+          .hatch-shell {
+            animation: none;
+            width: 100dvw;
+            height: 100dvh;
+            max-width: none !important;
+            border-radius: 0;
+            border: none;
+          }
+          .hatch-shell canvas {
+            max-height: calc(100dvh - 42px) !important;
           }
         }
       `}</style>

@@ -1437,13 +1437,15 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    // 计算缩放比例（Canvas实际尺寸 vs 显示尺寸）
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // 将鼠标坐标转换为Canvas坐标
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    // 将点击坐标转换为Canvas坐标；竖屏旋转模式下（屏上包围盒宽<高）需换回画布坐标系
+    let x: number, y: number;
+    if (rect.width < rect.height) {
+      x = ((e.clientY - rect.top) / rect.height) * canvas.width;
+      y = ((rect.width - (e.clientX - rect.left)) / rect.width) * canvas.height;
+    } else {
+      x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+      y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    }
     
     // 检查是否在缩圈边界内
     const bounds = arenaBoundsRef.current;
@@ -1545,8 +1547,40 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-[#1A1512]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(26,21,18,0.3)] border border-[#F6D8B5]/60 p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto animate-float-in">
+    <div className="rcop-root fixed inset-0 bg-[#1A1512]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden">
+      <style>{`
+        /* 竖屏触屏设备：游戏窗口旋转90°横置并尽量撑满（禁掉入场动画避免transform被覆盖） */
+        @media (orientation: portrait) and (pointer: coarse) {
+          .rcop-root { padding: 0; }
+          .rcop-shell {
+            animation: none;
+            transform: rotate(90deg);
+            width: 100dvh;
+            max-width: none !important;
+            max-height: 100dvw !important;
+            border-radius: 0;
+            padding: 0.5rem 0.75rem;
+          }
+          .rcop-shell canvas {
+            max-height: calc(100dvw - 150px) !important;
+          }
+        }
+        /* 横屏触屏设备：撑满全屏 */
+        @media (orientation: landscape) and (pointer: coarse) {
+          .rcop-root { padding: 0; }
+          .rcop-shell {
+            animation: none;
+            max-width: none !important;
+            max-height: 100dvh !important;
+            border-radius: 0;
+            padding: 0.5rem 0.75rem;
+          }
+          .rcop-shell canvas {
+            max-height: calc(100dvh - 150px) !important;
+          }
+        }
+      `}</style>
+      <div className="rcop-shell bg-white rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(26,21,18,0.3)] border border-[#F6D8B5]/60 p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto animate-float-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-[#C96A24] serif-text">{T.title}</h2>
           <button
