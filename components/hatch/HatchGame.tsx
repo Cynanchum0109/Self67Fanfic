@@ -296,8 +296,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const isPortrait = vp.h >= vp.w;
   const shellStyle: React.CSSProperties | undefined = isTouch && vp.w > 0
     ? (isPortrait
-        ? { width: vp.h - 8, transform: 'rotate(90deg)', animation: 'none', maxWidth: 'none' }
-        : { animation: 'none' })
+        ? { width: vp.h - 8, transform: 'rotate(90deg) scale(1.5)', animation: 'none', maxWidth: 'none' }
+        : { transform: 'scale(1.5)', animation: 'none' })
     : undefined;
   const canvasStyle: React.CSSProperties = isTouch && vp.w > 0
     ? { maxWidth: '100%', maxHeight: (isPortrait ? vp.w : vp.h) - 52, width: 'auto', height: 'auto' }
@@ -1605,25 +1605,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   }, [draw]);
 
   // ---------- 开局 ----------
-  // 移动端进入游戏时请求浏览器全屏（必须在用户手势里调用），隐藏地址栏等
-  const rootRef = useRef<HTMLDivElement>(null);
-  const requestAppFullscreen = () => {
-    const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
-    if (!el) return;
-    try {
-      const p = el.requestFullscreen ? el.requestFullscreen() : (el.webkitRequestFullscreen?.(), Promise.resolve());
-      // 全屏后尝试锁定系统横屏（仅安卓支持）；成功后视口变横向，CSS旋转分支自然不再生效
-      Promise.resolve(p).then(() => {
-        (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> })?.lock?.('landscape').catch(() => {});
-      }).catch(() => {});
-    } catch { /* 不支持就算了 */ }
-  };
-  useEffect(() => () => {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  }, []);
-
   const startGame = (fac: Faction) => {
-    if (isTouch) requestAppFullscreen();
     const s = S.current;
     const base = FACTION_BASE[fac];
     s.faction = fac;
@@ -1809,7 +1791,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
   // ---------- 渲染 ----------
   return (
-    <div ref={rootRef} className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
+    <div className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
       <style>{`
         @media (pointer: coarse) {
           .hatch-root { padding: 0; }
