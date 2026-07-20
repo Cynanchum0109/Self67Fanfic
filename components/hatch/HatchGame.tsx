@@ -1769,6 +1769,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
         /* 竖屏触屏设备：整个游戏窗口旋转90°横过来 */
         @media (orientation: portrait) and (pointer: coarse) {
           .hatch-shell {
+            /* fadeFloatUp动画(fill:both)的transform会覆盖rotate，这里必须禁掉 */
+            animation: none;
             transform: rotate(90deg);
             width: calc(100dvh - 8px);
             max-width: none !important;
