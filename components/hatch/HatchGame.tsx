@@ -1606,8 +1606,11 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
     if (!el) return;
     try {
-      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-      else el.webkitRequestFullscreen?.();
+      const p = el.requestFullscreen ? el.requestFullscreen() : (el.webkitRequestFullscreen?.(), Promise.resolve());
+      // 全屏后尝试锁定系统横屏（仅安卓支持）；成功后视口变横向，CSS旋转分支自然不再生效
+      Promise.resolve(p).then(() => {
+        (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> })?.lock?.('landscape').catch(() => {});
+      }).catch(() => {});
     } catch { /* 不支持就算了 */ }
   };
   useEffect(() => () => {
