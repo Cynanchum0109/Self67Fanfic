@@ -292,15 +292,18 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       document.removeEventListener('fullscreenchange', delayed);
     };
   }, [isTouch]);
-  // 桌面布局原样等比缩放；竖屏时整体旋转90°横置（尺寸用JS算，部分内核vh/dvh不可靠）
+  // 触屏设备：窗口固定按桌面尺寸(1152宽)排版，再整体transform等比缩放适配屏幕，
+  // 这样按钮/文字/画布全部与桌面同比例。竖屏时再旋转90°横置。
   const isPortrait = vp.h >= vp.w;
+  const DESIGN_W = 1152; // 桌面 max-w-6xl
+  const DESIGN_H = 816;  // 标题栏约48 + 画布1150*(2/3)
   const shellStyle: React.CSSProperties | undefined = isTouch && vp.w > 0
     ? (isPortrait
-        ? { width: vp.h - 8, transform: 'rotate(90deg) scale(1.3)', animation: 'none', maxWidth: 'none' }
-        : { transform: 'scale(1.3)', animation: 'none' })
+        ? { width: DESIGN_W, transform: `rotate(90deg) scale(${Math.min((vp.h - 8) / DESIGN_W, (vp.w - 8) / DESIGN_H)})`, animation: 'none', maxWidth: 'none', flex: 'none' }
+        : { width: DESIGN_W, transform: `scale(${Math.min((vp.w - 8) / DESIGN_W, (vp.h - 8) / DESIGN_H)})`, animation: 'none', maxWidth: 'none', flex: 'none' })
     : undefined;
   const canvasStyle: React.CSSProperties = isTouch && vp.w > 0
-    ? { maxWidth: '100%', maxHeight: (isPortrait ? vp.w : vp.h) - 52, width: 'auto', height: 'auto' }
+    ? { maxWidth: '100%', width: 'auto', height: 'auto' }
     : { maxWidth: '100%', maxHeight: 'calc(100dvh - 60px)', width: 'auto', height: 'auto' };
   const [upgradeOptions, setUpgradeOptions] = useState<UpgradeOption[]>([]);
   const [endInfo, setEndInfo] = useState<{ win: boolean; kills: number; eaten: number; daysUsed: number; maxCombo: number; bodies: number } | null>(null);
