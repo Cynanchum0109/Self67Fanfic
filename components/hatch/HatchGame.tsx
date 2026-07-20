@@ -275,6 +275,28 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     mqTouch.addEventListener('change', update);
     return () => mqTouch.removeEventListener('change', update);
   }, []);
+  // 触屏设备：用JS读真实视口像素定窗口尺寸/旋转（部分内核vh/dvh不可靠，CSS单位算不准）
+  const [vp, setVp] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    if (!isTouch) return;
+    const update = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    // 进出全屏/转屏后视口尺寸会变，稍延迟再量一次确保拿到最终值
+    const delayed = () => { update(); setTimeout(update, 300); };
+    window.addEventListener('resize', delayed);
+    window.addEventListener('orientationchange', delayed);
+    document.addEventListener('fullscreenchange', delayed);
+    return () => {
+      window.removeEventListener('resize', delayed);
+      window.removeEventListener('orientationchange', delayed);
+      document.removeEventListener('fullscreenchange', delayed);
+    };
+  }, [isTouch]);
+  const shellStyle: React.CSSProperties | undefined = isTouch && vp.w > 0
+    ? (vp.h >= vp.w
+        ? { width: vp.h, height: vp.w, transform: 'rotate(90deg)', animation: 'none', maxWidth: 'none', borderRadius: 0, border: 'none' }
+        : { width: vp.w, height: vp.h, animation: 'none', maxWidth: 'none', borderRadius: 0, border: 'none' })
+    : undefined;
   const [upgradeOptions, setUpgradeOptions] = useState<UpgradeOption[]>([]);
   const [endInfo, setEndInfo] = useState<{ win: boolean; kills: number; eaten: number; daysUsed: number; maxCombo: number; bodies: number } | null>(null);
 
@@ -1808,27 +1830,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             max-height: none !important;
           }
         }
-        /* 竖屏触屏：整体旋转90°横置（先写vh/vw回退，部分内核不支持dvh） */
-        @media (orientation: portrait) and (pointer: coarse) {
-          .hatch-shell {
-            transform: rotate(90deg);
-            width: 100vh;
-            width: 100dvh;
-            height: 100vw;
-            height: 100dvw;
-          }
-        }
-        /* 横屏触屏 */
-        @media (orientation: landscape) and (pointer: coarse) {
-          .hatch-shell {
-            width: 100vw;
-            width: 100dvw;
-            height: 100vh;
-            height: 100dvh;
-          }
-        }
       `}</style>
-      <div className="hatch-shell relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
+      <div style={shellStyle} className="hatch-shell relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
         <div className="hatch-header flex items-center justify-between px-3 py-1.5 md:px-5 md:py-3 border-b border-[#E8833A]/20">
           <div className="flex items-baseline gap-3">
             <h2 className="text-[#E8833A] font-bold tracking-[0.25em] serif-text">{T.title}</h2>
