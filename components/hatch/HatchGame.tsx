@@ -1578,7 +1578,22 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   }, [draw]);
 
   // ---------- 开局 ----------
+  // 移动端进入游戏时请求浏览器全屏（必须在用户手势里调用），隐藏地址栏等
+  const rootRef = useRef<HTMLDivElement>(null);
+  const requestAppFullscreen = () => {
+    const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else el.webkitRequestFullscreen?.();
+    } catch { /* 不支持就算了 */ }
+  };
+  useEffect(() => () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }, []);
+
   const startGame = (fac: Faction) => {
+    if (isTouch) requestAppFullscreen();
     const s = S.current;
     const base = FACTION_BASE[fac];
     s.faction = fac;
@@ -1764,7 +1779,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
   // ---------- 渲染 ----------
   return (
-    <div className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
+    <div ref={rootRef} className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
       <style>{`
         /* 触屏设备通用：窗口铺满全屏，画布拉伸填充，标题栏浮在画布上层 */
         @media (pointer: coarse) {
@@ -1793,18 +1808,22 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             max-height: none !important;
           }
         }
-        /* 竖屏触屏：整体旋转90°横置 */
+        /* 竖屏触屏：整体旋转90°横置（先写vh/vw回退，部分内核不支持dvh） */
         @media (orientation: portrait) and (pointer: coarse) {
           .hatch-shell {
             transform: rotate(90deg);
+            width: 100vh;
             width: 100dvh;
+            height: 100vw;
             height: 100dvw;
           }
         }
         /* 横屏触屏 */
         @media (orientation: landscape) and (pointer: coarse) {
           .hatch-shell {
+            width: 100vw;
             width: 100dvw;
+            height: 100vh;
             height: 100dvh;
           }
         }
