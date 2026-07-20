@@ -201,11 +201,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     reaping: 'RETRIEVAL IN PROGRESS',
     rarityFine: 'SUPERIOR',
     rarityAnom: 'ANOMALOUS',
-    rotate: 'Rotate to landscape to play',
     takeover: 'PERSPECTIVE SHIFTED',
     takeoverSub: (dead: number, next: number) => `No.${dead} dead — perspective shifts to No.${next}`,
     takeoverQuote: '“I am large, I contain multitudes.” — Walt Whitman',
-    hint: 'WASD / Arrows to move · Click / stick to cast · Devour corpses to grow',
+    hint: 'WASD / Arrows to move · Click / stick to cast · Devour corpses to grow · Play in landscape on mobile',
     upgrades: {
       gun: ['Gun', 'Bigger magazine', 'Fast reload', 'Focused fire', 'Annihilation'],
       dagger: ['Dagger', 'Swiftness', 'Vigor', 'Obsession', 'Tear the Fresh Grass'],
@@ -245,11 +244,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     reaping: '回收执行中',
     rarityFine: '优越',
     rarityAnom: '异常',
-    rotate: '请横屏游玩',
     takeover: '视角移交',
     takeoverSub: (dead: number, next: number) => `编号${dead} 死亡，视角移交编号${next}`,
     takeoverQuote: '“我辽阔，我包含众多”——惠特曼',
-    hint: 'WASD/方向键移动 · 鼠标/摇杆释放技能 · 吞噬尸体增强',
+    hint: 'WASD/方向键移动 · 鼠标/摇杆释放技能 · 吞噬尸体增强 · 手机请横屏游玩',
     upgrades: {
       gun: ['枪', '弹匣扩容', '快速装填', '火力集中', '歼灭'],
       dagger: ['匕首', '迅捷', '强壮', '执念', '撕咬鲜草'],
@@ -268,26 +266,14 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const [phase, setPhase] = useState<Phase>('title');
   const phaseRef = useRef<Phase>('title');
   const countdownNumRef = useRef(0);
-  // 移动端竖屏检测：提示横屏游玩，竖屏时暂停世界
-  const [needRotate, setNeedRotate] = useState(false);
-  const needRotateRef = useRef(false);
   // 触屏设备检测：决定是否显示虚拟摇杆（不能按宽度判断，横屏手机宽度常≥768px）
   const [isTouch, setIsTouch] = useState(false);
   useEffect(() => {
-    const mqRotate = window.matchMedia('(orientation: portrait) and (pointer: coarse)');
     const mqTouch = window.matchMedia('(pointer: coarse)');
-    const update = () => {
-      needRotateRef.current = mqRotate.matches;
-      setNeedRotate(mqRotate.matches);
-      setIsTouch(mqTouch.matches);
-    };
+    const update = () => setIsTouch(mqTouch.matches);
     update();
-    mqRotate.addEventListener('change', update);
     mqTouch.addEventListener('change', update);
-    return () => {
-      mqRotate.removeEventListener('change', update);
-      mqTouch.removeEventListener('change', update);
-    };
+    return () => mqTouch.removeEventListener('change', update);
   }, []);
   const [upgradeOptions, setUpgradeOptions] = useState<UpgradeOption[]>([]);
   const [endInfo, setEndInfo] = useState<{ win: boolean; kills: number; eaten: number; daysUsed: number; maxCombo: number; bodies: number } | null>(null);
@@ -765,8 +751,6 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     if (phaseRef.current !== 'playing') return;
     const rawDt = Math.min(50, now - s.lastFrame);
     s.lastFrame = now;
-    // 竖屏提示中：世界暂停
-    if (needRotateRef.current) return;
     // 开局倒数：世界静止
     if (now < s.freezeUntil) {
       const n = Math.ceil((s.freezeUntil - now) / 1000);
@@ -1793,13 +1777,6 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             onPointerMove={handleCanvasMove}
           />
 
-          {/* 移动端竖屏提示：请横屏游玩 */}
-          {needRotate && (
-            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-[#0D0B09]/95">
-              <span className="text-4xl animate-pulse select-none" aria-hidden>📱↻</span>
-              <p className="text-[#E8833A] serif-text tracking-widest">{T.rotate}</p>
-            </div>
-          )}
 
           {/* 标题：选阵营 */}
           {phase === 'title' && (

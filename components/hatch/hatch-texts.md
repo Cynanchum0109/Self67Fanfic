@@ -14,7 +14,7 @@
 | reindeerName | 不太高兴的驯鹿 | Not-So-Happy Reindeer |
 | rabbitDesc | 靠近敌人自动匕首攻击，命中后短暂加速。鼠标点击/摇杆：快速压制。去痛快地撕咬鲜草吧！| Auto dagger strikes at close range; hits grant a burst of speed. Click / stick: rapid suppression. Go tear into the fresh grass! |
 | reindeerDesc | 自动发动追踪敌人的能量轰击。鼠标点击/摇杆：精神鞭挞。难以忍受，一直都是…… | Auto energy blasts that seek nearby foes. Click / stick: Mind Whip. Unbearable — it always has been… |
-| hint | WASD/方向键移动 · 鼠标/摇杆释放技能 · 吞噬尸体增强 | WASD / Arrows to move · Click / stick to cast · Devour corpses to grow |
+| hint | WASD/方向键移动 · 鼠标/摇杆释放技能 · 吞噬尸体增强 · 手机请横屏游玩 | WASD / Arrows to move · Click / stick to cast · Devour corpses to grow · Play in landscape on mobile |
 
 ## HUD
 
@@ -26,7 +26,6 @@
 | left | 剩余 | Left |
 | serial | 编号 | No. |
 | reaping | 回收执行中 | RETRIEVAL IN PROGRESS |
-| rotate | 请横屏游玩 | Rotate to landscape to play |
 
 ## 升级界面
 
