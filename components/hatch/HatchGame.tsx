@@ -292,11 +292,16 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       document.removeEventListener('fullscreenchange', delayed);
     };
   }, [isTouch]);
+  // 桌面布局原样等比缩放；竖屏时整体旋转90°横置（尺寸用JS算，部分内核vh/dvh不可靠）
+  const isPortrait = vp.h >= vp.w;
   const shellStyle: React.CSSProperties | undefined = isTouch && vp.w > 0
-    ? (vp.h >= vp.w
-        ? { width: vp.h, height: vp.w, transform: 'rotate(90deg)', animation: 'none', maxWidth: 'none', borderRadius: 0, border: 'none' }
-        : { width: vp.w, height: vp.h, animation: 'none', maxWidth: 'none', borderRadius: 0, border: 'none' })
+    ? (isPortrait
+        ? { width: vp.h - 8, transform: 'rotate(90deg)', animation: 'none', maxWidth: 'none' }
+        : { animation: 'none' })
     : undefined;
+  const canvasStyle: React.CSSProperties = isTouch && vp.w > 0
+    ? { maxWidth: '100%', maxHeight: (isPortrait ? vp.w : vp.h) - 52, width: 'auto', height: 'auto' }
+    : { maxWidth: '100%', maxHeight: 'calc(100dvh - 60px)', width: 'auto', height: 'auto' };
   const [upgradeOptions, setUpgradeOptions] = useState<UpgradeOption[]>([]);
   const [endInfo, setEndInfo] = useState<{ win: boolean; kills: number; eaten: number; daysUsed: number; maxCombo: number; bodies: number } | null>(null);
 
@@ -1806,32 +1811,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   return (
     <div ref={rootRef} className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
       <style>{`
-        /* 触屏设备通用：窗口铺满全屏，画布拉伸填充，标题栏浮在画布上层 */
         @media (pointer: coarse) {
           .hatch-root { padding: 0; }
-          .hatch-shell {
-            /* fadeFloatUp动画(fill:both)的transform会覆盖rotate，必须禁掉 */
-            animation: none;
-            max-width: none !important;
-            border-radius: 0;
-            border: none;
-          }
-          .hatch-header {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            z-index: 30;
-            border-bottom: none;
-            background: linear-gradient(to bottom, rgba(10,8,6,0.55), transparent);
-            pointer-events: none;
-          }
-          .hatch-header button { pointer-events: auto; }
-          .hatch-body { height: 100%; }
-          .hatch-shell canvas {
-            width: 100% !important;
-            height: 100% !important;
-            max-width: none !important;
-            max-height: none !important;
-          }
         }
       `}</style>
       <div style={shellStyle} className="hatch-shell relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
@@ -1860,7 +1841,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             width={W}
             height={H}
             className="block mx-auto cursor-crosshair"
-            style={{ maxWidth: '100%', maxHeight: 'calc(100dvh - 60px)', width: 'auto', height: 'auto' }}
+            style={canvasStyle}
             onPointerDown={handleCanvasDown}
             onPointerMove={handleCanvasMove}
           />
