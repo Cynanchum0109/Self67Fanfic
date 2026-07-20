@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X, Volume2, VolumeX } from 'lucide-react';
 
 // ============================================================
 // 孵化场 —— R公司克隆体大逃杀（类吸血鬼幸存者）
@@ -34,7 +34,7 @@ const TAKEOVER_SLOWMO = 900;
 // —— 阵营基础数值 ——
 // 鹿场克隆攻击性更弱：盯人半径小、出手更慢（但单下更疼）
 const FACTION_BASE = {
-  rabbit: { hp: 60, speed: 3.2, color: '#7C55B0', corpseHeal: 20, corpseXp: 10, eatFreeze: 0, aggro: 260, contactCd: 700, cloneDmg: 6 },
+  rabbit: { hp: 60, speed: 3.2, color: '#7C55B0', corpseHeal: 20, corpseXp: 10, eatFreeze: 300, aggro: 260, contactCd: 700, cloneDmg: 6 },
   reindeer: { hp: 90, speed: 2.5, color: '#2FA38C', corpseHeal: 10, corpseXp: 15, eatFreeze: 500, aggro: 190, contactCd: 950, cloneDmg: 8 },
 };
 
@@ -204,7 +204,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     takeover: 'PERSPECTIVE SHIFTED',
     takeoverSub: (dead: number, next: number) => `No.${dead} dead — perspective shifts to No.${next}`,
     takeoverQuote: '“I am large, I contain multitudes.” — Walt Whitman',
-    hint: 'WASD / Arrows to move · Click / stick to cast · Devour corpses to grow · Play in landscape on mobile',
+    hint: 'WASD / Arrows to move · Click / stick to cast · Stand on a corpse to devour it and grow · Play in landscape on mobile',
     upgrades: {
       gun: ['Gun', 'Bigger magazine', 'Fast reload', 'Focused fire', 'Annihilation'],
       dagger: ['Dagger', 'Swiftness', 'Vigor', 'Obsession', 'Tear the Fresh Grass'],
@@ -247,7 +247,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     takeover: '视角移交',
     takeoverSub: (dead: number, next: number) => `编号${dead} 死亡，视角移交编号${next}`,
     takeoverQuote: '“我辽阔，我包含众多”——惠特曼',
-    hint: 'WASD/方向键移动 · 鼠标/摇杆释放技能 · 吞噬尸体增强 · 手机请横屏游玩',
+    hint: 'WASD/方向键移动 · 鼠标/摇杆释放技能 · 停留在尸体上可以吃掉增强 · 手机请横屏游玩',
     upgrades: {
       gun: ['枪', '弹匣扩容', '快速装填', '火力集中', '歼灭'],
       dagger: ['匕首', '迅捷', '强壮', '执念', '撕咬鲜草'],
@@ -1035,19 +1035,15 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           sfx.eat();
           gainXp((cc.big ? 3 : 1) * f.corpseXp);
         };
-        if (s.faction === 'reindeer') {
-          // 鹿不一定肯吃：50%拒食，对这具尸体犹豫一阵（自己的旧身体不拒）
-          if (!c.big && Math.random() >= DEER_EAT_CHANCE) {
-            c.shunUntil = now + DEER_SHUN_MS;
-          } else {
-            // 进食硬直，硬直结束才吞下（期间尸体可能被抢走）
-            s.eatingUntil = now + f.eatFreeze;
-            setTimeout(() => {
-              if (phaseRef.current === 'playing') consume();
-            }, f.eatFreeze);
-          }
+        // 鹿不一定肯吃：50%拒食，对这具尸体犹豫一阵（自己的旧身体不拒）
+        if (s.faction === 'reindeer' && !c.big && Math.random() >= DEER_EAT_CHANCE) {
+          c.shunUntil = now + DEER_SHUN_MS;
         } else {
-          consume();
+          // 两阵营都要在尸体上停一小会儿才吞下（期间尸体可能被抢走）
+          s.eatingUntil = now + f.eatFreeze;
+          setTimeout(() => {
+            if (phaseRef.current === 'playing') consume();
+          }, f.eatFreeze);
         }
       }
     }
@@ -1755,10 +1751,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMute}
-              className="text-[#E8833A]/60 hover:text-[#E8833A] transition-colors text-sm select-none"
+              className="text-[#E8833A]/60 hover:text-[#E8833A] transition-colors select-none"
               aria-label={muted ? 'unmute' : 'mute'}
             >
-              {muted ? '🔇' : '🔊'}
+              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
             <button onClick={onClose} className="text-[#E8833A]/60 hover:text-[#E8833A] transition-colors" aria-label="close">
               <X size={20} />
