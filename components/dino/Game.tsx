@@ -409,31 +409,8 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
   }, [handleKeyPress]);
 
   return (
-    <div className="dino-root fixed inset-0 bg-[#2D2438]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden">
-      <style>{`
-        /* 竖屏触屏设备：游戏窗口旋转90°横置并尽量撑满（禁掉入场动画避免transform被覆盖） */
-        @media (orientation: portrait) and (pointer: coarse) {
-          .dino-root { padding: 0; }
-          .dino-shell {
-            animation: none;
-            transform: rotate(90deg);
-            width: 100dvh;
-            max-width: none !important;
-            max-height: 100dvw;
-            border-radius: 1rem;
-            padding: 0.75rem 1rem;
-          }
-          .dino-shell canvas {
-            max-height: calc(100dvw - 170px) !important;
-          }
-        }
-        /* 横屏触屏设备：撑满宽度 */
-        @media (orientation: landscape) and (pointer: coarse) {
-          .dino-root { padding: 0.25rem; }
-          .dino-shell { max-width: none !important; }
-        }
-      `}</style>
-      <div className="dino-shell bg-[#FDFCFA] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(45,58,49,0.2)] border border-[#EAE5F0] p-6 max-w-2xl w-full animate-float-in">
+    <div className="fixed inset-0 bg-[#2D2438]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#FDFCFA] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(45,58,49,0.2)] border border-[#EAE5F0] p-6 max-w-2xl w-full animate-float-in">
         <div className="flex justify-end items-center mb-4">
           <button
             onClick={onClose}

@@ -1766,42 +1766,51 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   return (
     <div className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
       <style>{`
-        /* 竖屏触屏设备：整个游戏窗口旋转90°横过来并撑满全屏 */
-        @media (orientation: portrait) and (pointer: coarse) {
+        /* 触屏设备通用：窗口铺满全屏，画布拉伸填充，标题栏浮在画布上层 */
+        @media (pointer: coarse) {
           .hatch-root { padding: 0; }
           .hatch-shell {
-            /* fadeFloatUp动画(fill:both)的transform会覆盖rotate，这里必须禁掉 */
+            /* fadeFloatUp动画(fill:both)的transform会覆盖rotate，必须禁掉 */
             animation: none;
+            max-width: none !important;
+            border-radius: 0;
+            border: none;
+          }
+          .hatch-header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 30;
+            border-bottom: none;
+            background: linear-gradient(to bottom, rgba(10,8,6,0.55), transparent);
+            pointer-events: none;
+          }
+          .hatch-header button { pointer-events: auto; }
+          .hatch-body { height: 100%; }
+          .hatch-shell canvas {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+          }
+        }
+        /* 竖屏触屏：整体旋转90°横置 */
+        @media (orientation: portrait) and (pointer: coarse) {
+          .hatch-shell {
             transform: rotate(90deg);
             width: 100dvh;
             height: 100dvw;
-            max-width: none !important;
-            border-radius: 0;
-            border: none;
-          }
-          .hatch-shell canvas {
-            max-width: 100% !important;
-            max-height: calc(100dvw - 42px) !important;
           }
         }
-        /* 横屏触屏设备：去掉留白撑满全屏 */
+        /* 横屏触屏 */
         @media (orientation: landscape) and (pointer: coarse) {
-          .hatch-root { padding: 0; }
           .hatch-shell {
-            animation: none;
             width: 100dvw;
             height: 100dvh;
-            max-width: none !important;
-            border-radius: 0;
-            border: none;
-          }
-          .hatch-shell canvas {
-            max-height: calc(100dvh - 42px) !important;
           }
         }
       `}</style>
       <div className="hatch-shell relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-1.5 md:px-5 md:py-3 border-b border-[#E8833A]/20">
+        <div className="hatch-header flex items-center justify-between px-3 py-1.5 md:px-5 md:py-3 border-b border-[#E8833A]/20">
           <div className="flex items-baseline gap-3">
             <h2 className="text-[#E8833A] font-bold tracking-[0.25em] serif-text">{T.title}</h2>
             <span className="text-[11px] text-[#E8833A]/50 tracking-wider">{T.subtitle}</span>
@@ -1820,7 +1829,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="hatch-body relative">
           <canvas
             ref={canvasRef}
             width={W}
