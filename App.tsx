@@ -5,6 +5,7 @@ import MarkdownRenderer from './components/MarkdownRenderer';
 import Game from './components/dino/Game';
 import Simulation from './components/RCop/Simulation';
 import UFOGame from './components/ufo/UFOGame';
+import HatchGame from './components/hatch/HatchGame';
 import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
@@ -47,8 +48,8 @@ function parseChapters(content: string): { index: number }[] {
 }
 
 // —— Hash 路由 ——
-// #/ 首页；#/toc 目录；#/story/<id> 阅读；#/game/dino|rcop|ufo 小游戏弹窗
-type GameKey = 'dino' | 'rcop' | 'ufo';
+// #/ 首页；#/toc 目录；#/story/<id> 阅读；#/game/dino|rcop|ufo|hatch 小游戏弹窗
+type GameKey = 'dino' | 'rcop' | 'ufo' | 'hatch';
 
 interface Route {
   view: AppState;
@@ -61,7 +62,7 @@ function parseHash(): Route {
   const [seg, arg] = hash.split('/');
   if (seg === 'toc') return { view: AppState.TOC, storyId: null, game: null };
   if (seg === 'story' && arg) return { view: AppState.READER, storyId: decodeURIComponent(arg), game: null };
-  if (seg === 'game' && (arg === 'dino' || arg === 'rcop' || arg === 'ufo')) {
+  if (seg === 'game' && (arg === 'dino' || arg === 'rcop' || arg === 'ufo' || arg === 'hatch')) {
     return { view: AppState.HOME, storyId: null, game: arg };
   }
   return { view: AppState.HOME, storyId: null, game: null };
@@ -312,6 +313,14 @@ const App: React.FC = () => {
           </button>
 
           <button
+            onClick={() => openGame('hatch')}
+            className="text-[#E8833A]/70 hover:text-[#E8833A] transition-colors cursor-pointer text-sm font-light"
+            aria-label={lang === 'zh' ? '孵化场' : 'The Hatchery'}
+          >
+            {lang === 'zh' ? '孵化场' : 'Hatchery'}
+          </button>
+
+          <button
             onClick={() => openGame('dino')}
             className="text-[#9DCFC7] hover:text-[#6FCBB8] transition-colors cursor-pointer text-sm font-light"
           >
@@ -553,6 +562,7 @@ const App: React.FC = () => {
       {route.game === 'dino' && <Game onClose={closeGame} lang={lang} />}
       {route.game === 'rcop' && <Simulation onClose={closeGame} lang={lang} />}
       {route.game === 'ufo' && <UFOGame onClose={closeGame} lang={lang} />}
+      {route.game === 'hatch' && <HatchGame onClose={closeGame} lang={lang} />}
     </Layout>
   );
 };
