@@ -175,47 +175,48 @@ interface UpgradeOption {
 const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   // 英文为草译，待审校 → translations-review.md
   const T = lang === 'en' ? {
-    title: 'R Corp HATCHERY',
-    subtitle: 'R Corp. · Clone yourself out of the clones',
-    rabbitName: 'Rabbit',
-    reindeerName: 'Reindeer',
-    rabbitDesc: 'Fast & fragile. Auto: dagger (hits grant a burst of speed). Click: aimed gunshot — limited magazine, bullets refill over time. Eats its own dead without a second thought.',
-    reindeerDesc: 'Slow & sturdy. Auto: psychic filaments. Click: great lightning that seeks several foes in your aim — casting it hurts your own mind. May refuse to eat itself: hesitant, half heal, 1.5x XP.',
+    title: 'R Corp Hatchery — Live',
+    subtitle: 'Survival guaranteed.',
+    rabbitName: 'Happy Rabbit',
+    reindeerName: 'Not-So-Happy Reindeer',
+    rabbitDesc: 'Auto dagger strikes at close range; hits grant a burst of speed. Click / stick: rapid suppression. Go tear into the fresh grass!',
+    reindeerDesc: 'Auto energy blasts that seek nearby foes. Click / stick: Mind Whip. Unbearable — it always has been…',
     day: 'Day',
     kills: 'Kills',
     body: 'Body',
     left: 'Left',
     serial: 'No.',
-    levelup: 'GROWTH',
-    win: 'SOLE SURVIVOR — SHIPPED OUT',
-    lose: 'DAY 7 — ALL DISPOSED',
-    winSub: 'Only the strongest clone leaves the hatchery.',
-    loseSub: 'The A Corp. treaty allows no clone to live past 7 days.',
+    levelup: 'HUNT',
+    win: 'QUALIFIED — SHIPPED OUT',
+    lose: 'DAY 7 — ALL RETRIEVED',
+    winSub: 'Only one may leave the hatchery.',
+    loseSub: 'The taboo allows no clone to live past seven days.',
     statKills: 'Kills',
-    statEaten: 'Corpses eaten',
+    statEaten: 'Selves devoured',
     statTime: 'Time',
     statTimeUnit: 'days',
     statCombo: 'Best combo',
-    statBodies: 'Bodies used',
-    retry: 'Again',
-    reaping: 'DISPOSAL IN PROGRESS',
-    rarityFine: 'FINE',
+    statBodies: 'Bodies replaced',
+    retry: 'Clone again',
+    reaping: 'RETRIEVAL IN PROGRESS',
+    rarityFine: 'SUPERIOR',
     rarityAnom: 'ANOMALOUS',
+    rotate: 'Rotate to landscape to play',
     takeover: 'PERSPECTIVE SHIFTED',
     takeoverSub: (dead: number, next: number) => `No.${dead} dead — perspective shifts to No.${next}`,
     takeoverQuote: '“I am large, I contain multitudes.” — Walt Whitman',
-    hint: 'WASD / Arrows move · Auto weapon fires itself · Click to use your skill · HP drains constantly — only corpses restore it',
+    hint: 'WASD / Arrows to move · Click / stick to cast · Devour corpses to grow',
     upgrades: {
-      gun: ['Gun', 'Bigger magazine', 'Faster reload · pierce', 'Heavier rounds', 'Annihilation'],
-      dagger: ['Dagger', 'Faster slashes', 'Wider slash', 'Deeper cuts', 'Frenzy'],
-      bolt: ['Great Lightning', 'One more fork', 'Longer reach', 'Deeper paralysis', 'Storm'],
-      psy: ['Psychic Filaments', 'Second filament', 'Longer reach', 'Heavier static', 'Overwhelm'],
+      gun: ['Gun', 'Bigger magazine', 'Fast reload', 'Focused fire', 'Annihilation'],
+      dagger: ['Dagger', 'Swiftness', 'Vigor', 'Obsession', 'Tear the Fresh Grass'],
+      bolt: ['Mind Whip', 'Attack capacity', 'Beam charge', 'Focused mind', 'Get away!'],
+      psy: ['Energy Blast', 'Double blast', 'Convergence', 'Stasis', 'Chaos'],
       mov: 'Move Speed +8%',
       vit: 'Max HP +15',
-      cdr: 'Cooldown -8%',
+      cdr: 'Reload time -8%',
       pick: 'Pickup Range +',
       heal: 'Emergency Ration',
-      healDesc: 'Restore full HP right now.',
+      healDesc: 'HP Round',
     },
   } : {
     title: 'R公司孵化场实况',
@@ -244,6 +245,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     reaping: '回收执行中',
     rarityFine: '优越',
     rarityAnom: '异常',
+    rotate: '请横屏游玩',
     takeover: '视角移交',
     takeoverSub: (dead: number, next: number) => `编号${dead} 死亡，视角移交编号${next}`,
     takeoverQuote: '“我辽阔，我包含众多”——惠特曼',
@@ -266,6 +268,27 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const [phase, setPhase] = useState<Phase>('title');
   const phaseRef = useRef<Phase>('title');
   const countdownNumRef = useRef(0);
+  // 移动端竖屏检测：提示横屏游玩，竖屏时暂停世界
+  const [needRotate, setNeedRotate] = useState(false);
+  const needRotateRef = useRef(false);
+  // 触屏设备检测：决定是否显示虚拟摇杆（不能按宽度判断，横屏手机宽度常≥768px）
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    const mqRotate = window.matchMedia('(orientation: portrait) and (pointer: coarse)');
+    const mqTouch = window.matchMedia('(pointer: coarse)');
+    const update = () => {
+      needRotateRef.current = mqRotate.matches;
+      setNeedRotate(mqRotate.matches);
+      setIsTouch(mqTouch.matches);
+    };
+    update();
+    mqRotate.addEventListener('change', update);
+    mqTouch.addEventListener('change', update);
+    return () => {
+      mqRotate.removeEventListener('change', update);
+      mqTouch.removeEventListener('change', update);
+    };
+  }, []);
   const [upgradeOptions, setUpgradeOptions] = useState<UpgradeOption[]>([]);
   const [endInfo, setEndInfo] = useState<{ win: boolean; kills: number; eaten: number; daysUsed: number; maxCombo: number; bodies: number } | null>(null);
 
@@ -742,6 +765,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     if (phaseRef.current !== 'playing') return;
     const rawDt = Math.min(50, now - s.lastFrame);
     s.lastFrame = now;
+    // 竖屏提示中：世界暂停
+    if (needRotateRef.current) return;
     // 开局倒数：世界静止
     if (now < s.freezeUntil) {
       const n = Math.ceil((s.freezeUntil - now) / 1000);
@@ -1736,9 +1761,9 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
   // ---------- 渲染 ----------
   return (
-    <div className="fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="relative bg-[#12100D] border border-[#E8833A]/30 rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E8833A]/20">
+    <div className="fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4">
+      <div className="relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-1.5 md:px-5 md:py-3 border-b border-[#E8833A]/20">
           <div className="flex items-baseline gap-3">
             <h2 className="text-[#E8833A] font-bold tracking-[0.25em] serif-text">{T.title}</h2>
             <span className="text-[11px] text-[#E8833A]/50 tracking-wider">{T.subtitle}</span>
@@ -1762,15 +1787,24 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             ref={canvasRef}
             width={W}
             height={H}
-            className="w-full h-auto block cursor-crosshair"
+            className="block mx-auto cursor-crosshair"
+            style={{ maxWidth: '100%', maxHeight: 'calc(100dvh - 60px)', width: 'auto', height: 'auto' }}
             onPointerDown={handleCanvasDown}
             onPointerMove={handleCanvasMove}
           />
 
+          {/* 移动端竖屏提示：请横屏游玩 */}
+          {needRotate && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-[#0D0B09]/95">
+              <span className="text-4xl animate-pulse select-none" aria-hidden>📱↻</span>
+              <p className="text-[#E8833A] serif-text tracking-widest">{T.rotate}</p>
+            </div>
+          )}
+
           {/* 标题：选阵营 */}
           {phase === 'title' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 bg-[#0D0B09]/70">
-              <div className="flex gap-6 flex-col md:flex-row px-6">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 md:gap-8 bg-[#0D0B09]/70">
+              <div className="flex gap-3 md:gap-6 flex-col md:flex-row px-6">
                 <button
                   onClick={() => startGame('rabbit')}
                   className="w-64 p-5 rounded-xl border border-[#7C55B0]/60 bg-[#161020] hover:bg-[#1F1730] hover:border-[#7C55B0] transition-all text-left group"
@@ -1853,12 +1887,12 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             </div>
           )}
 
-          {/* 移动端：左移动摇杆 + 右技能摇杆 */}
-          {phase === 'playing' && (
+          {/* 移动端：左移动摇杆 + 右技能摇杆（按触屏判定显示，不按宽度） */}
+          {phase === 'playing' && isTouch && (
             <>
               <div
                 ref={joyBaseRef}
-                className="absolute bottom-6 left-6 w-24 h-24 rounded-full border border-[#E8833A]/30 bg-[#E8833A]/5 md:hidden touch-none"
+                className="absolute bottom-6 left-6 w-24 h-24 rounded-full border border-[#E8833A]/30 bg-[#E8833A]/5 touch-none"
                 onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleJoy(e); }}
                 onPointerMove={(e) => { if (S.current.joy.active) handleJoy(e); }}
                 onPointerUp={(e) => handleJoy(e, true)}
@@ -1871,7 +1905,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
               </div>
               <div
                 ref={skillBaseRef}
-                className="absolute bottom-6 right-6 w-24 h-24 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 md:hidden touch-none"
+                className="absolute bottom-6 right-6 w-24 h-24 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
                 onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleSkillJoy(e); }}
                 onPointerMove={(e) => { if (skillDirRef.current.x !== 0 || skillDirRef.current.y !== 0) handleSkillJoy(e); }}
                 onPointerUp={(e) => handleSkillJoy(e, true)}
