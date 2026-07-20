@@ -1658,11 +1658,25 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     };
   }, []);
 
-  // 画布坐标换算
+  // 竖屏旋转模式判定：画布被rotate(90deg)后，屏上包围盒宽<高
+  const isRotatedView = () => {
+    const c = canvasRef.current;
+    if (!c) return false;
+    const r = c.getBoundingClientRect();
+    return r.width < r.height;
+  };
+
+  // 画布坐标换算（旋转模式下屏幕坐标要转回画布坐标系）
   const canvasCoords = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
+    if (rect.width < rect.height) {
+      return {
+        x: ((clientY - rect.top) / rect.height) * W,
+        y: ((rect.width - (clientX - rect.left)) / rect.width) * H,
+      };
+    }
     return {
       x: ((clientX - rect.left) / rect.width) * W,
       y: ((clientY - rect.top) / rect.height) * H,
@@ -1709,6 +1723,11 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const cy = rect.top + rect.height / 2;
     let dx = (e.clientX - cx) / (rect.width / 2);
     let dy = (e.clientY - cy) / (rect.height / 2);
+    if (isRotatedView()) {
+      // 旋转模式：屏幕方向转回游戏坐标系
+      const rx = dy, ry = -dx;
+      dx = rx; dy = ry;
+    }
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     S.current.joy = { x: Math.abs(dx) > 0.15 ? dx : 0, y: Math.abs(dy) > 0.15 ? dy : 0, active: true };
@@ -1733,6 +1752,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const cy = rect.top + rect.height / 2;
     let dx = (e.clientX - cx) / (rect.width / 2);
     let dy = (e.clientY - cy) / (rect.height / 2);
+    if (isRotatedView()) {
+      const rx = dy, ry = -dx;
+      dx = rx; dy = ry;
+    }
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     skillDirRef.current = { x: dx, y: dy };
@@ -1741,8 +1764,21 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
   // ---------- 渲染 ----------
   return (
-    <div className="fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4">
-      <div className="relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
+    <div className="fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
+      <style>{`
+        /* 竖屏触屏设备：整个游戏窗口旋转90°横过来 */
+        @media (orientation: portrait) and (pointer: coarse) {
+          .hatch-shell {
+            transform: rotate(90deg);
+            width: calc(100dvh - 8px);
+            max-width: none !important;
+          }
+          .hatch-shell canvas {
+            max-height: calc(100dvw - 52px) !important;
+          }
+        }
+      `}</style>
+      <div className="hatch-shell relative bg-[#12100D] border border-[#E8833A]/30 rounded-xl md:rounded-2xl shadow-2xl shadow-black/60 max-w-6xl w-full animate-float-in overflow-hidden">
         <div className="flex items-center justify-between px-3 py-1.5 md:px-5 md:py-3 border-b border-[#E8833A]/20">
           <div className="flex items-baseline gap-3">
             <h2 className="text-[#E8833A] font-bold tracking-[0.25em] serif-text">{T.title}</h2>
