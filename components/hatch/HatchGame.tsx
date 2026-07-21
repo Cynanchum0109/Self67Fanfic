@@ -1496,7 +1496,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       ctx.fillText('…', s.px, s.py - 26);
     }
     // 玩家编号（只显示自己的）
-    ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 13px monospace';
     ctx.fillStyle = '#FFF7EE';
     ctx.fillText(`#${s.playerSerial}`, s.px, s.py - 32);
     // 血条（红色，持续流失，靠吃尸体回复）
@@ -1517,7 +1517,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 4;
     ctx.textAlign = 'left';
-    ctx.font = 'bold 17px monospace';
+    ctx.font = 'bold 19px monospace';
     if (s.reaper) {
       ctx.fillStyle = Math.sin(now / 180) > 0 ? '#FF5C40' : '#FF9A6B';
       ctx.fillText(T.reaping, WALL + 10, WALL + 26);
@@ -1534,7 +1534,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       ctx.fillText(`×${s.combo}`, W / 2, WALL + 52);
       ctx.textAlign = 'left';
     }
-    ctx.font = 'bold 14px monospace';
+    ctx.font = 'bold 15px monospace';
     ctx.fillStyle = '#F5A45B';
     const bodyStr = lang === 'en' ? `${T.body} ${s.bodies}` : `${T.body}${s.bodies}具`;
     ctx.fillText(`${T.serial} #${s.playerSerial} · ${bodyStr} · ${T.kills} ${s.kills} · ${T.left} ${s.mobs.length + s.poolLeft}`, WALL + 10, WALL + 48);
@@ -1546,7 +1546,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     ctx.fillRect(WALL + 10, H - WALL - 14, xw, 6);
     ctx.fillStyle = '#E8833A';
     ctx.fillRect(WALL + 10, H - WALL - 14, xw * xr, 6);
-    ctx.font = '11px monospace';
+    ctx.font = '12px monospace';
     ctx.fillStyle = 'rgba(232,131,58,0.7)';
     ctx.fillText(`Lv.${s.level}`, WALL + 10, H - WALL - 20);
 
@@ -1779,7 +1779,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     S.current.joy = { x: Math.abs(dx) > 0.15 ? dx : 0, y: Math.abs(dy) > 0.15 ? dy : 0, active: true };
-    setJoyKnob({ x: dx * 40, y: dy * 40 });
+    setJoyKnob({ x: dx * 44, y: dy * 44 });
   };
 
   // 移动端：右摇杆瞄准，松手释放主动技能
@@ -1807,7 +1807,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     skillDirRef.current = { x: dx, y: dy };
-    setSkillKnob({ x: dx * 40, y: dy * 40 });
+    setSkillKnob({ x: dx * 44, y: dy * 44 });
   };
 
   // ---------- 渲染 ----------
@@ -1875,7 +1875,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
                   <p className="text-xs text-[#8FDCCB]/90 leading-relaxed">{T.reindeerDesc}</p>
                 </button>
               </div>
-              <p className="text-[11px] text-[#E8833A]/50 tracking-wide">{T.hint}</p>
+              <p className="text-[13px] text-[#F5A45B]/90 tracking-wide">{T.hint}</p>
             </div>
           )}
 
@@ -1941,28 +1941,28 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             <>
               <div
                 ref={joyBaseRef}
-                className="absolute bottom-8 left-8 w-36 h-36 rounded-full border border-[#E8833A]/30 bg-[#E8833A]/5 touch-none"
+                className="absolute bottom-8 left-8 w-40 h-40 rounded-full border border-[#E8833A]/30 bg-[#E8833A]/5 touch-none"
                 onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleJoy(e); }}
                 onPointerMove={(e) => { if (S.current.joy.active) handleJoy(e); }}
                 onPointerUp={(e) => handleJoy(e, true)}
                 onPointerCancel={(e) => handleJoy(e, true)}
               >
                 <div
-                  className="absolute w-16 h-16 rounded-full bg-[#E8833A]/40 border border-[#E8833A]/60"
-                  style={{ left: `calc(50% - 32px + ${joyKnob.x}px)`, top: `calc(50% - 32px + ${joyKnob.y}px)` }}
+                  className="absolute w-[70px] h-[70px] rounded-full bg-[#E8833A]/40 border border-[#E8833A]/60"
+                  style={{ left: `calc(50% - 35px + ${joyKnob.x}px)`, top: `calc(50% - 35px + ${joyKnob.y}px)` }}
                 />
               </div>
               <div
                 ref={skillBaseRef}
-                className="absolute bottom-8 right-8 w-36 h-36 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
+                className="absolute bottom-8 right-8 w-40 h-40 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
                 onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleSkillJoy(e); }}
                 onPointerMove={(e) => { if (skillDirRef.current.x !== 0 || skillDirRef.current.y !== 0) handleSkillJoy(e); }}
                 onPointerUp={(e) => handleSkillJoy(e, true)}
                 onPointerCancel={(e) => handleSkillJoy(e, true)}
               >
                 <div
-                  className="absolute w-16 h-16 rounded-full bg-[#F5D061]/40 border border-[#F5D061]/60"
-                  style={{ left: `calc(50% - 32px + ${skillKnob.x}px)`, top: `calc(50% - 32px + ${skillKnob.y}px)` }}
+                  className="absolute w-[70px] h-[70px] rounded-full bg-[#F5D061]/40 border border-[#F5D061]/60"
+                  style={{ left: `calc(50% - 35px + ${skillKnob.x}px)`, top: `calc(50% - 35px + ${skillKnob.y}px)` }}
                 />
               </div>
             </>
