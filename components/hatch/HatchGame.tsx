@@ -35,7 +35,7 @@ const TAKEOVER_SLOWMO = 900;
 // 鹿场克隆攻击性更弱：盯人半径小、出手更慢（但单下更疼）
 const FACTION_BASE = {
   rabbit: { hp: 60, speed: 3.2, color: '#7C55B0', corpseHeal: 20, corpseXp: 10, eatFreeze: 300, aggro: 260, contactCd: 700, cloneDmg: 6 },
-  reindeer: { hp: 90, speed: 2.5, color: '#2FA38C', corpseHeal: 10, corpseXp: 15, eatFreeze: 500, aggro: 190, contactCd: 950, cloneDmg: 8 },
+  reindeer: { hp: 90, speed: 2.5, color: '#2FA38C', corpseHeal: 10, corpseXp: 15, eatFreeze: 300, aggro: 190, contactCd: 950, cloneDmg: 8 },
 };
 
 // —— 武器等级表 ——
@@ -124,6 +124,7 @@ const REAPER_SPEED = 3.6;
 // 升级稀有度：精良/异常
 const RARITY_FINE_CHANCE = 0.3;
 const RARITY_ANOM_CHANCE = 0.1;
+const EAT_COOLDOWN = 400; // 吃完一具后的短冷却，期间不主动吃下一具，避免连续硬直
 const DEER_EAT_CHANCE = 0.5; // 鹿不一定肯吃：50%概率拒食（犹豫一会儿再说）
 const DEER_SHUN_MS = 1200; // 拒食后对该尸体的犹豫时长
 
@@ -315,6 +316,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     hp: 60, maxHp: 60,
     facing: 0,
     eatingUntil: 0,
+    eatStart: 0,   // 本次进食开始时刻（画进度环用）
+    eatCdUntil: 0, // 进食后短冷却，到点前不主动吃，给玩家时间走开
     playerSerial: 1, // 当前身体的出厂编号
     prevSerial: 1, // 上一具身体的编号（换体提示用）
     wAuto: 1, wActive: 1, // 自动/主动武器等级
@@ -1048,8 +1051,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       return true;
     });
 
-    // —— 玩家吃尸体 ——
-    if (!eating) {
+    // —— 玩家吃尸体 ——（进食硬直结束后还有一小段冷却，避免连吃卡住）
+    if (!eating && now >= s.eatCdUntil) {
       const pr = pickupRange();
       const c = s.corpses.find(c => dist2(s.px, s.py, c.x, c.y) < pr * pr && !(c.shunUntil && now < c.shunUntil));
       if (c) {
@@ -1070,7 +1073,9 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           c.shunUntil = now + DEER_SHUN_MS;
         } else {
           // 两阵营都要在尸体上停一小会儿才吞下（期间尸体可能被抢走）
+          s.eatStart = now;
           s.eatingUntil = now + f.eatFreeze;
+          s.eatCdUntil = now + f.eatFreeze + EAT_COOLDOWN;
           setTimeout(() => {
             if (phaseRef.current === 'playing') consume();
           }, f.eatFreeze);
@@ -1512,9 +1517,19 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     }
     ctx.restore();
     if (eating) {
-      ctx.fillStyle = 'rgba(255,247,238,0.85)';
-      ctx.font = '11px sans-serif';
-      ctx.fillText('…', s.px, s.py - 26);
+      // 进食进度环：绕玩家一圈随进度填满，满圈=吃完（放开可动）
+      const p = Math.min(1, Math.max(0, (now - s.eatStart) / Math.max(1, s.eatingUntil - s.eatStart)));
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(143,220,203,0.25)';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(s.px, s.py, 27, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#9BE8D6';
+      ctx.beginPath(); ctx.arc(s.px, s.py, 27, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p); ctx.stroke();
+      ctx.lineCap = 'butt';
+      // 咀嚼小圆点：随进度轻微跳动
+      ctx.fillStyle = 'rgba(255,247,238,0.9)';
+      const bob = 2 * Math.sin(now / 70);
+      ctx.beginPath(); ctx.arc(s.px, s.py - 30 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
     }
     // 玩家编号（只显示自己的）
     ctx.font = 'bold 14px monospace';
@@ -1677,7 +1692,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.lastWave = s.startAt;
     s.lastFrame = now0;
     s.slowmoUntil = 0; s.flashUntil = 0; s.takeoverMsgUntil = 0;
-    s.eatingUntil = 0;
+    s.eatingUntil = 0; s.eatStart = 0; s.eatCdUntil = 0;
     s.invulnUntil = 0; s.painFreeUntil = 0; s.firing = false;
     s.pills = []; s.lastPillSpawn = s.startAt;
     s.supplies = []; s.lastSupplySpawn = s.startAt;
