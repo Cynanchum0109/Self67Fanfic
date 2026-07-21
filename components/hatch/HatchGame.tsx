@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Volume2, VolumeX } from 'lucide-react';
+import { X, Volume2, VolumeX, Zap } from 'lucide-react';
 
 // ============================================================
 // 孵化场 —— R公司克隆体大逃杀（类吸血鬼幸存者）
@@ -317,6 +317,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     facing: 0,
     aimAngle: -Math.PI / 2,          // 主动技能瞄准方向（武器指示物朝向）
     aimSrc: '' as '' | 'mouse' | 'joy', // 最近一次瞄准来源，用于每帧更新aimAngle
+    skillHeld: false,                // 鹿：移动端开火按钮是否按住（鹿自动索敌，只需按钮触发）
     eatingUntil: 0,
     eatStart: 0,   // 本次进食开始时刻（画进度环用）
     eatCdUntil: 0, // 进食后短冷却，到点前不主动吃，给玩家时间走开
@@ -847,16 +848,27 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       }
     }
 
-    // 武器指示物朝向 = 主动技能瞄准方向：摇杆推着时用摇杆，否则用鼠标（松开摇杆保持上次角度）
-    const sdAim = skillDirRef.current;
-    if (sdAim.x !== 0 || sdAim.y !== 0) {
-      s.aimAngle = Math.atan2(sdAim.y, sdAim.x);
-    } else if (s.aimSrc === 'mouse') {
-      s.aimAngle = Math.atan2(s.aimY - s.py, s.aimX - s.px);
+    // 最近的克隆（鹿自动索敌、指示物朝向都用它）
+    const nearestMob = s.mobs.length
+      ? s.mobs.reduce((a, b) => dist2(s.px, s.py, a.x, a.y) < dist2(s.px, s.py, b.x, b.y) ? a : b)
+      : null;
+    const nearAngle = nearestMob ? Math.atan2(nearestMob.y - s.py, nearestMob.x - s.px) : null;
+
+    // 武器指示物朝向 = 主动技能瞄准方向
+    if (s.faction === 'reindeer') {
+      // 鹿：自动瞄准，指向最近敌人（无敌人时保持上次角度）
+      if (nearAngle !== null) s.aimAngle = nearAngle;
+    } else {
+      // 兔：手动瞄准，摇杆优先，否则鼠标（松开摇杆保持上次角度）
+      const sdAim = skillDirRef.current;
+      if (sdAim.x !== 0 || sdAim.y !== 0) s.aimAngle = Math.atan2(sdAim.y, sdAim.x);
+      else if (s.aimSrc === 'mouse') s.aimAngle = Math.atan2(s.aimY - s.py, s.aimX - s.px);
     }
 
-    // 鼠标按住 / 技能摇杆持续推着：连发（枪受弹匣与射速限制，雷电受冷却限制）
-    if (s.firing) {
+    // 连发：兔手动方向；鹿自动朝最近敌人（鼠标按住或开火按钮按住即触发，射速/冷却在castActive内限制）
+    if (s.faction === 'reindeer') {
+      if ((s.firing || s.skillHeld) && nearAngle !== null) castActive(Math.cos(nearAngle), Math.sin(nearAngle));
+    } else if (s.firing) {
       castActive(s.aimX - s.px, s.aimY - s.py);
     } else {
       const sd = skillDirRef.current;
@@ -1681,7 +1693,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.px = W / 2; s.py = H * 0.65;
     s.maxHp = base.hp; s.hp = base.hp;
     s.facing = -Math.PI / 2;
-    s.aimAngle = -Math.PI / 2; s.aimSrc = '';
+    s.aimAngle = -Math.PI / 2; s.aimSrc = ''; s.skillHeld = false;
     s.playerSerial = 1 + Math.floor(Math.random() * POOL_TOTAL);
     s.prevSerial = s.playerSerial;
     s.serialNext = 1;
@@ -1995,19 +2007,32 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
                   style={{ left: `calc(50% - 38.5px + ${joyKnob.x}px)`, top: `calc(50% - 38.5px + ${joyKnob.y}px)` }}
                 />
               </div>
-              <div
-                ref={skillBaseRef}
-                className="absolute bottom-8 right-8 w-44 h-44 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
-                onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleSkillJoy(e); }}
-                onPointerMove={(e) => { if (skillDirRef.current.x !== 0 || skillDirRef.current.y !== 0) handleSkillJoy(e); }}
-                onPointerUp={(e) => handleSkillJoy(e, true)}
-                onPointerCancel={(e) => handleSkillJoy(e, true)}
-              >
+              {S.current.faction === 'rabbit' ? (
+                // 兔：右侧瞄准摇杆（手动指向开火）
                 <div
-                  className="absolute w-[77px] h-[77px] rounded-full bg-[#F5D061]/40 border border-[#F5D061]/60"
-                  style={{ left: `calc(50% - 38.5px + ${skillKnob.x}px)`, top: `calc(50% - 38.5px + ${skillKnob.y}px)` }}
-                />
-              </div>
+                  ref={skillBaseRef}
+                  className="absolute bottom-8 right-8 w-44 h-44 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
+                  onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleSkillJoy(e); }}
+                  onPointerMove={(e) => { if (skillDirRef.current.x !== 0 || skillDirRef.current.y !== 0) handleSkillJoy(e); }}
+                  onPointerUp={(e) => handleSkillJoy(e, true)}
+                  onPointerCancel={(e) => handleSkillJoy(e, true)}
+                >
+                  <div
+                    className="absolute w-[77px] h-[77px] rounded-full bg-[#F5D061]/40 border border-[#F5D061]/60"
+                    style={{ left: `calc(50% - 38.5px + ${skillKnob.x}px)`, top: `calc(50% - 38.5px + ${skillKnob.y}px)` }}
+                  />
+                </div>
+              ) : (
+                // 鹿：自动索敌，右侧改为开火按钮（按住持续释放雷电）
+                <button
+                  className="absolute bottom-8 right-8 w-40 h-40 rounded-full border-2 border-[#8FDCCB]/60 bg-[#8FDCCB]/10 active:bg-[#8FDCCB]/25 touch-none flex items-center justify-center text-[#CFF3EA] font-bold text-lg tracking-widest select-none"
+                  onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); S.current.skillHeld = true; }}
+                  onPointerUp={() => { S.current.skillHeld = false; }}
+                  onPointerCancel={() => { S.current.skillHeld = false; }}
+                >
+                  <Zap size={44} strokeWidth={1.6} />
+                </button>
+              )}
             </>
           )}
         </div>
