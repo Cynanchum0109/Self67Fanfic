@@ -1490,6 +1490,27 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
         ctx.fillRect(s.px - total / 2 + i * (pw + gap), s.py + 24, pw, 3.5);
       }
     }
+    // 武器标记：兔=枪管，鹿=法杖，指向当前瞄准方向(facing)
+    ctx.save();
+    ctx.translate(s.px, s.py);
+    ctx.rotate(s.facing);
+    if (s.faction === 'rabbit') {
+      ctx.fillStyle = '#FFF7EE';
+      ctx.fillRect(8, -2.5, 15, 5);      // 枪管
+      ctx.fillStyle = '#F5A45B';
+      ctx.fillRect(21, -3.5, 4, 7);       // 枪口
+    } else {
+      ctx.strokeStyle = '#FFF7EE';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(23, 0); ctx.stroke(); // 杖杆
+      ctx.fillStyle = '#8FDCCB';
+      ctx.beginPath(); ctx.arc(26, 0, 4, 0, Math.PI * 2); ctx.fill();       // 顶端能量球
+      ctx.strokeStyle = 'rgba(143,220,203,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(26, 0, 7, 0, Math.PI * 2); ctx.stroke();     // 球外光环
+    }
+    ctx.restore();
     if (eating) {
       ctx.fillStyle = 'rgba(255,247,238,0.85)';
       ctx.font = '11px sans-serif';
@@ -1683,13 +1704,6 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       else if (e.code === 'ArrowDown' || e.code === 'KeyS') { k.down = true; e.preventDefault(); }
       else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { k.left = true; e.preventDefault(); }
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') { k.right = true; e.preventDefault(); }
-      else if (e.code === 'KeyK') {
-        // 测试用：直接跳到第七天触发清算者（上线前可删）
-        const s = S.current;
-        if (phaseRef.current === 'playing' && !s.reaper) {
-          s.startAt = performance.now() - DURATION;
-        }
-      }
     };
     const up = (e: KeyboardEvent) => {
       const k = S.current.keys;
