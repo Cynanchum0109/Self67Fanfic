@@ -1138,7 +1138,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const s = S.current;
     const now = performance.now();
 
-    ctx.fillStyle = '#0D0B09';
+    ctx.fillStyle = '#15110C';
     ctx.fillRect(0, 0, W, H);
     // 屏震：整个战场随机偏移
     const shaking = now < s.shakeUntil;
@@ -1150,7 +1150,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     }
     const A = s.arena;
     // 缩圈外区域压暗
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(0, 0, W, A.t);
     ctx.fillRect(0, A.b, W, H - A.b);
     ctx.fillRect(0, A.t, A.l, A.b - A.t);
@@ -1158,7 +1158,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     ctx.strokeStyle = 'rgba(232,131,58,0.35)';
     ctx.lineWidth = 2;
     ctx.strokeRect(A.l, A.t, A.r - A.l, A.b - A.t);
-    ctx.strokeStyle = 'rgba(232,131,58,0.05)';
+    ctx.strokeStyle = 'rgba(232,131,58,0.11)';
     ctx.lineWidth = 1;
     for (let gx = WALL; gx <= W - WALL; gx += 60) {
       ctx.beginPath(); ctx.moveTo(gx, WALL); ctx.lineTo(gx, H - WALL); ctx.stroke();
@@ -1216,7 +1216,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       const elite = m.kills >= ELITE_KILLS;
       const r = elite ? 8.5 : 7;
       ctx.fillStyle = hit ? '#FFF7EE' : f.color;
-      ctx.globalAlpha = 0.45 + 0.55 * (m.hp / m.maxHp);
+      ctx.globalAlpha = 0.6 + 0.4 * (m.hp / m.maxHp);
       ctx.beginPath(); ctx.arc(m.x, m.y, r, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
       if (elite) {
@@ -1512,13 +1512,17 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const remain = Math.max(0, DURATION - elapsed);
     const mm = Math.floor(remain / 60000);
     const ss = Math.floor((remain % 60000) / 1000).toString().padStart(2, '0');
+    // HUD文字加深色阴影，暗底上更清晰
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 4;
     ctx.textAlign = 'left';
     ctx.font = 'bold 17px monospace';
     if (s.reaper) {
-      ctx.fillStyle = Math.sin(now / 180) > 0 ? '#FF5C40' : '#E8833A';
+      ctx.fillStyle = Math.sin(now / 180) > 0 ? '#FF5C40' : '#FF9A6B';
       ctx.fillText(T.reaping, WALL + 10, WALL + 26);
     } else {
-      ctx.fillStyle = '#E8833A';
+      ctx.fillStyle = '#FFA35A';
       ctx.fillText(lang === 'en' ? `${T.day} ${day}/7 · ${mm}:${ss}` : `${T.day}${day}天/7 · ${mm}:${ss}`, WALL + 10, WALL + 26);
     }
     // 连杀显示（×2就显示，窗口4秒更易触发）
@@ -1530,10 +1534,11 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       ctx.fillText(`×${s.combo}`, W / 2, WALL + 52);
       ctx.textAlign = 'left';
     }
-    ctx.font = '14px monospace';
-    ctx.fillStyle = 'rgba(232,131,58,0.85)';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#F5A45B';
     const bodyStr = lang === 'en' ? `${T.body} ${s.bodies}` : `${T.body}${s.bodies}具`;
     ctx.fillText(`${T.serial} #${s.playerSerial} · ${bodyStr} · ${T.kills} ${s.kills} · ${T.left} ${s.mobs.length + s.poolLeft}`, WALL + 10, WALL + 48);
+    ctx.restore();
     // 经验条
     const xw = W - WALL * 2 - 20;
     const xr = Math.min(1, s.xp / xpNeed(s.level));
