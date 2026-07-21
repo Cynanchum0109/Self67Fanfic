@@ -1612,8 +1612,21 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draw]);
 
+  // 移动端进入游戏时请求浏览器全屏（须在用户手势内调用，隐藏地址栏减少误触/边缘手势）
+  const requestAppFullscreen = () => {
+    const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+    try {
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else el.webkitRequestFullscreen?.();
+    } catch { /* 不支持就算了 */ }
+  };
+  useEffect(() => () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }, []);
+
   // ---------- 开局 ----------
   const startGame = (fac: Faction) => {
+    if (isTouch) requestAppFullscreen();
     const s = S.current;
     const base = FACTION_BASE[fac];
     s.faction = fac;
@@ -1766,7 +1779,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     S.current.joy = { x: Math.abs(dx) > 0.15 ? dx : 0, y: Math.abs(dy) > 0.15 ? dy : 0, active: true };
-    setJoyKnob({ x: dx * 28, y: dy * 28 });
+    setJoyKnob({ x: dx * 40, y: dy * 40 });
   };
 
   // 移动端：右摇杆瞄准，松手释放主动技能
@@ -1794,12 +1807,12 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     skillDirRef.current = { x: dx, y: dy };
-    setSkillKnob({ x: dx * 28, y: dy * 28 });
+    setSkillKnob({ x: dx * 40, y: dy * 40 });
   };
 
   // ---------- 渲染 ----------
   return (
-    <div className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden">
+    <div className="hatch-root fixed inset-0 bg-[#0A0806]/85 backdrop-blur-sm z-50 flex items-center justify-center p-1 md:p-4 overflow-hidden touch-none">
       <style>{`
         @media (pointer: coarse) {
           .hatch-root { padding: 0; }
@@ -1830,7 +1843,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             ref={canvasRef}
             width={W}
             height={H}
-            className="block mx-auto cursor-crosshair"
+            className="block mx-auto cursor-crosshair touch-none"
             style={canvasStyle}
             onPointerDown={handleCanvasDown}
             onPointerMove={handleCanvasMove}
@@ -1839,27 +1852,27 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
           {/* 标题：选阵营 */}
           {phase === 'title' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 bg-[#0D0B09]/70">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 bg-[#0D0B09]/55">
               <div className="flex gap-6 flex-row px-6">
                 <button
                   onClick={() => startGame('rabbit')}
-                  className="w-64 p-5 rounded-xl border border-[#7C55B0]/60 bg-[#161020] hover:bg-[#1F1730] hover:border-[#7C55B0] transition-all text-left group"
+                  className="w-64 p-5 rounded-xl border border-[#8C64C4]/70 bg-[#1E1630] hover:bg-[#281C40] hover:border-[#9B78D6] transition-all text-left group"
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="w-4 h-4 rounded-full bg-[#7C55B0] group-hover:shadow-[0_0_10px_#7C55B0]" />
-                    <span className="text-[#B69AE0] font-bold serif-text">{T.rabbitName}</span>
+                    <span className="w-4 h-4 rounded-full bg-[#9B78D6] group-hover:shadow-[0_0_10px_#9B78D6]" />
+                    <span className="text-[#CDB6F0] font-bold serif-text">{T.rabbitName}</span>
                   </div>
-                  <p className="text-xs text-[#B69AE0]/70 leading-relaxed">{T.rabbitDesc}</p>
+                  <p className="text-xs text-[#CDB6F0]/90 leading-relaxed">{T.rabbitDesc}</p>
                 </button>
                 <button
                   onClick={() => startGame('reindeer')}
-                  className="w-64 p-5 rounded-xl border border-[#2FA38C]/60 bg-[#0E1A17] hover:bg-[#132420] hover:border-[#2FA38C] transition-all text-left group"
+                  className="w-64 p-5 rounded-xl border border-[#3FBFA5]/70 bg-[#12241F] hover:bg-[#183029] hover:border-[#3FBFA5] transition-all text-left group"
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="w-4 h-4 rounded-full bg-[#2FA38C] group-hover:shadow-[0_0_10px_#2FA38C]" />
-                    <span className="text-[#6FCBB8] font-bold serif-text">{T.reindeerName}</span>
+                    <span className="w-4 h-4 rounded-full bg-[#3FBFA5] group-hover:shadow-[0_0_10px_#3FBFA5]" />
+                    <span className="text-[#8FDCCB] font-bold serif-text">{T.reindeerName}</span>
                   </div>
-                  <p className="text-xs text-[#6FCBB8]/70 leading-relaxed">{T.reindeerDesc}</p>
+                  <p className="text-xs text-[#8FDCCB]/90 leading-relaxed">{T.reindeerDesc}</p>
                 </button>
               </div>
               <p className="text-[11px] text-[#E8833A]/50 tracking-wide">{T.hint}</p>
@@ -1928,28 +1941,28 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             <>
               <div
                 ref={joyBaseRef}
-                className="absolute bottom-6 left-6 w-24 h-24 rounded-full border border-[#E8833A]/30 bg-[#E8833A]/5 touch-none"
+                className="absolute bottom-8 left-8 w-36 h-36 rounded-full border border-[#E8833A]/30 bg-[#E8833A]/5 touch-none"
                 onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleJoy(e); }}
                 onPointerMove={(e) => { if (S.current.joy.active) handleJoy(e); }}
                 onPointerUp={(e) => handleJoy(e, true)}
                 onPointerCancel={(e) => handleJoy(e, true)}
               >
                 <div
-                  className="absolute w-10 h-10 rounded-full bg-[#E8833A]/40 border border-[#E8833A]/60"
-                  style={{ left: `calc(50% - 20px + ${joyKnob.x}px)`, top: `calc(50% - 20px + ${joyKnob.y}px)` }}
+                  className="absolute w-16 h-16 rounded-full bg-[#E8833A]/40 border border-[#E8833A]/60"
+                  style={{ left: `calc(50% - 32px + ${joyKnob.x}px)`, top: `calc(50% - 32px + ${joyKnob.y}px)` }}
                 />
               </div>
               <div
                 ref={skillBaseRef}
-                className="absolute bottom-6 right-6 w-24 h-24 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
+                className="absolute bottom-8 right-8 w-36 h-36 rounded-full border border-[#F5D061]/40 bg-[#F5D061]/5 touch-none"
                 onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); handleSkillJoy(e); }}
                 onPointerMove={(e) => { if (skillDirRef.current.x !== 0 || skillDirRef.current.y !== 0) handleSkillJoy(e); }}
                 onPointerUp={(e) => handleSkillJoy(e, true)}
                 onPointerCancel={(e) => handleSkillJoy(e, true)}
               >
                 <div
-                  className="absolute w-10 h-10 rounded-full bg-[#F5D061]/40 border border-[#F5D061]/60"
-                  style={{ left: `calc(50% - 20px + ${skillKnob.x}px)`, top: `calc(50% - 20px + ${skillKnob.y}px)` }}
+                  className="absolute w-16 h-16 rounded-full bg-[#F5D061]/40 border border-[#F5D061]/60"
+                  style={{ left: `calc(50% - 32px + ${skillKnob.x}px)`, top: `calc(50% - 32px + ${skillKnob.y}px)` }}
                 />
               </div>
             </>
