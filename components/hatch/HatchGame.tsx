@@ -35,7 +35,7 @@ const TAKEOVER_SLOWMO = 900;
 // 鹿场克隆攻击性更弱：盯人半径小、出手更慢（但单下更疼）
 const FACTION_BASE = {
   rabbit: { hp: 60, speed: 3.2, color: '#7C55B0', corpseHeal: 20, corpseXp: 10, eatFreeze: 300, aggro: 260, contactCd: 700, cloneDmg: 6 },
-  reindeer: { hp: 90, speed: 2.5, color: '#2FA38C', corpseHeal: 10, corpseXp: 15, eatFreeze: 300, aggro: 190, contactCd: 950, cloneDmg: 8 },
+  reindeer: { hp: 90, speed: 2.5, color: '#2FA38C', corpseHeal: 10, corpseXp: 15, eatFreeze: 500, aggro: 190, contactCd: 950, cloneDmg: 8 },
 };
 
 // —— 武器等级表 ——
@@ -315,6 +315,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     px: W / 2, py: H / 2,
     hp: 60, maxHp: 60,
     facing: 0,
+    aimAngle: -Math.PI / 2,          // 主动技能瞄准方向（武器指示物朝向）
+    aimSrc: '' as '' | 'mouse' | 'joy', // 最近一次瞄准来源，用于每帧更新aimAngle
     eatingUntil: 0,
     eatStart: 0,   // 本次进食开始时刻（画进度环用）
     eatCdUntil: 0, // 进食后短冷却，到点前不主动吃，给玩家时间走开
@@ -843,6 +845,14 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
         s.selfSlowUntil = 0;
         s.eatFx.push({ x: got.x, y: got.y, time: now, big: true });
       }
+    }
+
+    // 武器指示物朝向 = 主动技能瞄准方向：摇杆推着时用摇杆，否则用鼠标（松开摇杆保持上次角度）
+    const sdAim = skillDirRef.current;
+    if (sdAim.x !== 0 || sdAim.y !== 0) {
+      s.aimAngle = Math.atan2(sdAim.y, sdAim.x);
+    } else if (s.aimSrc === 'mouse') {
+      s.aimAngle = Math.atan2(s.aimY - s.py, s.aimX - s.px);
     }
 
     // 鼠标按住 / 技能摇杆持续推着：连发（枪受弹匣与射速限制，雷电受冷却限制）
@@ -1498,7 +1508,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     // 武器标记：兔=枪管，鹿=法杖，指向当前瞄准方向(facing)
     ctx.save();
     ctx.translate(s.px, s.py);
-    ctx.rotate(s.facing);
+    ctx.rotate(s.aimAngle);
     if (s.faction === 'rabbit') {
       ctx.fillStyle = '#FFF7EE';
       ctx.fillRect(8, -2.5, 15, 5);      // 枪管
@@ -1671,6 +1681,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.px = W / 2; s.py = H * 0.65;
     s.maxHp = base.hp; s.hp = base.hp;
     s.facing = -Math.PI / 2;
+    s.aimAngle = -Math.PI / 2; s.aimSrc = '';
     s.playerSerial = 1 + Math.floor(Math.random() * POOL_TOTAL);
     s.prevSerial = s.playerSerial;
     s.serialNext = 1;
@@ -1767,14 +1778,14 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     if (e.pointerType !== 'mouse') return; // 移动端用技能摇杆
     const s = S.current;
     const { x, y } = canvasCoords(e.clientX, e.clientY);
-    s.aimX = x; s.aimY = y;
+    s.aimX = x; s.aimY = y; s.aimSrc = 'mouse';
     s.firing = true;
     castActive(x - s.px, y - s.py);
   };
   const handleCanvasMove = (e: React.PointerEvent) => {
     if (e.pointerType !== 'mouse') return;
     const { x, y } = canvasCoords(e.clientX, e.clientY);
-    S.current.aimX = x; S.current.aimY = y;
+    S.current.aimX = x; S.current.aimY = y; S.current.aimSrc = 'mouse';
   };
   useEffect(() => {
     const stop = () => { S.current.firing = false; };
@@ -1838,6 +1849,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len > 1) { dx /= len; dy /= len; }
     skillDirRef.current = { x: dx, y: dy };
+    S.current.aimSrc = 'joy';
     setSkillKnob({ x: dx * 48, y: dy * 48 });
   };
 
