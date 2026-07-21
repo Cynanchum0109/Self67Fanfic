@@ -847,22 +847,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       }
     }
 
-    // 最近的克隆（鹿自动索敌、指示物朝向都用它）
-    const nearestMob = s.mobs.length
-      ? s.mobs.reduce((a, b) => dist2(s.px, s.py, a.x, a.y) < dist2(s.px, s.py, b.x, b.y) ? a : b)
-      : null;
-    const nearAngle = nearestMob ? Math.atan2(nearestMob.y - s.py, nearestMob.x - s.px) : null;
-
-    // 武器指示物朝向 = 主动技能瞄准方向
-    if (s.faction === 'reindeer') {
-      // 鹿：自动瞄准，指向最近敌人（无敌人时保持上次角度）
-      if (nearAngle !== null) s.aimAngle = nearAngle;
-    } else {
-      // 兔：手动瞄准，摇杆优先，否则鼠标（松开摇杆保持上次角度）
-      const sdAim = skillDirRef.current;
-      if (sdAim.x !== 0 || sdAim.y !== 0) s.aimAngle = Math.atan2(sdAim.y, sdAim.x);
-      else if (s.aimSrc === 'mouse') s.aimAngle = Math.atan2(s.aimY - s.py, s.aimX - s.px);
-    }
+    // 武器指示物朝向 = 主动技能瞄准/锥心方向：摇杆优先，否则鼠标（松开摇杆保持上次角度）
+    const sdAim = skillDirRef.current;
+    if (sdAim.x !== 0 || sdAim.y !== 0) s.aimAngle = Math.atan2(sdAim.y, sdAim.x);
+    else if (s.aimSrc === 'mouse') s.aimAngle = Math.atan2(s.aimY - s.py, s.aimX - s.px);
 
     // 连发：鼠标按住朝准星，或右摇杆推着朝摇杆方向（鹿仍为锥形索敌，方向决定锥心）
     if (s.firing) {
