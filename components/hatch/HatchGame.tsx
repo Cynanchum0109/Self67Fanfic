@@ -1519,11 +1519,13 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     if (eating) {
       // 进食进度环：绕玩家一圈随进度填满，满圈=吃完（放开可动）
       const p = Math.min(1, Math.max(0, (now - s.eatStart) / Math.max(1, s.eatingUntil - s.eatStart)));
+      const ringTrack = s.faction === 'rabbit' ? 'rgba(155,120,214,0.25)' : 'rgba(143,220,203,0.25)';
+      const ringFill = s.faction === 'rabbit' ? '#B69AE0' : '#9BE8D6';
       ctx.lineCap = 'round';
-      ctx.strokeStyle = 'rgba(143,220,203,0.25)';
+      ctx.strokeStyle = ringTrack;
       ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(s.px, s.py, 27, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = '#9BE8D6';
+      ctx.strokeStyle = ringFill;
       ctx.beginPath(); ctx.arc(s.px, s.py, 27, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p); ctx.stroke();
       ctx.lineCap = 'butt';
       // 咀嚼小圆点：随进度轻微跳动
