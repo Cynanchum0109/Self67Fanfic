@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BookOpen, List, Home, X } from 'lucide-react';
+import { BookOpen, List, Home, X, MessageCircle } from 'lucide-react';
 import { AppState } from '../types';
 
 // 使用相对路径，适配本地、Vercel 和 GitHub Pages（项目根为 /Self67Fanfic/）
@@ -20,8 +20,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapters = [], onJumpToChapter, lang = 'zh' }) => {
   const T = lang === 'en'
-    ? { home: 'Home', contents: 'Contents', reading: 'Reading', chapters: 'Chapters', chapter: (n: number) => `Chapter ${n}` }
-    : { home: '主页', contents: '目录', reading: '阅读', chapters: '章节目录', chapter: (n: number) => `第${n}章` };
+    ? { home: 'Home', contents: 'Contents', reading: 'Reading', chapters: 'Chapters', chapter: (n: number) => `Chapter ${n}`, askBox: 'Ask Box' }
+    : { home: '主页', contents: '目录', reading: '阅读', chapters: '章节目录', chapter: (n: number) => `第${n}章`, askBox: '留言提问箱' };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // We keep the library view hidden for the general user, but accessible if they know where to look (or for the author)
   const isReaderOrToc = activeView === AppState.READER || activeView === AppState.TOC;
@@ -145,6 +145,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
             </div>
           )}
         </nav>
+
+        <div className="px-7 pb-4">
+          <a
+            href="https://www.pome.vip/BQCynan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-[#7A688F] underline underline-offset-4 decoration-[#C6B8D8] hover:decoration-[#7A688F] transition-colors"
+          >
+            <MessageCircle size={14} className="shrink-0" />
+            {T.askBox}
+          </a>
+        </div>
 
         <div className="p-6 border-t border-[#EAE5F0]">
           <p className="text-[10px] text-center text-gray-300 tracking-widest">© 2026 BQCynanchum</p>
