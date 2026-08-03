@@ -571,6 +571,7 @@ const App: React.FC = () => {
       onNavigate={navigateView}
       chapters={currentView === AppState.READER ? readerChapters : []}
       onJumpToChapter={handleJumpToChapter}
+      lang={lang}
     >
       {currentView === AppState.HOME && renderHome()}
       {currentView === AppState.TOC && renderTOC()}

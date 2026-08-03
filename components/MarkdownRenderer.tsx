@@ -42,6 +42,29 @@ function parseSpoilers(text: string, keyPrefix: string): React.ReactNode[] {
   return nodes;
 }
 
+// 跨行的 **...**：把从开标记到闭标记的若干行合并成一行（用 \n 连接），
+// 交给 parseSpoilers 当作一个整体剧透块渲染（whitespace-pre-line 保留换行）
+function groupMultilineSpoilers(lines: string[]): string[] {
+  const out: string[] = [];
+  let buffer: string[] | null = null;
+  for (const line of lines) {
+    const odd = ((line.match(/\*\*/g)?.length ?? 0) % 2) === 1;
+    if (buffer === null) {
+      if (odd) buffer = [line];
+      else out.push(line);
+    } else {
+      buffer.push(line);
+      if (odd) {
+        out.push(buffer.join('\n'));
+        buffer = null;
+      }
+    }
+  }
+  // 标记未闭合：原样输出，不吞内容
+  if (buffer) out.push(...buffer);
+  return out;
+}
+
 // 识别图片行：整行是一个图片 URL（支持 raw.githubusercontent.com 等），后可跟全角括号脚注 （caption）
 // 格式示例：https://raw.githubusercontent.com/.../file.jpg（from 要塞）
 const IMAGE_LINE_RE = /^(https?:\/\/[^\s（]+\.(?:jpg|jpeg|png|gif|webp|svg))(?:（([^）]*)）)?\s*$/i;
@@ -83,7 +106,7 @@ function StoryImage({ url, caption }: { url: string; caption: string }) {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-  const lines = normalizeNewlines(content).split('\n');
+  const lines = groupMultilineSpoilers(normalizeNewlines(content).split('\n'));
 
   return (
     <div className="serif-text space-y-7 text-[1.1rem] leading-[2] text-gray-700 max-w-[680px] mx-auto tracking-[0.02em]">

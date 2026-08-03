@@ -14,9 +14,14 @@ interface LayoutProps {
   chapters?: { index: number }[];
   /** 点击章节时滚动到对应位置并关闭侧栏 */
   onJumpToChapter?: (index: number) => void;
+  /** 站点语言，决定侧栏文案 */
+  lang?: 'zh' | 'en';
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapters = [], onJumpToChapter }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapters = [], onJumpToChapter, lang = 'zh' }) => {
+  const T = lang === 'en'
+    ? { home: 'Home', contents: 'Contents', reading: 'Reading', chapters: 'Chapters', chapter: (n: number) => `Chapter ${n}` }
+    : { home: '主页', contents: '目录', reading: '阅读', chapters: '章节目录', chapter: (n: number) => `第${n}章` };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // We keep the library view hidden for the general user, but accessible if they know where to look (or for the author)
   const isReaderOrToc = activeView === AppState.READER || activeView === AppState.TOC;
@@ -91,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
             }`}
           >
             <Home size={16} className="shrink-0" />
-            <span>Home</span>
+            <span>{T.home}</span>
           </button>
 
           <button
@@ -103,7 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
             }`}
           >
             <List size={16} className="shrink-0" />
-            <span>Contents</span>
+            <span>{T.contents}</span>
           </button>
 
           {isReaderOrToc && (
@@ -116,13 +121,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
               }`}
             >
               <BookOpen size={16} className="shrink-0" />
-              <span>Reading</span>
+              <span>{T.reading}</span>
             </button>
           )}
 
           {activeView === AppState.READER && chapters.length > 0 && (
             <div className="mt-4 pt-4 border-t border-[#EAE5F0]">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-300 px-4 mb-2">章节目录</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-300 px-4 mb-2">{T.chapters}</h4>
               <div className="space-y-0.5 max-h-64 overflow-y-auto">
                 {chapters.map((ch) => (
                   <button
@@ -133,7 +138,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
                     }}
                     className="w-full text-left px-4 py-2 text-sm rounded-full text-gray-400 hover:bg-[#F3F0F8] hover:text-[#7A688F] transition-colors"
                   >
-                    第{ch.index}章
+                    {T.chapter(ch.index)}
                   </button>
                 ))}
               </div>
