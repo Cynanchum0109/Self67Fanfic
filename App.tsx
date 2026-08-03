@@ -10,6 +10,8 @@ import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
 import { normalizeNewlines } from './utils/text';
+import PasswordGate from './components/PasswordGate';
+import { isUnlocked, markUnlocked } from './utils/auth';
 
 // 使用 Vite 的 import.meta.glob 直接读取 text 文件夹中的所有 .md 文件（仅用于获取正文内容）
 const markdownModules = import.meta.glob('./text/*.md', { query: '?raw', import: 'default', eager: true });
@@ -112,6 +114,8 @@ const App: React.FC = () => {
   };
   // 记住最后阅读的文章，供侧栏 Reading 按钮返回
   const lastStoryIdRef = React.useRef<string | null>(null);
+  // 访问口令：会话内解锁一次即可，关闭浏览器后失效
+  const [unlocked, setUnlocked] = useState<boolean>(isUnlocked);
 
   // 监听浏览器前进/回退
   useEffect(() => {
@@ -548,6 +552,18 @@ const App: React.FC = () => {
       </aside>
     </div>
   );
+
+  // 除首页外的所有入口（目录、正文、侧栏、直接改 hash）都要先过口令
+  const needsPasscode = currentView !== AppState.HOME && !unlocked;
+  if (needsPasscode) {
+    return (
+      <PasswordGate
+        lang={lang}
+        onUnlock={() => { markUnlocked(); setUnlocked(true); }}
+        onCancel={() => { window.location.hash = '#/'; }}
+      />
+    );
+  }
 
   return (
     <Layout
