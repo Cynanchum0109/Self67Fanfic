@@ -18,7 +18,7 @@ function SpoilerSpan({ children }: { children: string }) {
       className={
         revealed
           ? 'text-gray-700 whitespace-pre-line'
-          : 'text-gray-300 bg-gray-200/60 cursor-pointer rounded-sm px-0.5 select-none hover:bg-gray-300/70 transition-colors whitespace-pre-line'
+          : 'text-gray-300 cursor-pointer select-none hover:text-gray-400 transition-colors whitespace-pre-line'
       }
       aria-label={revealed ? undefined : '点击显示'}
     >
