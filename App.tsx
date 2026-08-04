@@ -334,7 +334,9 @@ const App: React.FC = () => {
 
         {/* 更新说明降级到底部 */}
         <p className="text-[11px] font-light italic serif-text text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-2">
-          最新更新：7/12/2026，S08E4第三章，小游戏英文版本
+          {lang === 'zh'
+            ? '最新更新：8/4/2026，黄金台上完结，更新密码防误入'
+            : 'Latest update: 8/4/2026, Lord’s Pawn completed, passcode added to prevent accidental entry'}
         </p>
       </div>
     </div>

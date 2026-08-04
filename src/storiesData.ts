@@ -15,6 +15,17 @@ export interface StoryData {
 
 export const storiesData: StoryData[] = [
   {
+    "id": "3wftatbuy",
+    "title": "黄金台上 Lord's Pawn",
+    "tags": "君主/酉鸡",
+    "summary": "超放纵主人与超僭越鸡的不堪入目小故事",
+    "version": "none",
+    "language": "CN",
+    "fileName": "黄金台上.md",
+    "wordCount": 17088,
+    "order": 9
+  },
+  {
     "id": "6qoj0wrqx",
     "title": "Season 08 Episode 4",
     "tags": "蜘蛛巢67, 连载中",
@@ -46,17 +57,6 @@ export const storiesData: StoryData[] = [
     "fileName": "破溃点.md",
     "wordCount": 12496,
     "order": 6
-  },
-  {
-    "id": "3wftatbuy",
-    "title": "黄金台上 Lord's Pawn",
-    "tags": "君主/酉鸡, 连载中",
-    "summary": "超放纵主人与超僭越鸡的不堪入目小故事",
-    "version": "none",
-    "language": "CN",
-    "fileName": "黄金台上.md",
-    "wordCount": 17088,
-    "order": 5
   },
   {
     "id": "lm3mewxqx",
