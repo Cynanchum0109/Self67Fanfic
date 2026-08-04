@@ -165,7 +165,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
 
       {/* Main Content Area */}
       <main className="flex-1">
-        <div className={`max-w-5xl mx-auto p-8 md:p-14 lg:p-20 ${activeView === AppState.HOME ? 'flex items-center justify-center min-h-screen' : 'pt-14 md:pt-16'}`}>
+        <div className={`max-w-5xl mx-auto ${activeView === AppState.HOME ? 'flex items-center justify-center min-h-[100svh] px-5 py-6 sm:p-10 md:p-14 lg:p-20' : 'p-8 md:p-14 lg:p-20 pt-14 md:pt-16'}`}>
           {children}
         </div>
       </main>

@@ -210,7 +210,7 @@ const App: React.FC = () => {
 
   // Render Functions
   const renderHome = () => (
-    <div className="relative text-center space-y-12">
+    <div className="relative w-full text-center space-y-7 sm:space-y-10 md:space-y-12">
       {/* 语言切换：中文薄荷绿 / English 紫（右上角） */}
       <div className="fixed top-4 right-4 md:top-5 md:right-6 z-40 flex items-center gap-2.5 text-sm serif-text select-none">
         <button
@@ -229,14 +229,14 @@ const App: React.FC = () => {
       </div>
 
       {/* 站名主视觉 */}
-      <header className="relative space-y-5 animate-float-in">
+      <header className="relative space-y-3.5 sm:space-y-5 animate-float-in">
         <img
           src="assets/icons/momo67.png"
           alt=""
-          className="relative w-14 h-14 mx-auto object-contain animate-breathe"
+          className="relative w-11 h-11 sm:w-14 sm:h-14 mx-auto object-contain animate-breathe"
           style={{ imageRendering: 'pixelated' }}
         />
-        <h1 className="relative text-6xl md:text-7xl font-bold tracking-tight serif-text">
+        <h1 className="relative text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight serif-text">
           <span className="text-[#6FCBB8]">Hong</span>
           <span className="text-[#7A688F]">Cliff</span>
         </h1>
@@ -251,28 +251,28 @@ const App: React.FC = () => {
 
       {/* 引文区块 */}
       <div className="relative max-w-md mx-auto animate-float-in float-delay-1">
-        <p className="relative text-[1.35rem] text-[#4FAE9C] font-medium italic leading-[1.9] serif-text tracking-[0.05em]">
+        <p className="relative text-[1.15rem] sm:text-[1.35rem] text-[#4FAE9C] font-medium italic leading-[1.75] sm:leading-[1.9] serif-text tracking-[0.05em]">
           <span className="text-[#9BD9CC] mr-1" aria-hidden>“</span>
           那呼唤爱的样子如此美丽……
           <span className="text-[#9BD9CC] ml-1" aria-hidden>”</span>
         </p>
         {/* 蔓生细线：像藤蔓一样蜿蜒的分隔线 */}
-        <svg className="mt-5 mx-auto w-28 h-3 text-[#A99BC1]" viewBox="0 0 112 12" fill="none" aria-hidden>
+        <svg className="mt-4 sm:mt-5 mx-auto w-28 h-3 text-[#A99BC1]" viewBox="0 0 112 12" fill="none" aria-hidden>
           <path d="M2 6 C 20 1, 36 11, 56 6 S 92 1, 110 6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
           <circle cx="56" cy="6" r="1.5" fill="#6FCBB8" />
         </svg>
       </div>
 
-      <div className="relative flex flex-col items-center space-y-7 animate-float-in float-delay-2">
+      <div className="relative flex flex-col items-center space-y-5 sm:space-y-7 animate-float-in float-delay-2">
         <button
           onClick={() => navigateView(AppState.TOC)}
-          className="group relative inline-flex items-center gap-3 px-11 py-4 bg-[#7A688F] text-[#FAF8F1] rounded-full font-medium overflow-hidden transition-all duration-300 hover:pr-14 hover:bg-[#68577F] active:scale-95 shadow-lg shadow-[#7A688F]/25 text-[0.9rem] uppercase tracking-[0.2em] serif-text"
+          className="group relative inline-flex items-center gap-3 px-9 py-3.5 sm:px-11 sm:py-4 bg-[#7A688F] text-[#FAF8F1] rounded-full font-medium overflow-hidden transition-all duration-300 hover:pr-14 hover:bg-[#68577F] active:scale-95 shadow-lg shadow-[#7A688F]/25 text-[0.9rem] uppercase tracking-[0.2em] serif-text"
         >
           <span className="relative z-10">Enter the Garden</span>
           <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={18} strokeWidth={1.5} />
         </button>
 
-        <div className="flex items-center gap-6 justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2.5 sm:gap-6">
           <div className="relative">
             {showRTokenTooltip && (
               <span
@@ -333,7 +333,7 @@ const App: React.FC = () => {
         </div>
 
         {/* 更新说明降级到底部 */}
-        <p className="text-[11px] font-light italic serif-text text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-2">
+        <p className="text-[10px] sm:text-[11px] font-light italic serif-text text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-1 sm:pt-2">
           {lang === 'zh'
             ? '最新更新：8/4/2026，黄金台上完结，更新密码防误入'
             : 'Latest update: 8/4/2026, Lord’s Pawn completed, passcode added to prevent accidental entry'}
