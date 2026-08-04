@@ -36,6 +36,13 @@ async function main() {
   console.log('☁️  开始推送到 GitHub...\n');
   console.log(`📁 项目目录: ${projectRoot}\n`);
 
+  // 0. 先跑构建：prebuild 会自动做正文检查 + 重算字数，避免忘记更新 storiesData
+  if (!exec('npm run build', '检查正文并重新生成数据')) {
+    console.log('⚠️  正文检查或构建未通过，已中止推送。修正后重试');
+    rl.close();
+    process.exit(1);
+  }
+
   // 检查是否有更改
   try {
     execSync('git diff --quiet', { stdio: 'ignore', cwd: projectRoot });

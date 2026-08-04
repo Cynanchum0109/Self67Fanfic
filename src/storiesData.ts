@@ -55,7 +55,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "黄金台上.md",
-    "wordCount": 10001,
+    "wordCount": 17088,
     "order": 5
   },
   {
