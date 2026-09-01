@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Volume2, VolumeX } from 'lucide-react';
+import { X, Volume2, VolumeX, RotateCw } from 'lucide-react';
 
 // ============================================================
 // 孵化场 —— R公司克隆体大逃杀（类吸血鬼幸存者）
@@ -74,6 +74,7 @@ const BOLT_LEVELS = [
 ];
 const BOLT_CONE = 1.0; // 大雷电追踪的方向锥（弧度，±约57°）
 const MAX_WEAPON_LEVEL = 5;
+const FRAME_GAP_PAUSE_MS = 250; // 帧间空档超过这个值就当作暂停（切后台/卡顿），不计入游戏时钟
 // 鹿主动技能自我debuff
 const DEBUFF_DARK_MS = 2500; // 屏幕变暗
 const DEBUFF_SLOW_MS = 1500; // 行动迟缓
@@ -177,7 +178,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   // 英文为草译，待审校 → translations-review.md
   const T = lang === 'en' ? {
     title: 'R Corp Hatchery — Live',
-    subtitle: 'Survival guaranteed.',
+    subtitle: 'Ensure your own survival.',
     rabbitName: 'Happy Rabbit',
     reindeerName: 'Not-So-Happy Reindeer',
     rabbitDesc: 'Auto dagger strikes at close range; hits grant a burst of speed. Click / stick: rapid suppression. Go tear into the fresh grass!',
@@ -296,10 +297,13 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   // 触屏设备：窗口固定按桌面尺寸(1152宽)排版，再整体transform等比缩放适配屏幕，
   // 这样按钮/文字/画布全部与桌面同比例。竖屏时再旋转90°横置。
   const isPortrait = vp.h >= vp.w;
+  // 部分内核不支持锁定横屏，留一个手动开关，按一下翻转当前朝向
+  const [forceRotate, setForceRotate] = useState(false);
+  const rotated = forceRotate ? !isPortrait : isPortrait;
   const DESIGN_W = 1152; // 桌面 max-w-6xl
   const DESIGN_H = 816;  // 标题栏约48 + 画布1150*(2/3)
   const shellStyle: React.CSSProperties | undefined = isTouch && vp.w > 0
-    ? (isPortrait
+    ? (rotated
         ? { width: DESIGN_W, transform: `rotate(90deg) scale(${Math.min((vp.h - 8) / DESIGN_W, (vp.w - 8) / DESIGN_H)})`, animation: 'none', maxWidth: 'none', flex: 'none' }
         : { width: DESIGN_W, transform: `scale(${Math.min((vp.w - 8) / DESIGN_W, (vp.h - 8) / DESIGN_H)})`, animation: 'none', maxWidth: 'none', flex: 'none' })
     : undefined;
@@ -371,7 +375,12 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     joy: { x: 0, y: 0, active: false },
     animId: 0,
     lastFrame: 0,
+    pauseOffset: 0, // 暂停累计时长：游戏时钟 = performance.now() - pauseOffset
   });
+
+  // 选技能等暂停期间，游戏时钟停走：所有游戏内时间戳都走 nowMs()
+  const nowMs = () => performance.now() - S.current.pauseOffset;
+  const pauseStartRef = useRef(0);
 
   // ---------- 音效（WebAudio合成，无素材文件） ----------
   const audioRef = useRef<AudioContext | null>(null);
@@ -424,16 +433,16 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   // 屏震+顿帧
   const addShake = (amp: number, ms: number) => {
     const s = S.current;
-    const now = performance.now();
+    const now = nowMs();
     s.shakeAmp = Math.max(s.shakeAmp, amp);
     s.shakeUntil = Math.max(s.shakeUntil, now + ms);
   };
   const addHitstop = (ms: number) => {
-    S.current.hitstopUntil = Math.max(S.current.hitstopUntil, performance.now() + ms);
+    S.current.hitstopUntil = Math.max(S.current.hitstopUntil, nowMs() + ms);
   };
   const playerSpeed = () => {
     const s = S.current;
-    const now = performance.now();
+    const now = nowMs();
     const slowMul = now < s.selfSlowUntil ? 0.5 : 1;
     const hasteMul = now < s.hasteUntil ? HASTE_MUL : 1;
     return factionOf().speed * (1 + s.passives.mov * PASSIVE_STEP.mov) * slowMul * hasteMul;
@@ -562,11 +571,13 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     }
     setUpgradeOptions(picked);
     sfx.levelup();
+    pauseStartRef.current = performance.now();
     phaseRef.current = 'levelup';
     setPhase('levelup');
   };
 
   const applyUpgrade = (opt: UpgradeOption) => {
+    if (phaseRef.current !== 'levelup') return; // 连点两张卡：第二次直接忽略（会多吃一次升级并重复累加暂停时长）
     const s = S.current;
     // 稀有度倍数：普通1 / 精良2 / 异常3（武器为+1级/+1级并回血/+2级）
     const mult = opt.rarity === 'anomalous' ? 3 : opt.rarity === 'fine' ? 2 : 1;
@@ -584,9 +595,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
         s.hp = Math.min(s.maxHp, s.hp + PASSIVE_STEP.vit * mult);
       }
     }
+    S.current.pauseOffset += performance.now() - pauseStartRef.current;
     phaseRef.current = 'playing';
     setPhase('playing');
-    S.current.lastFrame = performance.now();
+    S.current.lastFrame = nowMs();
   };
 
   const gainXp = (amount: number) => {
@@ -681,7 +693,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const castActive = (dirX: number, dirY: number) => {
     const s = S.current;
     if (phaseRef.current !== 'playing') return;
-    const now = performance.now();
+    const now = nowMs();
     if (now < s.freezeUntil) return;
     if (now < s.eatingUntil) return;
     const len = Math.sqrt(dirX * dirX + dirY * dirY);
@@ -735,12 +747,13 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   };
 
   // ---------- 换体 ----------
-  const takeover = (now: number) => {
+  // 返回 true 表示成功换体；false 表示场上已无克隆可换（吊着一口气等终局结算）
+  const takeover = (now: number): boolean => {
     const s = S.current;
     // 找不到最后伤害者（如饿死）时，移交给最近的克隆
     const nearest = [...s.mobs].sort((a, b) => dist2(s.px, s.py, a.x, a.y) - dist2(s.px, s.py, b.x, b.y))[0];
     const killer = s.mobs.find(m => m.id === s.lastDamagerId) ?? nearest;
-    if (!killer) { s.hp = 1; return; } // 场上已无克隆：吊着一口气等待终局结算
+    if (!killer) { s.hp = 1; return false; } // 场上已无克隆：吊着一口气等待终局结算
     s.corpses.push({ id: s.nextId++, x: s.px, y: s.py, bornAt: now, big: true });
     s.bloodFx.push({ x: s.px, y: s.py, time: now });
     // 接管击杀者：武器保留（你的熟练度），被动清空（身体素质归零）
@@ -762,6 +775,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.slowmoUntil = now + TAKEOVER_SLOWMO;
     s.flashUntil = now + 350;
     s.takeoverMsgUntil = now + 2600;
+    return true;
   };
 
   // ---------- 结束（纯统计，不计分） ----------
@@ -818,10 +832,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     // 体力持续流失：只能靠吃尸体回复（换体无敌期间暂停）
     if (now >= s.invulnUntil) {
       s.hp -= HP_DRAIN_PER_SEC[s.faction] * (rawDt / 1000) * timeScale;
-      if (s.hp <= 0) {
-        takeover(now);
-        return;
-      }
+      if (s.hp <= 0 && takeover(now)) return;
     }
 
     // 止痛药（鹿场）：定时刷新、过期消失、拾取免疫
@@ -1070,7 +1081,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           const heal = cc.big ? S.current.maxHp : f.corpseHeal;
           S.current.hp = Math.min(S.current.maxHp, S.current.hp + heal);
           S.current.corpses = S.current.corpses.filter(x => x.id !== cc.id);
-          S.current.eatFx.push({ x: cc.x, y: cc.y, time: performance.now(), big: cc.big });
+          S.current.eatFx.push({ x: cc.x, y: cc.y, time: nowMs(), big: cc.big });
           S.current.eaten++;
           sfx.eat();
           gainXp((cc.big ? 3 : 1) * f.corpseXp);
@@ -1148,7 +1159,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const s = S.current;
-    const now = performance.now();
+    const now = nowMs();
 
     ctx.fillStyle = '#15110C';
     ctx.fillRect(0, 0, W, H);
@@ -1645,8 +1656,22 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     let running = true;
     const loop = (t: number) => {
       if (!running) return;
-      step(t);
-      draw();
+      void t;
+      const st = S.current;
+      // 切后台/最小化时 rAF 停摆但墙钟照走，回来会让 elapsed 凭空跳过一大段
+      // （旧版靠这个能白拿七天禁忌结局）。超过阈值的空档一律算暂停。
+      // 只在游戏进行中补偿：选技能面板另有 pauseStartRef 记账，两边都算会重复扣时间
+      if (phaseRef.current === 'playing' && st.lastFrame > 0) {
+        const gap = performance.now() - st.pauseOffset - st.lastFrame;
+        if (gap > FRAME_GAP_PAUSE_MS) st.pauseOffset += gap;
+      }
+      try {
+        step(nowMs());
+        draw();
+      } catch (err) {
+        // 单帧异常不能让整个 rAF 链断掉：断了就永久黑屏/卡死，重开也救不回来
+        console.error('[hatch] frame error', err);
+      }
       S.current.animId = requestAnimationFrame(loop);
     };
     S.current.animId = requestAnimationFrame(loop);
@@ -1658,15 +1683,23 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   }, [draw]);
 
   // 移动端进入游戏时请求浏览器全屏（须在用户手势内调用，隐藏地址栏减少误触/边缘手势）
+  // 锁定横屏：多数内核要求先进全屏才允许 lock；都不支持时回落到 CSS 旋转（见 shellStyle）
+  const lockLandscape = () => {
+    const orientation = window.screen?.orientation as (ScreenOrientation & { lock?: (o: string) => Promise<void> }) | undefined;
+    try {
+      orientation?.lock?.('landscape')?.catch(() => {});
+    } catch { /* 不支持就算了 */ }
+  };
   const requestAppFullscreen = () => {
     const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
     try {
-      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-      else el.webkitRequestFullscreen?.();
+      if (el.requestFullscreen) el.requestFullscreen().then(lockLandscape).catch(lockLandscape);
+      else { el.webkitRequestFullscreen?.(); lockLandscape(); }
     } catch { /* 不支持就算了 */ }
   };
   useEffect(() => () => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    try { (window.screen?.orientation as ScreenOrientation & { unlock?: () => void })?.unlock?.(); } catch { /* 忽略 */ }
   }, []);
 
   // ---------- 开局 ----------
@@ -1684,7 +1717,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.serialNext = 1;
     s.wAuto = 1; s.wActive = 1;
     s.lastAuto = 0; s.lastActive = -99999;
-    s.ammo = GUN_LEVELS[0].mag; s.lastReload = performance.now();
+    s.ammo = GUN_LEVELS[0].mag; s.lastReload = nowMs();
     s.passives = { mov: 0, vit: 0, cdr: 0, pick: 0 };
     s.xp = 0; s.level = 1;
     s.kills = 0; s.bodies = 1;
@@ -1695,7 +1728,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.hasteUntil = 0;
     s.poolLeft = POOL_TOTAL - 1 - INITIAL_CLONES;
     s.nextId = 1;
-    const now0 = performance.now();
+    s.pauseOffset = 0;
+    const now0 = nowMs();
     // 开局倒数：世界静止，计时从倒数结束起算
     s.freezeUntil = now0 + START_COUNTDOWN_MS;
     s.startAt = now0 + START_COUNTDOWN_MS;
@@ -1865,6 +1899,15 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
             <span className="text-[12px] text-[#E8833A]/50 tracking-wider">{T.subtitle}</span>
           </div>
           <div className="flex items-center gap-3">
+            {isTouch && (
+              <button
+                onClick={() => setForceRotate(v => !v)}
+                className="text-[#E8833A]/60 hover:text-[#E8833A] transition-colors select-none"
+                aria-label={lang === 'en' ? 'rotate screen' : '旋转屏幕'}
+              >
+                <RotateCw size={18} />
+              </button>
+            )}
             <button
               onClick={toggleMute}
               className="text-[#E8833A]/60 hover:text-[#E8833A] transition-colors select-none"

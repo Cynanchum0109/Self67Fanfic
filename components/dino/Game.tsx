@@ -420,7 +420,9 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
             <X size={22} strokeWidth={1.5} className="text-[#7B5B89]" />
           </button>
         </div>
-        <div className="bg-[#F8F6FA] rounded-3xl p-4 border border-[#E8F9F6]">
+        <div className="bg-[#F8F6FA] rounded-3xl p-4 border border-[#E8F9F6]"
+          onPointerDown={handleJump}
+          style={{ touchAction: 'manipulation' }}>
           <canvas
             ref={canvasRef}
             className="w-full h-auto border border-[#D4F4EC] rounded-2xl"
