@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { BookOpen, List, Home, X, MessageCircle } from 'lucide-react';
 import { AppState } from '../types';
 
-// 使用相对路径，适配本地、Vercel 和 GitHub Pages（项目根为 /Self67Fanfic/）
-const MOMO67_ICON_URL = 'assets/icons/momo67.png';
+// 走 import 而不是 public/ 下的裸路径：打包器负责加 base 前缀，
+// 离线单文件模式下还能直接内联成 data URI
+import MOMO67_ICON_URL from '../src/icons/momo67.png';
 
 interface LayoutProps {
   children: React.ReactNode;

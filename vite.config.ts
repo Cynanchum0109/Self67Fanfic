@@ -12,12 +12,28 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 // 所以离线版必须是单文件 + 传统 script（iife），不能直接用线上那份 dist。
 const offline = process.env.OFFLINE === 'true';
 
-// 离线包里去掉 Google Fonts 外链：断网时它只会阻塞首屏渲染，
-// 字体本来就按 src/index.css 的字体栈回落到系统字体
-const stripRemoteFonts = () => ({
-  name: 'strip-remote-fonts',
-  transformIndexHtml: (html: string) =>
-    html.replace(/\s*<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, '')
+// 离线包要做到「只有一个 index.html」，所以 offline 模式下不拷 public/：
+// - Google Fonts 外链去掉（断网时只会阻塞首屏，字体本就按字体栈回落系统字体）
+// - PNG 图标全部 inline 成 data URI，manifest 链接去掉（file:// 下没意义）
+// - favicon 直接内联，省掉外部 .ico 文件
+const inlineHeadAssets = () => ({
+  name: 'inline-head-assets',
+  transformIndexHtml(html: string) {
+    const ico = fs.readFileSync(path.resolve(__dirname, 'public', 'favicon.ico')).toString('base64');
+    return html
+      .replace(/\s*<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, '')
+      .replace(/\s*<link[^>]*rel="manifest"[^>]*>/g, '')
+      .replace(/\s*<link[^>]*href="\.\/assets\/favicon_io\/[^>]*>/g, '')
+      .replace(/\s*<link[^>]*rel="apple-touch-icon"[^>]*>/g, '')
+      .replace(
+        /\s*<link[^>]*href="\.\/favicon\.ico"[^>]*>/g,
+        ''
+      )
+      .replace(
+        '</head>',
+        `  <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,${ico}">\n</head>`
+      );
+  }
 });
 
 // singlefile 内联完之后再把 <script type="module"> 降级成传统 script：
@@ -43,11 +59,13 @@ const demoteModuleScript = () => ({
 
 export default defineConfig({
   base: './',
+  // 离线单文件模式不拷 public/：产物就是孤零零一个 index.html
+  publicDir: offline ? false : 'public',
   server: {
     port: 3000,
     host: '0.0.0.0'
   },
-  plugins: [react(), ...(offline ? [stripRemoteFonts(), viteSingleFile(), demoteModuleScript()] : [])],
+  plugins: [react(), ...(offline ? [inlineHeadAssets(), viteSingleFile(), demoteModuleScript()] : [])],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.')

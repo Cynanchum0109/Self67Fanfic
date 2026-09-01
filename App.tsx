@@ -10,6 +10,11 @@ import { Story, AppState } from './types';
 import { BookOpen, Quote, Clock, ArrowRight } from 'lucide-react';
 import { storiesData } from './src/storiesData';
 import { normalizeNewlines } from './utils/text';
+// 图标走 import：打包器加 base 前缀，离线单文件模式下内联成 data URI
+import momo67Icon from './src/icons/momo67.png';
+import rtoken1Icon from './src/icons/Rtoken1.png';
+import rtoken2Icon from './src/icons/Rtoken2.png';
+import ambrosialIcon from './src/icons/ambrosial.png';
 import PasswordGate from './components/PasswordGate';
 import { isUnlocked, markUnlocked } from './utils/auth';
 
@@ -231,7 +236,7 @@ const App: React.FC = () => {
       {/* 站名主视觉 */}
       <header className="relative space-y-3.5 sm:space-y-5 animate-float-in">
         <img
-          src="assets/icons/momo67.png"
+          src={momo67Icon}
           alt=""
           className="relative w-11 h-11 sm:w-14 sm:h-14 mx-auto object-contain animate-breathe"
           style={{ imageRendering: 'pixelated' }}
@@ -295,12 +300,12 @@ const App: React.FC = () => {
             >
               <span className="relative flex items-center justify-center w-10 h-10">
                 <img
-                  src="assets/icons/Rtoken1.png"
+                  src={rtoken1Icon}
                   alt=""
                   className="w-full h-full object-contain transition-opacity duration-200 group-hover:opacity-0"
                 />
                 <img
-                  src="assets/icons/Rtoken2.png"
+                  src={rtoken2Icon}
                   alt=""
                   className="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                 />
@@ -456,7 +461,7 @@ const App: React.FC = () => {
               {activeStory.fileName === '爱莫若食.md' && (
                 <div className="flex justify-center mb-6">
                   <img
-                    src="assets/icons/ambrosial.png"
+                    src={ambrosialIcon}
                     alt=""
                     className="w-36 h-36 object-contain opacity-90"
                     style={{ imageRendering: 'auto' }}
