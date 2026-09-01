@@ -19,6 +19,22 @@
 </head>
 <body class="text-gray-900">
     <div id="root"></div>
+    <!-- 兜底提示：3 秒后还没挂载，多半是把需要服务器的 dist/ 直接用 file:// 打开了
+         （浏览器不允许 file:// 加载外部 ES module，整页会白屏且没有任何提示）。
+         离线版能正常挂载，永远不会走到这里。样式写死是因为那种情况下 CSS 也被拦了。 -->
+    <script>
+      setTimeout(function () {
+        var r = document.getElementById('root');
+        if (!r || r.hasChildNodes()) return;
+        r.innerHTML =
+          '<div style="max-width:34em;margin:18vh auto;padding:0 1.5em;font:400 15px/1.8 system-ui,sans-serif;color:#4E4462;text-align:center">' +
+          '<p style="font-size:20px;margin:0 0 .8em">页面没能加载</p>' +
+          '<p style="margin:0 0 .8em">这份产物需要通过服务器访问，直接双击打开是不行的。</p>' +
+          '<p style="margin:0">要本地离线打开，请用 <code style="background:#F0EDF5;padding:.15em .45em;border-radius:4px">dist-offline/index.html</code>（<code style="background:#F0EDF5;padding:.15em .45em;border-radius:4px">npm run build:offline</code> 生成）。</p>' +
+          '<p style="margin:1.6em 0 0;font-size:13px;color:#9A93A8">This build must be served over http(s). For offline use, open dist-offline/index.html instead.</p>' +
+          '</div>';
+      }, 3000);
+    </script>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>
