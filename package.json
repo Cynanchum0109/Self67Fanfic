@@ -7,7 +7,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "check": "node scripts/checkText.js",
-    "prebuild": "node scripts/checkText.js && python3 scripts/generateStoriesData.py",
+    "prebuild": "node scripts/checkText.js && (python3 scripts/generateStoriesData.py || python scripts/generateStoriesData.py)",
     "build": "vite build",
     "push": "node scripts/push-to-github.js"
   },

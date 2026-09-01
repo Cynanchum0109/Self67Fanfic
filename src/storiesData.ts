@@ -66,7 +66,7 @@ export const storiesData: StoryData[] = [
     "version": "none",
     "language": "CN",
     "fileName": "爱莫若食.md",
-    "wordCount": 19033,
+    "wordCount": 24167,
     "order": 4
   },
   {
