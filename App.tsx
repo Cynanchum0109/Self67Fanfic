@@ -340,8 +340,8 @@ const App: React.FC = () => {
         {/* 更新说明降级到底部 */}
         <p className="text-[10px] sm:text-[11px] font-light italic serif-text text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-1 sm:pt-2">
           {lang === 'zh'
-            ? '最新更新：8/4/2026，黄金台上完结，更新密码防误入'
-            : 'Latest update: 8/4/2026, Lord’s Pawn completed, passcode added to prevent accidental entry'}
+            ? '最新更新：8/31/2026，爱莫若食更新完结，小游戏修 bug'
+            : 'Latest update: 8/31/2026, Ambrosial!! completed, game bugfixes'}
         </p>
       </div>
     </div>

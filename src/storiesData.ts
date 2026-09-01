@@ -61,7 +61,7 @@ export const storiesData: StoryData[] = [
   {
     "id": "lm3mewxqx",
     "title": "Ambrosial!! 爱莫若食!!",
-    "tags": "lcb67, 连载中",
+    "tags": "lcb67",
     "summary": "鸿璐的自我伤害与希斯克利夫的自投罗网。Fork&Cake",
     "version": "none",
     "language": "CN",
