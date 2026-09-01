@@ -23,6 +23,7 @@ npm run build:offline    # 产物：dist-offline/index.html（唯一一个文件
 ```
 
 发给别人就发这一个 `index.html`，双击即可，无需任何服务器、不用解压。
+标签页标题是「BQ67私站单机版」，图标用站点 favicon（改标题见 `vite.config.ts` 的 `OFFLINE_TITLE`）。
 
 为什么要单独一个命令：浏览器不允许 `file://` 加载外部 ES module，所以线上那份
 `dist/`（多文件 + module 脚本）双击打不开。离线版会把 JS / CSS / 正文插图 / 站内图标 /

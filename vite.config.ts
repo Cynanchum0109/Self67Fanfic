@@ -15,11 +15,16 @@ const offline = process.env.OFFLINE === 'true';
 // 离线包要做到「只有一个 index.html」，所以 offline 模式下不拷 public/：
 // - Google Fonts 外链去掉（断网时只会阻塞首屏，字体本就按字体栈回落系统字体）
 // - PNG 图标全部 inline 成 data URI，manifest 链接去掉（file:// 下没意义）
-// - favicon 直接内联，省掉外部 .ico 文件
+// - favicon 用站点图标的 PNG 版内联（Chromium 对 data: 的 .ico 支持不稳，PNG 稳）
+// - 标题换成离线版自己的名字
+const OFFLINE_TITLE = 'BQ67私站单机版';
 const inlineHeadAssets = () => ({
   name: 'inline-head-assets',
   transformIndexHtml(html: string) {
-    const ico = fs.readFileSync(path.resolve(__dirname, 'public', 'favicon.ico')).toString('base64');
+    const png = (name: string) =>
+      fs.readFileSync(path.resolve(__dirname, 'public', 'assets', 'favicon_io', name)).toString('base64');
+    const icon32 = png('favicon-32x32.png');
+    const icon192 = png('android-chrome-192x192.png');
     return html
       .replace(/\s*<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, '')
       .replace(/\s*<link[^>]*rel="manifest"[^>]*>/g, '')
@@ -29,9 +34,12 @@ const inlineHeadAssets = () => ({
         /\s*<link[^>]*href="\.\/favicon\.ico"[^>]*>/g,
         ''
       )
+      .replace(/<title>[^<]*<\/title>/, `<title>${OFFLINE_TITLE}</title>`)
       .replace(
         '</head>',
-        `  <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,${ico}">\n</head>`
+        `  <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,${icon32}">\n` +
+          `  <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,${icon192}">\n` +
+          `  <link rel="apple-touch-icon" href="data:image/png;base64,${icon192}">\n</head>`
       );
   }
 });
