@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { normalizeNewlines } from '../utils/text';
+import { STORY_IMAGES } from '../src/storyImages';
 
 interface MarkdownRendererProps {
   content: string;
@@ -78,11 +79,13 @@ function parseImageLine(line: string): { url: string; caption: string } | null {
 // 插图组件：防止拖拽/右键另存
 function StoryImage({ url, caption }: { url: string; caption: string }) {
   const block = (e: React.MouseEvent | React.DragEvent) => e.preventDefault();
+  // 优先用打包进产物的本地副本（离线也能看），没抓到的图仍旧走外链
+  const src = STORY_IMAGES[url] ?? url;
   return (
     <figure className="my-8 text-center select-none">
       <div className="relative inline-block max-w-full" onContextMenu={block}>
         <img
-          src={url}
+          src={src}
           alt={caption || '插图'}
           draggable={false}
           onDragStart={block}

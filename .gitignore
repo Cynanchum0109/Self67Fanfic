@@ -28,3 +28,6 @@ scripts/local/
 
 *storybook.log
 storybook-static
+
+# 离线单文件产物
+dist-offline
