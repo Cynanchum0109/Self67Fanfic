@@ -15,6 +15,7 @@ import momo67Icon from './src/icons/momo67.png';
 import rtoken1Icon from './src/icons/Rtoken1.png';
 import rtoken2Icon from './src/icons/Rtoken2.png';
 import ambrosialIcon from './src/icons/ambrosial.png';
+import collagePetals from './src/assets/collage/petals.webp';
 import PasswordGate from './components/PasswordGate';
 import { isUnlocked, markUnlocked } from './utils/auth';
 
@@ -215,9 +216,12 @@ const App: React.FC = () => {
 
   // Render Functions
   const renderHome = () => (
-    <div className="relative w-full text-center space-y-7 sm:space-y-10 md:space-y-12">
+    <div lang={lang} className="journal-home relative w-full text-center space-y-7 sm:space-y-10 md:space-y-12">
+      <div className="journal-collage" aria-hidden="true">
+        <img className="collage-petals" src={collagePetals} alt="" />
+      </div>
       {/* 语言切换：中文薄荷绿 / English 紫（右上角） */}
-      <div className="fixed top-4 right-4 md:top-5 md:right-6 z-40 flex items-center gap-2.5 text-sm serif-text select-none">
+      <div className="journal-language fixed top-4 right-4 md:top-5 md:right-6 z-40 flex items-center gap-2.5 text-sm serif-text select-none">
         <button
           onClick={() => switchLang('zh')}
           className={`transition-all text-[#4FAE9C] ${lang === 'zh' ? 'font-bold underline underline-offset-4 decoration-[#6FCBB8]' : 'opacity-50 hover:opacity-80'}`}
@@ -255,10 +259,10 @@ const App: React.FC = () => {
       </header>
 
       {/* 引文区块 */}
-      <div className="relative max-w-md mx-auto animate-float-in float-delay-1">
-        <p className="relative text-[1.15rem] sm:text-[1.35rem] text-[#4FAE9C] font-medium italic leading-[1.75] sm:leading-[1.9] serif-text tracking-[0.05em]">
+      <div className="journal-quote relative max-w-md mx-auto animate-float-in float-delay-1">
+        <p className="relative text-[1.15rem] sm:text-[1.35rem] text-[#4FAE9C] font-medium leading-[1.75] sm:leading-[1.9] serif-text tracking-[0.05em]">
           <span className="text-[#9BD9CC] mr-1" aria-hidden>“</span>
-          那呼唤爱的样子如此美丽……
+          {lang === 'zh' ? '那呼唤爱的样子如此美丽……' : 'The declaration of Love was so beautiful...'}
           <span className="text-[#9BD9CC] ml-1" aria-hidden>”</span>
         </p>
         {/* 蔓生细线：像藤蔓一样蜿蜒的分隔线 */}
@@ -271,13 +275,13 @@ const App: React.FC = () => {
       <div className="relative flex flex-col items-center space-y-5 sm:space-y-7 animate-float-in float-delay-2">
         <button
           onClick={() => navigateView(AppState.TOC)}
-          className="group relative inline-flex items-center gap-3 px-9 py-3.5 sm:px-11 sm:py-4 bg-[#7A688F] text-[#FAF8F1] rounded-full font-medium overflow-hidden transition-all duration-300 hover:pr-14 hover:bg-[#68577F] active:scale-95 shadow-lg shadow-[#7A688F]/25 text-[0.9rem] uppercase tracking-[0.2em] serif-text"
+          className="journal-enter group relative inline-flex items-center gap-3 font-medium serif-text"
         >
           <span className="relative z-10">Enter the Garden</span>
           <ArrowRight className="absolute right-4 opacity-0 group-hover:opacity-100 transition-all duration-300" size={18} strokeWidth={1.5} />
         </button>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2.5 sm:gap-6">
+        <div className="journal-games flex flex-wrap items-center justify-center gap-x-4 gap-y-2.5 sm:gap-6">
           <div className="relative">
             {showRTokenTooltip && (
               <span
@@ -338,7 +342,7 @@ const App: React.FC = () => {
         </div>
 
         {/* 更新说明降级到底部 */}
-        <p className="text-[10px] sm:text-[11px] font-light italic serif-text text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-1 sm:pt-2">
+        <p className="text-[10px] sm:text-[11px] font-light serif-text text-gray-400/80 tracking-wide max-w-lg mx-auto leading-relaxed px-2 pt-1 sm:pt-2">
           {lang === 'zh'
             ? '最新更新：8/31/2026，爱莫若食更新完结，小游戏修 bug'
             : 'Latest update: 8/31/2026, Ambrosial!! completed, game bugfixes'}
@@ -353,7 +357,7 @@ const App: React.FC = () => {
     const englishStories = stories.filter(s => s.language === 'EN').sort((a, b) => (b.order || 0) - (a.order || 0));
 
     return (
-      <div className="space-y-14 animate-float-in">
+      <div className="journal-toc space-y-14 animate-float-in">
         <header className="pb-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#6FCBB8] mb-3">Content</p>
           <h1 className="text-5xl md:text-6xl font-bold text-[#7A688F] tracking-tight serif-text">Fanfic</h1>
@@ -363,7 +367,7 @@ const App: React.FC = () => {
           </svg>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+        <div className="journal-columns grid grid-cols-1 md:grid-cols-2 gap-16">
           {/* 中文栏 */}
           <div className="space-y-1">
             {chineseStories.length > 0 && (
@@ -374,7 +378,7 @@ const App: React.FC = () => {
                     <div
                       key={story.id}
                       onClick={() => openStory(story.id)}
-                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#6FCBB8] transition-all duration-300 space-y-2.5"
+                      className="journal-story group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#6FCBB8] transition-all duration-300 space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <h3 className="text-[1.2rem] font-bold text-[#4A4152] serif-text group-hover:text-[#3F9284] transition-colors duration-200 leading-snug whitespace-pre-line min-w-0 break-words flex-1">
@@ -393,7 +397,7 @@ const App: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 italic group-hover:text-gray-500 transition-colors whitespace-pre-line">
+                      <p className="text-[0.875rem] text-gray-400 leading-[1.7] serif-text line-clamp-2 group-hover:text-gray-500 transition-colors whitespace-pre-line">
                         {getStoryPreview(story)}
                       </p>
                     </div>
@@ -413,7 +417,7 @@ const App: React.FC = () => {
                     <div
                       key={story.id}
                       onClick={() => openStory(story.id)}
-                      className="group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#A99BC1] transition-all duration-300 space-y-2.5"
+                      className="journal-story group cursor-pointer pl-4 border-l-2 border-transparent hover:border-[#A99BC1] transition-all duration-300 space-y-2.5"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <h3 className="text-[1.2rem] font-bold text-[#4A4152] serif-text group-hover:text-[#8E7BA8] transition-colors duration-200 leading-snug whitespace-pre-line min-w-0 break-words flex-1">
@@ -453,7 +457,7 @@ const App: React.FC = () => {
   };
 
   const renderReader = () => (
-    <div className="flex gap-12 animate-float-in">
+    <div className="journal-reader flex gap-12 animate-float-in">
       <div className="flex-1 max-w-3xl min-w-0">
         {activeStory ? (
           <div className="space-y-10">
@@ -487,7 +491,7 @@ const App: React.FC = () => {
                 )}
               </div>
               {activeStory.summary && (
-                <p className="text-[1rem] text-gray-500 italic mb-4 serif-text leading-[1.8] tracking-[0.02em] whitespace-pre-line">{normalizeNewlines(activeStory.summary)}</p>
+                <p lang={activeStory.language === 'CN' ? 'zh' : 'en'} className="text-[1rem] text-gray-500 italic mb-4 serif-text leading-[1.8] tracking-[0.02em] whitespace-pre-line">{normalizeNewlines(activeStory.summary)}</p>
               )}
               {activeStory.version && activeStory.version.toLowerCase() !== 'none' && (() => {
                 const relatedStory = findStoryByVersion(activeStory.version, activeStory);
@@ -510,7 +514,7 @@ const App: React.FC = () => {
               </div>
             </header>
 
-            <article className="pb-36">
+            <article lang={activeStory.language === 'CN' ? 'zh' : 'en'} className="pb-36">
               <MarkdownRenderer content={activeStory.content} />
             </article>
           </div>

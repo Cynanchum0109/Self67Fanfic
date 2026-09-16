@@ -1545,8 +1545,8 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-[#1A1512]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(26,21,18,0.3)] border border-[#F6D8B5]/60 p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto animate-float-in">
+    <div className="observation-overlay fixed inset-0 bg-[#1A1512]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="observation-panel bg-white rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(26,21,18,0.3)] border border-[#F6D8B5]/60 p-4 md:p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto animate-float-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-[#C96A24] serif-text">{T.title}</h2>
           <button
@@ -1558,7 +1558,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
           </button>
         </div>
 
-        <div className="relative bg-[#FFFFFF] rounded-3xl p-4 border border-[#F6D8B5]/70 mb-4">
+        <div className={`observation-stage relative bg-[#FFFFFF] rounded-3xl p-4 border border-[#F6D8B5]/70 mb-4 ${gameEnded ? 'observation-stage--ended' : ''}`}>
           <style>{`
             @keyframes rcopEndingFade {
               from { opacity: 0; transform: scale(0.98); }
@@ -1593,30 +1593,23 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
             if (!texts) return null;
             return (
               <div
-                className="absolute inset-4 flex items-center justify-center rounded-2xl overflow-y-auto"
-                style={{ background: meta.backdrop, animation: 'rcopEndingFade 1.2s ease-out both' }}
+                className={`observation-ending ${meta.blood ? 'observation-ending--blood' : ''}`}
+                style={{ '--ending-accent': meta.color } as React.CSSProperties}
               >
-                <div className="max-w-2xl px-4 md:px-8 py-3 text-center space-y-3 md:space-y-7 my-auto">
+                <div className="observation-ending-content">
                   {texts.pre && (
-                    <p className="serif-text text-gray-700 text-[11px] md:text-lg leading-[1.7] md:leading-[2.1] whitespace-pre-line tracking-[0.03em] md:tracking-[0.05em]">
+                    <p className="observation-ending-pre serif-text whitespace-pre-line">
                       {texts.pre}
                     </p>
                   )}
-                  <div className="mx-auto w-12 h-px" style={{ backgroundColor: meta.color }} />
                   <h3
-                    className="serif-text font-bold text-base md:text-4xl tracking-[0.25em] md:tracking-[0.35em] indent-[0.25em] md:indent-[0.35em]"
-                    style={{ color: meta.color, textShadow: meta.blood ? '0 1px 12px rgba(178,34,34,0.25)' : `0 1px 12px ${meta.color}33` }}
+                    className="observation-ending-title serif-text"
+                    style={{ color: meta.color }}
                   >
                     {texts.title.split(' ').map((word, i) => (
                       <span
                         key={i}
-                        style={
-                          word === '兔子' || word === 'Rabbit'
-                            ? { color: '#7C55B0' }
-                            : word === '驯鹿' || word === 'Reindeer'
-                            ? { color: '#2FB39A' }
-                            : undefined
-                        }
+                        style={word === '兔子' || word === 'Rabbit' ? { color: '#7C55B0' } : word === '驯鹿' || word === 'Reindeer' ? { color: '#2F9E88' } : undefined}
                       >
                         {i > 0 ? ' ' : ''}{word}
                       </span>

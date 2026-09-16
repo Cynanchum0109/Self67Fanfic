@@ -24,20 +24,26 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ lang, onUnlock, onCancel })
     e.preventDefault();
     if (checking) return;
     setChecking(true);
-    const ok = await verifyPasscode(code);
-    setChecking(false);
-    if (ok) {
-      onUnlock();
-    } else {
+    try {
+      const ok = await verifyPasscode(code);
+      if (ok) {
+        onUnlock();
+      } else {
+        setError(true);
+        setCode('');
+        inputRef.current?.focus();
+      }
+    } catch {
       setError(true);
-      setCode('');
       inputRef.current?.focus();
+    } finally {
+      setChecking(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#FAF8F1]/95 backdrop-blur-sm px-6">
-      <form onSubmit={submit} className="w-full max-w-xs text-center space-y-7 animate-float-in">
+    <div className="journal-gate fixed inset-0 z-[60] flex items-center justify-center bg-[#FAF8F1]/95 backdrop-blur-sm px-6">
+      <form onSubmit={submit} className="journal-gate-form w-full max-w-xs text-center space-y-7 animate-float-in" aria-busy={checking}>
         <div className="flex items-center justify-center gap-3" aria-hidden>
           <span className="w-10 h-px bg-gradient-to-r from-transparent to-[#C6B8D8]" />
           <span className="text-[#A99BC1] text-sm leading-none serif-text">❦</span>
@@ -55,6 +61,8 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ lang, onUnlock, onCancel })
           inputMode="numeric"
           autoComplete="off"
           maxLength={4}
+          aria-invalid={error}
+          aria-describedby="passcode-feedback"
           value={code}
           onChange={(e) => {
             setCode(e.target.value.replace(/\D/g, '').slice(0, 4));
@@ -65,7 +73,7 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ lang, onUnlock, onCancel })
           }`}
         />
 
-        <p className={`text-xs serif-text transition-opacity ${error ? 'text-[#C98B8B] opacity-100' : 'opacity-0'}`}>
+        <p id="passcode-feedback" aria-live="polite" className={`text-xs serif-text transition-opacity ${error ? 'text-[#C98B8B] opacity-100' : 'opacity-0'}`}>
           {lang === 'zh' ? '不对哦，再想想。' : 'Not quite. Try again.'}
         </p>
 
@@ -73,7 +81,7 @@ const PasswordGate: React.FC<PasswordGateProps> = ({ lang, onUnlock, onCancel })
           <button
             type="submit"
             disabled={code.length !== 4 || checking}
-            className="inline-flex items-center gap-3 px-10 py-3 bg-[#7A688F] text-[#FAF8F1] rounded-full font-medium transition-all duration-300 hover:bg-[#68577F] active:scale-95 disabled:opacity-40 disabled:active:scale-100 shadow-lg shadow-[#7A688F]/25 text-[0.8rem] uppercase tracking-[0.2em] serif-text"
+            className="journal-enter relative inline-flex items-center justify-center serif-text"
           >
             {lang === 'zh' ? '进入' : 'Enter'}
           </button>

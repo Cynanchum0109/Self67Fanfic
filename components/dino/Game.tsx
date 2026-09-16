@@ -111,6 +111,20 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     canvas.width = 600;
     canvas.height = 200;
 
+    // Cache the paper texture once; gameplay and sprite rendering stay unchanged.
+    const paper = document.createElement('canvas');
+    paper.width = canvas.width;
+    paper.height = canvas.height;
+    const paperCtx = paper.getContext('2d');
+    if (paperCtx) {
+      paperCtx.fillStyle = '#f8f5ec';
+      paperCtx.fillRect(0, 0, paper.width, paper.height);
+      for (let i = 0; i < 1800; i++) {
+        paperCtx.fillStyle = i % 2 ? 'rgba(121,105,80,.045)' : 'rgba(255,255,255,.35)';
+        paperCtx.fillRect((i * 137.3) % 600, (i * 73.7) % 200, 1, .7);
+      }
+    }
+
     const draw = () => {
       if (!ctx) return;
 
@@ -118,17 +132,28 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // 绘制背景
-      ctx.fillStyle = '#F8F6FA';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(paper, 0, 0);
 
       // 绘制地面
-      ctx.fillStyle = '#E8F9F6';
+      ctx.fillStyle = '#dbe6d5';
       ctx.fillRect(
         0,
         gameState.current.groundY + gameState.current.dino.height,
         canvas.width,
         10
       );
+
+      const floor = gameState.current.groundY + gameState.current.dino.height;
+      ctx.strokeStyle = '#a4b69a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, floor + .5);
+      ctx.lineTo(canvas.width, floor + .5);
+      ctx.stroke();
+      ctx.fillStyle = '#becbb0';
+      for (let x = 14; x < canvas.width; x += 39) {
+        ctx.fillRect(x, floor + 4, 5, 1);
+      }
 
       const state = gameState.current;
 
@@ -165,7 +190,7 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
             obstacle.height
           );
         } else {
-        ctx.fillStyle = '#6BD4C0';
+        ctx.fillStyle = '#648e7a';
         ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         }
       });
@@ -179,10 +204,10 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
       
       if (hasSix && hasSeven && indexOfSix < indexOfSeven) {
         // 6在7前面（如67、167）：粉色
-        ctx.fillStyle = 'rgba(242, 182, 251, 0.9)';
+        ctx.fillStyle = '#ad7296';
       } else if (hasSix) {
         // 包含6：薄荷绿
-        ctx.fillStyle = '#6BD4C0';
+        ctx.fillStyle = '#648e7a';
       } else if (hasSeven) {
         // 包含7：浅紫色
         ctx.fillStyle = '#9D8AB5';
@@ -196,18 +221,18 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
 
       if (gameOver) {
         // 游戏结束界面（去掉变暗效果）
-        ctx.fillStyle = 'rgba(251, 182, 206, 0.9)'; // 浅粉色带透明度
+        ctx.fillStyle = '#d34883'; // 浅粉色带透明度
         ctx.font = 'bold 32px "Source Sans 3"';
         ctx.textAlign = 'center';
         ctx.fillText(T.win, canvas.width / 2, canvas.height / 2 - 30);
         
         // 按下空格再试一次 - 深紫色
-        ctx.fillStyle = '#7B5B89'; // 深紫色
+        ctx.fillStyle = '#8650b3'; // 深紫色
         ctx.font = '18px "Source Sans 3"';
         ctx.fillText(T.retry, canvas.width / 2, canvas.height / 2 + 5);
         
         // 希斯克利夫加油～ - 小字细字薄荷绿
-        ctx.fillStyle = '#6BD4C0'; // 薄荷绿
+        ctx.fillStyle = '#229b79'; // 薄荷绿
         ctx.font = '14px "Source Sans 3"';
         ctx.fillText(T.cheer, canvas.width / 2, canvas.height / 2 + 30);
         
@@ -409,8 +434,8 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
   }, [handleKeyPress]);
 
   return (
-    <div className="fixed inset-0 bg-[#2D2438]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#FDFCFA] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(45,58,49,0.2)] border border-[#EAE5F0] p-6 max-w-2xl w-full animate-float-in">
+    <div className="paper-game-overlay fixed inset-0 bg-[#2D2438]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="paper-game bg-[#FDFCFA] rounded-[2rem] shadow-[0_25px_50px_-12px_rgba(45,58,49,0.2)] border border-[#EAE5F0] p-6 max-w-2xl w-full animate-float-in">
         <div className="flex justify-end items-center mb-4">
           <button
             onClick={onClose}
@@ -420,7 +445,7 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
             <X size={22} strokeWidth={1.5} className="text-[#7B5B89]" />
           </button>
         </div>
-        <div className="bg-[#F8F6FA] rounded-3xl p-4 border border-[#E8F9F6]"
+        <div className="paper-game-stage bg-[#F8F6FA] rounded-3xl p-4 border border-[#E8F9F6]"
           onPointerDown={handleJump}
           style={{ touchAction: 'manipulation' }}>
           <canvas
@@ -432,7 +457,7 @@ const Game: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
         {/* 移动端跳跃按钮 */}
         <button
           onClick={handleJump}
-          className="md:hidden w-full mt-4 py-4 bg-[#E8E0ED] hover:bg-[#9D8AB5] active:bg-[#7B5B89] text-[#7B5B89] hover:text-white rounded-full font-semibold text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_10px_15px_-3px_rgba(123,91,137,0.15)] active:scale-95"
+          className="paper-game-jump md:hidden w-full mt-4 py-4 bg-[#E8E0ED] hover:bg-[#9D8AB5] active:bg-[#7B5B89] text-[#7B5B89] hover:text-white rounded-full font-semibold text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_10px_15px_-3px_rgba(123,91,137,0.15)] active:scale-95"
         >
           <ArrowUp size={20} strokeWidth={1.5} />
           <span>{T.jump}</span>

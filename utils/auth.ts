@@ -1,3 +1,5 @@
+import { sha256 } from '@noble/hashes/sha2.js';
+
 // 站点访问口令校验：只存 SHA-256 摘要，不存明文
 const SALT = 'hongcliff-garden-v1';
 
@@ -11,7 +13,7 @@ export const UNLOCK_KEY = 'garden-unlocked';
 
 async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const digest = sha256(bytes);
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');

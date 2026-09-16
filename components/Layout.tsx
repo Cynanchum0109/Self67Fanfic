@@ -37,8 +37,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-[0_4px_6px_-1px_rgba(45,58,49,0.05)] border border-[#EAE5F0] hover:bg-[#F0EDF5] hover:shadow-[0_10px_15px_-3px_rgba(45,58,49,0.08)] transition-all duration-300 aspect-square w-10 h-10"
+        className="journal-menu-toggle fixed top-4 left-4 z-50 flex items-center justify-center p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-[0_4px_6px_-1px_rgba(45,58,49,0.05)] border border-[#EAE5F0] hover:bg-[#F0EDF5] hover:shadow-[0_10px_15px_-3px_rgba(45,58,49,0.08)] transition-all duration-300 aspect-square w-10 h-10"
         aria-label="Toggle menu"
+        aria-expanded={isSidebarOpen}
+        aria-controls="site-navigation"
       >
         <span className="relative aspect-square w-7 h-7 flex items-center justify-center">
           <img
@@ -54,6 +56,21 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
         </span>
       </button>
 
+      {activeView === AppState.READER && (
+        <nav className="reader-tools" aria-label={T.reading}>
+          <button onClick={() => handleNavigate(AppState.TOC)}><BookOpen size={15} aria-hidden="true" />{T.contents}</button>
+          {chapters.length > 0 && (
+            <select aria-label={T.chapters} value="" onChange={(event) => {
+              onJumpToChapter?.(Number(event.target.value));
+              setIsSidebarOpen(false);
+            }}>
+              <option value="" disabled>{T.chapters}</option>
+              {chapters.map(ch => <option key={ch.index} value={ch.index}>{T.chapter(ch.index)}</option>)}
+            </select>
+          )}
+        </nav>
+      )}
+
       {/* Overlay */}
       {isSidebarOpen && (
         <div
@@ -63,7 +80,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onNavigate, chapt
       )}
 
       {/* Fixed Sidebar */}
-      <aside className={`w-64 fixed inset-y-0 left-0 bg-gradient-to-b from-[#FDFCFE] to-white border-r border-[#EAE5F0] rounded-r-3xl shadow-[0_20px_40px_-10px_rgba(45,58,49,0.08)] flex flex-col z-40 transition-transform duration-500 ease-out ${
+      <aside id="site-navigation" inert={!isSidebarOpen} className={`journal-navigation w-64 fixed inset-y-0 left-0 bg-gradient-to-b from-[#FDFCFE] to-white border-r border-[#EAE5F0] rounded-r-3xl shadow-[0_20px_40px_-10px_rgba(45,58,49,0.08)] flex flex-col z-40 transition-transform duration-500 ease-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="p-8 pb-6">
