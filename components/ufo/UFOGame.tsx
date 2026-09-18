@@ -19,7 +19,8 @@ const GROUND_LEVEL = GY - DOG_H;   // 216
 const UFO_IW = 99, UFO_IH = 54;
 const UFO_BASE_Y = 58, UFO_BOB = 10;
 const RW = 38, RH = 43, RUNNER_SPEED = 3;
-const GRAVITY = 0.32, JUMP_POWER = -9;
+const RESTART_DELAY_MS = 1800;
+const GRAVITY = 0.36, JUMP_POWER = -9.6;
 
 type BeamPhase  = 'off' | 'warning' | 'active';
 type DeathCause = 'alien' | 'human' | 'won';
@@ -58,6 +59,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
 
   const S = useRef({
     dog: { x: CW/2-DOG_W/2, y: GROUND_LEVEL, vy: 0, onGround: true },
+    jumpBufferMs: 0, patrolX: CW / 2, patrolMs: 0, recoilMs: 0,
     facingRight: false,
     ufoX: CW/2, ufoY: UFO_BASE_Y,
     sineT: 0,
@@ -65,7 +67,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     beamTimer: 2500, warnDur: 900, onDur: 1500, offDur: 2500,
     track: 0.012, lastScore: 0, lastFrame: 0, animId: 0, diffT: 0,
     deathCause: 'alien' as DeathCause,
-    overFadeStart: 0,
+    overFadeStart: 0, ended: false, restartReadyAt: 0, ufoVx: 0,
     uid: 0,
     stars: [] as MStar[], flowers: [] as Flower[], runners: [] as Runner[],
     // UFO damage system
@@ -99,12 +101,14 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     const s = S.current;
     s.dog = { x: CW/2-DOG_W/2, y: GROUND_LEVEL, vy: 0, onGround: true };
     s.facingRight = false;
+    s.jumpBufferMs = 0; s.patrolX = CW / 2; s.patrolMs = 0; s.recoilMs = 0;
+    leftHeld.current = false; rightHeld.current = false;
     s.ufoX = CW/2; s.ufoY = UFO_BASE_Y; s.sineT = 0;
     s.beamPhase = 'off'; s.beamTimer = 2500;
     s.warnDur = 900; s.onDur = 1500; s.offDur = 2500;
     s.track = 0.012; s.diffT = 0;
     s.deathCause = 'alien';
-    s.overFadeStart = 0;
+    s.overFadeStart = 0; s.ended = false; s.restartReadyAt = 0; s.ufoVx = 0;
     s.stars = []; s.flowers = []; s.runners = [];
     s.ufoHits = 0; s.ufoHitCooldown = 0;
     s.ufoStunned = false; s.ufoStunTimer = 0; s.ufoStunCount = 0;
@@ -126,7 +130,8 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
 
   const handleJump = useCallback(() => {
     const d = S.current.dog;
-    if (d.onGround) { d.vy = JUMP_POWER; d.onGround = false; }
+    if (d.onGround) { d.vy = JUMP_POWER; d.onGround = false; S.current.jumpBufferMs = 0; }
+    else S.current.jumpBufferMs = 120;
   }, []);
 
   const handleJoyDown = useCallback((e: React.PointerEvent) => {
@@ -156,7 +161,18 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     rightHeld.current = false;
   }, []);
 
+  const finishGame = (cause: DeathCause) => {
+    const s = S.current;
+    if (s.ended) return;
+    s.ended = true; s.deathCause = cause;
+    s.overFadeStart = performance.now();
+    s.restartReadyAt = s.overFadeStart + RESTART_DELAY_MS;
+    leftHeld.current = false; rightHeld.current = false;
+    setGameOver(true); setIsPlaying(false);
+  };
+  const canRestart = () => performance.now() >= S.current.restartReadyAt;
   const handleAction = useCallback(() => {
+    if (S.current.ended && !canRestart()) return;
     if (gameOver)        { reset(); setGameOver(false); setIsPlaying(true); }
     else if (!isPlaying) { reset(); setIsPlaying(true); }
   }, [gameOver, isPlaying]);
@@ -218,7 +234,8 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     const ux = s.ufoX, uy = s.ufoY;
     const uImg = imgUFO.current;
     if (uImg && uImg.complete) {
-      ctx.drawImage(uImg, ux-UFO_IW/2, uy-UFO_IH/2, UFO_IW, UFO_IH);
+      ctx.save(); ctx.translate(ux, uy); ctx.rotate(s.ufoVx * 0.0007);
+      ctx.drawImage(uImg, -UFO_IW/2, -UFO_IH/2, UFO_IW, UFO_IH); ctx.restore();
     }
 
     // Damage lights (along saucer rim)
@@ -305,6 +322,9 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     ctx.fillStyle='#D4A8FF'; ctx.font='bold 14px monospace'; ctx.textAlign='left';
     ctx.fillText(`Score: ${scoreRef.current}`, 10, 24);
 
+    ctx.textAlign='right'; ctx.font='12px monospace'; ctx.fillStyle='#6BD4C0';
+    ctx.fillText(`${lang === 'en' ? 'UFO' : '飞碟'} ${Math.min(3,s.ufoStunCount)}/3`, CW-10, 24);
+    ctx.textAlign='left';
     // Overlays
     if (gameOver) {
       if (!s.overFadeStart) s.overFadeStart = now;
@@ -344,7 +364,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
                 :                          T.byAlien;
       ctx.fillText(msg, CW/2, yMsg);
       ctx.fillStyle = isAlienEnd ? '#D8CCE8' : '#9D8AB5'; ctx.font='14px monospace';
-      ctx.fillText(T.retry, CW/2, yRetry);
+      if (now >= s.restartReadyAt) ctx.fillText(T.retry, CW/2, yRetry);
       ctx.fillStyle='#6BD4C0'; ctx.font='12px monospace';
       ctx.fillText(`${T.finalScore}: ${scoreRef.current}`, CW/2, yScore);
       ctx.shadowBlur = 0;
@@ -373,31 +393,37 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
       const dt = Math.min(now - s.lastFrame, 50);
       s.lastFrame = now;
 
-      if (isPlaying && !gameOver) {
+      if (isPlaying && !gameOver && !s.ended) {
         const { dog } = s;
+        const frames = dt / (1000 / 60);
+        s.jumpBufferMs = Math.max(0, s.jumpBufferMs - dt);
+        s.recoilMs = Math.max(0, s.recoilMs - dt);
 
         // Dog facing direction
         if (leftHeld.current  && !rightHeld.current) s.facingRight = false;
         if (rightHeld.current && !leftHeld.current)  s.facingRight = true;
 
         // Dog movement + physics
-        if (leftHeld.current)  dog.x = Math.max(0, dog.x-3);
-        if (rightHeld.current) dog.x = Math.min(CW-DOG_W, dog.x+3);
+        if (leftHeld.current)  dog.x = Math.max(0, dog.x-3*frames);
+        if (rightHeld.current) dog.x = Math.min(CW-DOG_W, dog.x+3*frames);
         if (!dog.onGround) {
-          dog.vy += GRAVITY; dog.y += dog.vy;
-          if (dog.y >= GROUND_LEVEL) { dog.y=GROUND_LEVEL; dog.vy=0; dog.onGround=true; }
+          dog.y += dog.vy * frames + GRAVITY * frames * frames / 2; dog.vy += GRAVITY * frames;
+          if (dog.y >= GROUND_LEVEL) { dog.y=GROUND_LEVEL; dog.vy=0; dog.onGround=true;
+            if (s.jumpBufferMs > 0) { dog.vy=JUMP_POWER; dog.onGround=false; s.jumpBufferMs=0; }
+          }
         }
 
         // UFO vertical bob (always, including during stun/fall)
         s.sineT += dt;
         if (!s.ufoFalling && !s.ufoGrounded) {
-          s.ufoY = UFO_BASE_Y + Math.sin(s.sineT * 0.0012) * UFO_BOB;
+          const targetY = UFO_BASE_Y + (s.beamPhase === 'active' ? 12 : 0) + Math.sin(s.sineT * 0.0012) * UFO_BOB;
+          s.ufoY += (targetY - s.ufoY) * (1 - Math.exp(-dt / 180));
         }
 
         // UFO falling
         if (s.ufoFalling && !s.ufoGrounded) {
-          s.ufoFallVy += 0.18;
-          s.ufoY += s.ufoFallVy;
+          s.ufoFallVy += 0.18 * frames;
+          s.ufoY += s.ufoFallVy * frames;
           if (s.ufoY + UFO_IH/2 >= GY) {
             s.ufoY = GY - UFO_IH/2;
             s.ufoGrounded = true;
@@ -408,8 +434,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
         if (s.ufoGrounded) {
           s.ufoGroundedTimer += dt;
           if (s.ufoGroundedTimer >= 1800) {
-            s.deathCause = 'won';
-            setGameOver(true); setIsPlaying(false);
+            finishGame('won');
           }
         }
 
@@ -417,26 +442,50 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
         if (s.ufoStunned) {
           s.ufoStunTimer -= dt;
           if (s.ufoStunTimer <= 0) {
-            s.ufoStunned = false; s.ufoStunTimer = 0;
+            s.ufoStunned = false; s.ufoStunTimer = 0; s.ufoHits = 0;
             s.beamPhase = 'off'; s.beamTimer = s.offDur;
           }
         }
 
         // UFO horizontal tracking (only when not stunned/falling/grounded)
-        if (!s.ufoStunned && !s.ufoFalling && !s.ufoGrounded) {
+        if (!s.ufoStunned && !s.ufoFalling && !s.ufoGrounded && s.beamPhase !== 'active') {
           const dogCx = dog.x + DOG_W/2;
-          s.ufoX += (dogCx - s.ufoX) * s.track * (dt/16);
-          s.ufoX += Math.sin(s.sineT * 0.0008) * 0.4;
+          s.patrolMs -= dt;
+          if (s.patrolMs <= 0) {
+            s.patrolX = Math.max(60, Math.min(CW-60, dogCx + (Math.random() < .5 ? -1 : 1) * (65 + Math.random()*65)));
+            s.patrolMs = 1000 + Math.random()*700;
+          }
+          const direction = Number(rightHeld.current) - Number(leftHeld.current);
+          const targetX = s.beamPhase === 'warning' ? dogCx + direction * 28 : s.patrolX;
+          if (s.recoilMs <= 0) {
+            const tracking = s.beamPhase === 'warning' ? s.track * 1.5 : s.track * .65;
+            s.ufoX += (targetX - s.ufoX) * (1 - Math.pow(1-tracking, dt/16));
+          }
           s.ufoX = Math.max(UFO_IW/2+4, Math.min(CW-UFO_IW/2-4, s.ufoX));
         }
 
+        // Damped horizontal impulse; boundary bounce keeps impact visible near walls.
+        if (!s.ufoFalling && !s.ufoGrounded) {
+          const damping = Math.exp(-dt / 200);
+          s.ufoX += s.ufoVx * .2 * (1 - damping);
+          s.ufoVx *= damping;
+          const lo = UFO_IW/2+4, hi = CW-lo;
+          if (s.ufoX < lo || s.ufoX > hi) {
+            s.ufoX = Math.max(lo, Math.min(hi, s.ufoX)); s.ufoVx *= -.35;
+          }
+        }
         // UFO hit cooldown
         if (s.ufoHitCooldown > 0) s.ufoHitCooldown -= dt;
 
         // Dog touches UFO
         if (!s.ufoFalling && !s.ufoGrounded && !s.ufoStunned && s.ufoHitCooldown <= 0 &&
             overlaps(dog.x,dog.y,DOG_W,DOG_H, s.ufoX-UFO_IW/2,s.ufoY-UFO_IH/2,UFO_IW,UFO_IH)) {
-          s.ufoHits += 1;
+          s.ufoHits += 1; s.recoilMs = 650;
+          const away = Math.sign(s.ufoX - (dog.x + DOG_W/2)) || (s.facingRight ? 1 : -1);
+          s.ufoVx = away * 230;
+          s.ufoY = Math.max(UFO_IH/2+5, s.ufoY - 12);
+          s.patrolX = Math.max(60, Math.min(CW-60, s.ufoX + away * 85));
+          s.patrolMs = 1100;
           s.ufoHitCooldown = 1200;
           if (s.ufoHits >= 3) {
             s.ufoStunCount += 1;
@@ -467,14 +516,14 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
 
         // Beam capture
         if (s.beamPhase==='active' && dog.onGround && inBeamX()) {
-          s.deathCause='alien'; setGameOver(true); setIsPlaying(false);
+          finishGame('alien');
         }
 
         // Mint stars — slow floaty fall
         s.stars = s.stars.filter(st => !st.done);
         for (const st of s.stars) {
           if (!st.landed) {
-            st.vy += 0.05; st.y += st.vy;
+            st.vy += 0.05 * frames; st.y += st.vy * frames;
             if (st.y >= GY-10) { st.y=GY-10; st.landed=true; }
           } else {
             st.landMs -= dt;
@@ -499,10 +548,12 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
         // Dino runners
         s.runners = s.runners.filter(r => r.x > -RW-10);
         for (const r of s.runners) {
-          r.x -= RUNNER_SPEED; r.ft++;
+          r.x -= RUNNER_SPEED * frames; r.ft += frames;
           if (r.ft >= 8) { r.ft=0; r.frame=(r.frame+1)%3; }
           if (overlaps(dog.x+4,dog.y+4,DOG_W-8,DOG_H-4, r.x+4,GY-RH+5,RW-8,RH-10)) {
-            s.deathCause='human'; setGameOver(true); setIsPlaying(false);
+            if (!s.ufoFalling && !s.ufoGrounded) {
+              finishGame('human');
+            }
           }
         }
 
@@ -540,19 +591,22 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
     const down = (e: KeyboardEvent) => {
       if (e.code==='ArrowLeft'  || e.code==='KeyA') leftHeld.current  = true;
       if (e.code==='ArrowRight' || e.code==='KeyD') rightHeld.current = true;
-      if (e.code==='Space') { e.preventDefault(); handleAction(); }
-      if (e.code==='ArrowUp' || e.code==='KeyW') {
+      if (e.code==='Space' || e.code==='ArrowUp' || e.code==='KeyW') {
         e.preventDefault();
+        if (e.repeat) return;
         if (isPlaying && !gameOver) handleJump();
+        else if (e.code === 'Space') handleAction();
       }
     };
     const up = (e: KeyboardEvent) => {
       if (e.code==='ArrowLeft'  || e.code==='KeyA') leftHeld.current  = false;
       if (e.code==='ArrowRight' || e.code==='KeyD') rightHeld.current = false;
     };
+    const blur = () => { leftHeld.current=false; rightHeld.current=false; S.current.jumpBufferMs=0; };
+    window.addEventListener('blur', blur);
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+    return () => { window.removeEventListener('blur', blur); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, [handleAction, handleJump, isPlaying, gameOver]);
 
   return (
@@ -608,7 +662,7 @@ const UFOGame: React.FC<GameProps> = ({ onClose, lang = 'zh' }) => {
             {T.move} ·{' '}
             <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">↑</kbd>{' / '}
             <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">W</kbd>{' '}
-            {T.jumpWord} · {T.hintTail}
+            / <kbd className="px-1.5 py-0.5 bg-[#2D1B4E] rounded text-[#9D8AB5]">{lang === 'en' ? 'Space' : '空格'}</kbd>{' '}{T.jumpWord} · {T.hintTail}
           </p>
           <p className="md:hidden text-xs text-[#5D4A6E]">{T.hintMobile}</p>
         </div>
