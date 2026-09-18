@@ -14,6 +14,17 @@ interface HatchGameProps {
 }
 
 type Faction = 'rabbit' | 'reindeer';
+type BodyTrait = 'swift' | 'sturdy' | 'restorative';
+const BODY_TRAITS = {
+  swift: { speed: 1.15, hp: .9, heal: 1, mark: '›' },
+  sturdy: { speed: .92, hp: 1.25, heal: 1, mark: '◇' },
+  restorative: { speed: 1, hp: 1, heal: 1.4, mark: '+' },
+};
+const BODY_KEYS: BodyTrait[] = ['swift', 'sturdy', 'restorative'];
+const MENTAL_CAST_COST = 34;
+const MENTAL_RECOVERY = 7;
+const MENTAL_RECOVERY_DELAY = 1000;
+
 type Phase = 'title' | 'playing' | 'levelup' | 'ended';
 
 // —— 画布与对局 ——
@@ -64,7 +75,7 @@ const PSY_LEVELS = [
   { cd: 800, dmg: 8, count: 3, range: 180, slow: 1000 },
   { cd: 700, dmg: 10, count: 3, range: 190, slow: 1200 },
 ];
-// 鹿·主动：大雷电（追踪瞄准方向附近的数个敌人，粗电流束+麻痹；释放后随机自我debuff）
+// 鹿·主动：大雷电（追踪瞄准方向附近的数个敌人，粗电流束+麻痹；高负荷扩大范围和延长麻痹，满负荷反噬）
 const BOLT_LEVELS = [
   { cd: 3000, dmg: 22, count: 2, range: 320, width: 16, stun: 400 },
   { cd: 2700, dmg: 26, count: 3, range: 340, width: 18, stun: 500 },
@@ -77,7 +88,6 @@ const MAX_WEAPON_LEVEL = 5;
 const FRAME_GAP_PAUSE_MS = 250; // 帧间空档超过这个值就当作暂停（切后台/卡顿），不计入游戏时钟
 // 鹿主动技能自我debuff
 const DEBUFF_DARK_MS = 2500; // 屏幕变暗
-const DEBUFF_SLOW_MS = 1500; // 行动迟缓
 // 体力持续流失（只能靠吃尸体回复）
 const HP_DRAIN_PER_SEC = { rabbit: 1.2, reindeer: 0.9 };
 // 克隆成长与精英制：互杀/抢食会变强，杀满2个升精英解锁远程（误伤同类）
@@ -88,8 +98,12 @@ const CLONE_EAT_DMG_GAIN = 0.5; // 克隆抢食也涨攻击
 const ELITE_KILLS = 2;
 const ELITE_SHOT_CD = 3000;
 const ELITE_BULLET_SPEED = 4.5;
-const ELITE_ZAP_RANGE = 130; // 鹿场精英短距电流
+const ELITE_ZAP_RANGE = 165; // 鹿场精英短距电流
 const ELITE_ZAP_SLOW = 800;
+const ELITE_ZAP_WINDUP = 500;
+const ELITE_ZAP_RADIUS = 32;
+const ELITE_ZAP_CD = 2600;
+const PLAYER_SLOW_RECOVERY_MS = 1800;
 // 波次数值成长
 const WAVE_HP_GAIN = 3;
 const WAVE_DMG_GAIN = 0.3;
@@ -126,8 +140,6 @@ const REAPER_SPEED = 3.6;
 const RARITY_FINE_CHANCE = 0.3;
 const RARITY_ANOM_CHANCE = 0.1;
 const EAT_COOLDOWN = 400; // 吃完一具后的短冷却，期间不主动吃下一具，避免连续硬直
-const DEER_EAT_CHANCE = 0.5; // 鹿不一定肯吃：50%概率拒食（犹豫一会儿再说）
-const DEER_SHUN_MS = 1200; // 拒食后对该尸体的犹豫时长
 
 // —— 被动（换体清空）——
 type PassiveKey = 'mov' | 'vit' | 'cdr' | 'pick';
@@ -139,6 +151,7 @@ const xpNeed = (level: number) => Math.round(30 * Math.pow(1.35, level - 1));
 
 // —— 实体 ——
 interface Mob {
+  trait: BodyTrait;
   id: number;
   serial: number; // 出厂编号（1~80）
   x: number; y: number;
@@ -152,6 +165,7 @@ interface Mob {
   hitUntil: number; // 受击闪烁
   wobble: number;
   kills: number; // 互杀战果，≥ELITE_KILLS 为精英
+  zap?: { x: number; y: number; at: number; targetId: number | null };
   lastShot: number; // 精英远程冷却
 }
 interface Corpse { id: number; x: number; y: number; bornAt: number; big: boolean; shunUntil?: number }
@@ -166,9 +180,16 @@ interface BloodFx { x: number; y: number; time: number }
 interface EatFx { x: number; y: number; time: number; big: boolean }
 interface DmgNum { x: number; y: number; v: number; time: number }
 
+type CombatRoute = 'chain' | 'heavy' | 'wide' | 'quick';
+const ROUTES: Record<CombatRoute, { zh: string; en: string; descZh: string; descEn: string }> = {
+  chain: { zh: '连续猎杀', en: 'Kill chain', descZh: '击杀回填2发；自然回弹耗时增加40%。依靠击杀续航。本局路线二选一，换体保留。', descEn: 'Kills return 2 rounds; passive reload takes 40% longer. Choose one route per run; survives takeover.' },
+  heavy: { zh: '重弹穿透', en: 'Heavy rounds', descZh: '子弹伤害+45%、穿透+1；射击间隔+30%，击杀不再回弹。本局路线二选一，换体保留。', descEn: '+45% bullet damage, +1 pierce; firing interval +30%, no kill refund. Choose one route per run; survives takeover.' },
+  wide: { zh: '广域控制', en: 'Wide control', descZh: '主动范围+25%、目标+1；冷却延长30%。本局路线二选一，换体保留。', descEn: '+25% active range, +1 target; cooldown +30%. Choose one route per run; survives takeover.' },
+  quick: { zh: '短促脉冲', en: 'Quick pulses', descZh: '主动冷却缩短25%；范围缩小20%，每次负荷不变。本局路线二选一，换体保留。', descEn: 'Active cooldown −25%; range −20%, same load per cast. Choose one route per run; survives takeover.' },
+};
 type Rarity = 'normal' | 'fine' | 'anomalous';
 interface UpgradeOption {
-  key: 'auto' | 'active' | PassiveKey | 'heal';
+  key: 'auto' | 'active' | PassiveKey | 'heal' | CombatRoute;
   title: string;
   desc: string;
   rarity: Rarity;
@@ -321,6 +342,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     facing: 0,
     aimAngle: -Math.PI / 2,          // 主动技能瞄准方向（武器指示物朝向）
     aimSrc: '' as '' | 'mouse' | 'joy', // 最近一次瞄准来源，用于每帧更新aimAngle
+    bodyTrait: 'restorative' as BodyTrait,
+    mentalLoad: 0,
+    combatRoute: null as CombatRoute | null,
+    eatingCorpseId: null as number | null,
     eatingUntil: 0,
     eatStart: 0,   // 本次进食开始时刻（画进度环用）
     eatCdUntil: 0, // 进食后短冷却，到点前不主动吃，给玩家时间走开
@@ -334,7 +359,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     kills: 0, bodies: 1,
     lastDamagerId: -1,
     darkUntil: 0, // 鹿debuff：屏幕变暗
-    selfSlowUntil: 0, // 鹿debuff：行动迟缓
+    selfSlowUntil: 0, // 敌方电击：行动迟缓
+    slowProtectedUntil: 0, // 减速结束后保留脱身窗口
     hasteUntil: 0, // 兔匕首加速
     invulnUntil: 0, // 换体无敌
     freezeUntil: 0, // 开局倒数
@@ -443,11 +469,30 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const playerSpeed = () => {
     const s = S.current;
     const now = nowMs();
-    const slowMul = now < s.selfSlowUntil ? 0.5 : 1;
+    const slowMul = now < s.selfSlowUntil ? 0.75 : 1;
     const hasteMul = now < s.hasteUntil ? HASTE_MUL : 1;
-    return factionOf().speed * (1 + s.passives.mov * PASSIVE_STEP.mov) * slowMul * hasteMul;
+    return factionOf().speed * BODY_TRAITS[s.bodyTrait].speed * (1 + s.passives.mov * PASSIVE_STEP.mov) * slowMul * hasteMul;
+  };
+  const applyPlayerSlow = (now: number) => {
+    const s = S.current;
+    if (now < s.painFreeUntil || now < s.slowProtectedUntil) return;
+    s.selfSlowUntil = now + ELITE_ZAP_SLOW;
+    s.slowProtectedUntil = s.selfSlowUntil + PLAYER_SLOW_RECOVERY_MS;
   };
   const cdMul = () => 1 - S.current.passives.cdr * PASSIVE_STEP.cdr;
+  const gunStats = () => {
+    const s = S.current, base = GUN_LEVELS[s.wActive - 1];
+    return { ...base, reload: base.reload * (s.combatRoute === 'chain' ? 1.4 : 1),
+      dmg: base.dmg * (s.combatRoute === 'heavy' ? 1.45 : 1),
+      pierce: base.pierce + (s.combatRoute === 'heavy' ? 1 : 0),
+      cd: base.cd * (s.combatRoute === 'heavy' ? 1.3 : 1) };
+  };
+  const boltStats = () => {
+    const s = S.current, base = BOLT_LEVELS[s.wActive - 1];
+    return { ...base, range: base.range * (s.combatRoute === 'wide' ? 1.25 : s.combatRoute === 'quick' ? 0.8 : 1),
+      count: base.count + (s.combatRoute === 'wide' ? 1 : 0),
+      cd: base.cd * (s.combatRoute === 'wide' ? 1.3 : s.combatRoute === 'quick' ? 0.75 : 1) };
+  };
   const pickupRange = () => BASE_PICKUP + S.current.passives.pick * PASSIVE_STEP.pick;
 
   const dist2 = (ax: number, ay: number, bx: number, by: number) => {
@@ -466,13 +511,15 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const spawnClone = (x: number, y: number, waveIdx: number) => {
     const s = S.current;
     // 后出场的批次天生更强
-    const hp = 22 + waveIdx * WAVE_HP_GAIN;
+    const trait = BODY_KEYS[Math.floor(Math.random() * BODY_KEYS.length)];
+    const hp = Math.round((22 + waveIdx * WAVE_HP_GAIN) * BODY_TRAITS[trait].hp);
     s.mobs.push({
       id: s.nextId++,
       serial: takeSerial(),
+      trait,
       x, y,
       hp, maxHp: hp,
-      speed: 1.5 + Math.random() * 0.7 + waveIdx * WAVE_SPEED_GAIN,
+      speed: (1.5 + Math.random() * 0.7 + waveIdx * WAVE_SPEED_GAIN) * BODY_TRAITS[trait].speed,
       dmg: factionOf().cloneDmg + waveIdx * WAVE_DMG_GAIN,
       lastAtk: 0, lastEat: 0, slowUntil: 0, stunUntil: 0, hitUntil: 0,
       wobble: Math.random() * Math.PI * 2,
@@ -502,6 +549,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
   const hurtMob = (m: Mob, dmg: number, now: number): boolean => {
     const s = S.current;
+    if (!s.mobs.some(alive => alive.id === m.id)) return false;
     m.hp -= dmg;
     m.hitUntil = now + 130;
     s.dmgNums.push({ x: m.x + (Math.random() - 0.5) * 10, y: m.y - 10, v: dmg, time: now });
@@ -512,6 +560,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       s.corpses.push({ id: s.nextId++, x: m.x, y: m.y, bornAt: now, big: false });
       s.bloodFx.push({ x: m.x, y: m.y, time: now });
       s.kills++;
+      // A confirmed rabbit kill returns one round; no reward on duplicate hits.
+      if (s.faction === 'rabbit') s.ammo = Math.min(gunStats().mag, s.ammo + (s.combatRoute === 'heavy' ? 0 : s.combatRoute === 'chain' ? 2 : 1));
       // 连杀：窗口内连续击杀涨层数
       s.combo = now < s.comboUntil ? s.combo + 1 : 1;
       s.comboUntil = now + COMBO_WINDOW;
@@ -562,6 +612,12 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
   const openLevelup = () => {
     const pool = buildUpgradePool();
     const picked: UpgradeOption[] = [];
+    const s = S.current;
+    if (!s.combatRoute) {
+      const routes: CombatRoute[] = s.faction === 'rabbit' ? ['chain', 'heavy'] : ['wide', 'quick'];
+      routes.forEach(key => picked.push({ key, title: lang === 'en' ? ROUTES[key].en : ROUTES[key].zh,
+        desc: lang === 'en' ? ROUTES[key].descEn : ROUTES[key].descZh, rarity: 'normal' }));
+    }
     const copy = [...pool];
     while (picked.length < 3 && copy.length > 0) {
       const opt = copy.splice(Math.floor(Math.random() * copy.length), 1)[0];
@@ -581,7 +637,11 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const s = S.current;
     // 稀有度倍数：普通1 / 精良2 / 异常3（武器为+1级/+1级并回血/+2级）
     const mult = opt.rarity === 'anomalous' ? 3 : opt.rarity === 'fine' ? 2 : 1;
-    if (opt.key === 'auto' || opt.key === 'active') {
+    if (opt.key === 'chain' || opt.key === 'heavy' || opt.key === 'wide' || opt.key === 'quick') {
+      const allowed = s.faction === 'rabbit' ? ['chain', 'heavy'] : ['wide', 'quick'];
+      if (s.combatRoute || !allowed.includes(opt.key)) return;
+      s.combatRoute = opt.key;
+    } else if (opt.key === 'auto' || opt.key === 'active') {
       const lvGain = opt.rarity === 'anomalous' ? 2 : 1;
       if (opt.key === 'auto') s.wAuto = Math.min(MAX_WEAPON_LEVEL, s.wAuto + lvGain);
       else s.wActive = Math.min(MAX_WEAPON_LEVEL, s.wActive + lvGain);
@@ -591,7 +651,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     } else {
       s.passives[opt.key] = Math.min(PASSIVE_MAX, s.passives[opt.key] + mult);
       if (opt.key === 'vit') {
-        s.maxHp = factionOf().hp + s.passives.vit * PASSIVE_STEP.vit;
+        s.maxHp = Math.round(factionOf().hp * BODY_TRAITS[s.bodyTrait].hp) + s.passives.vit * PASSIVE_STEP.vit;
         s.hp = Math.min(s.maxHp, s.hp + PASSIVE_STEP.vit * mult);
       }
     }
@@ -617,7 +677,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const s = S.current;
     // 兔枪弹匣回填（不依赖场上有无敌人）
     if (s.faction === 'rabbit') {
-      const g = GUN_LEVELS[s.wActive - 1];
+      const g = gunStats();
       const reload = g.reload * cdMul();
       while (s.ammo < g.mag && now - s.lastReload >= reload) {
         s.ammo++;
@@ -703,7 +763,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
     if (s.faction === 'rabbit') {
       // 枪：朝鼠标方向打一发，消耗弹匣
-      const g = GUN_LEVELS[s.wActive - 1];
+      const g = gunStats();
       if (now - s.lastActive < g.cd) return;
       if (s.ammo <= 0) return;
       if (s.ammo >= g.mag) s.lastReload = now; // 从满匣开始计回填
@@ -715,9 +775,12 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       s.bullets.push({ x: s.px, y: s.py, vx: nx * 8, vy: ny * 8, dmg: g.dmg, pierce: g.pierce, hit: new Set() });
     } else {
       // 大雷电：追踪瞄准方向锥内最近的数个敌人
-      const b = BOLT_LEVELS[s.wActive - 1];
+      const b = boltStats();
       if (now - s.lastActive < b.cd * cdMul()) return;
-      const inRange = s.mobs.filter(m => dist2(s.px, s.py, m.x, m.y) <= b.range * b.range);
+      const loadRatio = Math.min(1, s.mentalLoad / 100);
+      const range = b.range * (1 + loadRatio * 0.25);
+      const stun = b.stun * (1 + loadRatio * 0.3);
+      const inRange = s.mobs.filter(m => dist2(s.px, s.py, m.x, m.y) <= range * range);
       if (inRange.length === 0) return; // 范围内没人，不浪费冷却
       const withAngle = inRange.map(m => {
         let da = Math.atan2(m.y - s.py, m.x - s.px) - angle;
@@ -735,13 +798,17 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       addShake(3, 150);
       targets.forEach(t => {
         s.beamFx.push({ x1: s.px, y1: s.py, x2: t.m.x, y2: t.m.y, width: b.width, time: now });
-        t.m.stunUntil = now + b.stun;
+        t.m.stunUntil = now + stun;
+        t.m.zap = undefined; // 主动控制可打断蓄力
         hurtMob(t.m, b.dmg, now);
       });
-      // 精神反噬：随机屏幕变暗或行动迟缓（止痛药期间免疫）
+      // Predictable overload: sustained casting builds load; painkillers prevent it.
       if (now >= s.painFreeUntil) {
-        if (Math.random() < 0.5) s.darkUntil = now + DEBUFF_DARK_MS;
-        else s.selfSlowUntil = now + DEBUFF_SLOW_MS;
+        s.mentalLoad = Math.min(100, s.mentalLoad + MENTAL_CAST_COST);
+        if (s.mentalLoad >= 100) {
+          s.darkUntil = now + DEBUFF_DARK_MS;
+          s.mentalLoad = 60;
+        }
       }
     }
   };
@@ -762,16 +829,20 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     s.prevSerial = s.playerSerial;
     s.playerSerial = killer.serial;
     s.passives = { mov: 0, vit: 0, cdr: 0, pick: 0 };
-    s.maxHp = factionOf().hp;
+    s.bodyTrait = killer.trait;
+    s.maxHp = Math.round(factionOf().hp * BODY_TRAITS[s.bodyTrait].hp);
+    s.mentalLoad = 0;
+    s.eatingCorpseId = null;
+    s.eatingUntil = 0; s.eatStart = 0; s.eatCdUntil = 0;
     s.hp = Math.round(s.maxHp * 0.7);
     s.bodies++;
-    s.darkUntil = 0; s.selfSlowUntil = 0; s.hasteUntil = 0;
+    s.darkUntil = 0; s.selfSlowUntil = 0; s.slowProtectedUntil = 0; s.hasteUntil = 0;
     s.invulnUntil = now + INVULN_MS; // 换体无敌
     s.lastTakeoverAt = now;
     sfx.takeover();
     addShake(4, 300);
     // 新身体满弹匣
-    if (s.faction === 'rabbit') { s.ammo = GUN_LEVELS[s.wActive - 1].mag; s.lastReload = now; }
+    if (s.faction === 'rabbit') { s.ammo = gunStats().mag; s.lastReload = now; }
     s.slowmoUntil = now + TAKEOVER_SLOWMO;
     s.flashUntil = now + 350;
     s.takeoverMsgUntil = now + 2600;
@@ -825,6 +896,9 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       s.reaper = { x: W / 2, y: -30 };
       sfx.alarm();
       addShake(5, 500);
+    }
+    if (s.faction === 'reindeer' && now - s.lastActive > MENTAL_RECOVERY_DELAY) {
+      s.mentalLoad = Math.max(0, s.mentalLoad - MENTAL_RECOVERY * (rawDt / 1000) * timeScale);
     }
     // 第六天起全场狂暴
     const frenzy = elapsed >= FRENZY_AFTER_DAY * DAY_MS;
@@ -899,7 +973,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
         const roll = Math.random();
         if (roll < 0.34) {
           // 军备：满弹匣/技能立即就绪 + 回血
-          if (s.faction === 'rabbit') s.ammo = GUN_LEVELS[s.wActive - 1].mag;
+          if (s.faction === 'rabbit') s.ammo = gunStats().mag;
           else s.lastActive = -99999;
           s.hp = Math.min(s.maxHp, s.hp + 20);
         } else if (roll < 0.67) {
@@ -920,11 +994,13 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     }
 
     // —— 玩家移动 ——
-    const eating = now < s.eatingUntil;
     let mx = (s.keys.right ? 1 : 0) - (s.keys.left ? 1 : 0) + s.joy.x;
     let my = (s.keys.down ? 1 : 0) - (s.keys.up ? 1 : 0) + s.joy.y;
     const mlen = Math.sqrt(mx * mx + my * my);
-    if (mlen > 0.15 && !eating) {
+    if (mlen > 0.15) {
+      s.eatingCorpseId = null;
+      s.eatingUntil = 0;
+      s.eatStart = 0;
       mx /= mlen; my /= mlen;
       s.px += mx * playerSpeed() * dt;
       s.py += my * playerSpeed() * dt;
@@ -941,7 +1017,28 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
         cloneKillClone(m, now);
         return;
       }
-      if (now < m.stunUntil) return;
+      if (now < m.stunUntil) { m.zap = undefined; return; }
+      // Lock the impact point at windup start: movement can dodge, control can interrupt.
+      if (m.zap) {
+        const zap = m.zap;
+        if (now < zap.at) return;
+        m.zap = undefined;
+        s.filamentFx.push({ x1: m.x, y1: m.y, x2: zap.x, y2: zap.y, time: now });
+        const victim = zap.targetId === null ? null : s.mobs.find(o => o.id === zap.targetId);
+        if (zap.targetId === null) {
+          if (now >= s.invulnUntil && dist2(s.px, s.py, zap.x, zap.y) <= ELITE_ZAP_RADIUS ** 2) {
+            s.hp -= Math.round(m.dmg * 0.6);
+            s.lastDamagerId = m.id;
+            applyPlayerSlow(now);
+            if (s.hp <= 0) takeover(now);
+          }
+        } else if (victim && dist2(victim.x, victim.y, zap.x, zap.y) <= ELITE_ZAP_RADIUS ** 2) {
+          victim.hp -= Math.round(m.dmg * 0.6);
+          victim.slowUntil = now + ELITE_ZAP_SLOW;
+          if (victim.hp <= 0) { cloneKillClone(victim, now); creditCloneKill(m); }
+        }
+        return;
+      }
       const slowMul = (now < m.slowUntil ? 0.5 : 1) * (frenzy ? FRENZY_SPEED_MUL : 1);
       const isAlpha = m.kills >= ALPHA_KILLS;
       let tx = s.px, ty = s.py;
@@ -988,7 +1085,8 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       }
 
       // 精英远程（杀满2个解锁）：兔场开枪 / 鹿场短距电流；头狼射速加快
-      const shotCd = isAlpha ? ELITE_SHOT_CD * 0.6 : ELITE_SHOT_CD;
+      const baseShotCd = s.faction === 'reindeer' ? ELITE_ZAP_CD : ELITE_SHOT_CD;
+      const shotCd = isAlpha ? baseShotCd * 0.6 : baseShotCd;
       if (m.kills >= ELITE_KILLS && now - m.lastShot >= shotCd) {
         const aimPlayer = !targetMob;
         const tx2 = aimPlayer ? s.px : targetMob!.x;
@@ -1005,23 +1103,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           });
         } else if (dist2(m.x, m.y, tx2, ty2) <= ELITE_ZAP_RANGE * ELITE_ZAP_RANGE) {
           m.lastShot = now + Math.random() * 800;
-          s.filamentFx.push({ x1: m.x, y1: m.y, x2: tx2, y2: ty2, time: now });
-          if (aimPlayer) {
-            if (now >= s.invulnUntil) {
-              s.hp -= Math.round(m.dmg * 0.6);
-              s.lastDamagerId = m.id;
-              // 止痛药期间免疫减速
-              if (now >= s.painFreeUntil) s.selfSlowUntil = Math.max(s.selfSlowUntil, now + ELITE_ZAP_SLOW);
-              if (s.hp <= 0) takeover(now);
-            }
-          } else {
-            targetMob!.hp -= Math.round(m.dmg * 0.6);
-            targetMob!.slowUntil = now + ELITE_ZAP_SLOW;
-            if (targetMob!.hp <= 0) {
-              cloneKillClone(targetMob!, now);
-              creditCloneKill(m);
-            }
-          }
+          m.zap = { x: tx2, y: ty2, at: now + ELITE_ZAP_WINDUP, targetId: aimPlayer ? null : targetMob!.id };
         }
       }
 
@@ -1032,7 +1114,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
           // 吃出来的强：血上限+攻击都涨
           m.maxHp += CLONE_EAT_MAXHP_GAIN;
           m.dmg += CLONE_EAT_DMG_GAIN;
-          m.hp = Math.min(m.maxHp, m.hp + 10);
+          m.hp = Math.min(m.maxHp, m.hp + 10 * BODY_TRAITS[m.trait].heal);
           s.corpses = s.corpses.filter(x => x.id !== c.id);
           s.eatFx.push({ x: c.x, y: c.y, time: now, big: false });
         }
@@ -1069,35 +1151,32 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       return true;
     });
 
-    // —— 玩家吃尸体 ——（进食硬直结束后还有一小段冷却，避免连吃卡住）
-    if (!eating && now >= s.eatCdUntil) {
-      const pr = pickupRange();
-      const c = s.corpses.find(c => dist2(s.px, s.py, c.x, c.y) < pr * pr && !(c.shunUntil && now < c.shunUntil));
-      if (c) {
-        const consume = () => {
-          // 兔全额回血；鹿的减半已体现在corpseHeal基础值里
-          const cc = S.current.corpses.find(x => x.id === c.id);
-          if (!cc) return;
-          const heal = cc.big ? S.current.maxHp : f.corpseHeal;
-          S.current.hp = Math.min(S.current.maxHp, S.current.hp + heal);
-          S.current.corpses = S.current.corpses.filter(x => x.id !== cc.id);
-          S.current.eatFx.push({ x: cc.x, y: cc.y, time: nowMs(), big: cc.big });
-          S.current.eaten++;
-          sfx.eat();
-          gainXp((cc.big ? 3 : 1) * f.corpseXp);
-        };
-        // 鹿不一定肯吃：50%拒食，对这具尸体犹豫一阵（自己的旧身体不拒）
-        if (s.faction === 'reindeer' && !c.big && Math.random() >= DEER_EAT_CHANCE) {
-          c.shunUntil = now + DEER_SHUN_MS;
-        } else {
-          // 两阵营都要在尸体上停一小会儿才吞下（期间尸体可能被抢走）
-          s.eatStart = now;
-          s.eatingUntil = now + f.eatFreeze;
-          s.eatCdUntil = now + f.eatFreeze + EAT_COOLDOWN;
-          setTimeout(() => {
-            if (phaseRef.current === 'playing') consume();
-          }, f.eatFreeze);
-        }
+    // Eating uses game time (not setTimeout), pauses with upgrades, and movement cancels it.
+    if (s.eatingCorpseId !== null) {
+      const corpse = s.corpses.find(c => c.id === s.eatingCorpseId);
+      if (!corpse || now - corpse.bornAt >= CORPSE_TTL * (corpse.big ? 2 : 1)) {
+        s.eatingCorpseId = null;
+        s.eatingUntil = 0;
+      } else if (now >= s.eatingUntil) {
+        const heal = corpse.big ? s.maxHp : f.corpseHeal * BODY_TRAITS[s.bodyTrait].heal;
+        s.hp = Math.min(s.maxHp, s.hp + heal);
+        s.corpses = s.corpses.filter(c => c.id !== corpse.id);
+        s.eatFx.push({ x: corpse.x, y: corpse.y, time: now, big: corpse.big });
+        s.eaten++;
+        sfx.eat();
+        gainXp((corpse.big ? 3 : 1) * f.corpseXp);
+        s.eatingCorpseId = null;
+        s.eatingUntil = 0;
+        s.eatCdUntil = now + EAT_COOLDOWN;
+      }
+    }
+    if (mlen <= .15 && s.eatingCorpseId === null && now >= s.eatCdUntil) {
+      const range = pickupRange();
+      const corpse = s.corpses.find(c => dist2(s.px, s.py, c.x, c.y) < range * range);
+      if (corpse) {
+        s.eatingCorpseId = corpse.id;
+        s.eatStart = now;
+        s.eatingUntil = now + f.eatFreeze;
       }
     }
 
@@ -1233,6 +1312,20 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
 
     // 克隆
     s.mobs.forEach(m => {
+      if (m.zap && now >= m.stunUntil) {
+        ctx.save();
+        ctx.strokeStyle = '#e8833a';
+        ctx.fillStyle = 'rgba(232,131,58,0.12)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 5]);
+        ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.zap.x, m.zap.y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(m.zap.x, m.zap.y, ELITE_ZAP_RADIUS, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        const progress = Math.max(0, Math.min(1, 1 - (m.zap.at - now) / ELITE_ZAP_WINDUP));
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(m.zap.x, m.zap.y, ELITE_ZAP_RADIUS, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
       const stunned = now < m.stunUntil;
       const slowed = now < m.slowUntil;
       const hit = now < m.hitUntil;
@@ -1242,6 +1335,12 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
       ctx.globalAlpha = 0.6 + 0.4 * (m.hp / m.maxHp);
       ctx.beginPath(); ctx.arc(m.x, m.y, r, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f0d3a3';
+      ctx.fillText(BODY_TRAITS[m.trait].mark, m.x, m.y - 13);
+      ctx.restore();
       if (elite) {
         // 精英金边；头狼双环
         ctx.strokeStyle = '#F5D061';
@@ -1482,10 +1581,10 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     // 兔=下一发子弹的回填进度（满弹匣时整圈亮）；鹿=大雷电冷却
     let cdFrac = 1;
     if (s.faction === 'rabbit') {
-      const g = GUN_LEVELS[s.wActive - 1];
+      const g = gunStats();
       cdFrac = s.ammo >= g.mag ? 1 : Math.min(1, (now - s.lastReload) / (g.reload * cdMul()));
     } else {
-      const b = BOLT_LEVELS[s.wActive - 1];
+      const b = boltStats();
       cdFrac = Math.min(1, (now - s.lastActive) / (b.cd * cdMul()));
     }
     const ringReady = s.faction === 'rabbit' ? s.ammo > 0 : cdFrac >= 1;
@@ -1505,7 +1604,7 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     }
     // 兔：弹匣格（脚下一排小格）
     if (s.faction === 'rabbit') {
-      const g = GUN_LEVELS[s.wActive - 1];
+      const g = gunStats();
       const pw = 5, gap = 2;
       const total = g.mag * pw + (g.mag - 1) * gap;
       for (let i = 0; i < g.mag; i++) {
@@ -1594,7 +1693,24 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     ctx.fillStyle = '#F5A45B';
     const bodyStr = lang === 'en' ? `${T.body} ${s.bodies}` : `${T.body}${s.bodies}具`;
     ctx.fillText(`${T.serial} #${s.playerSerial} · ${bodyStr} · ${T.kills} ${s.kills} · ${T.left} ${s.mobs.length + s.poolLeft}`, WALL + 10, WALL + 48);
+    ctx.textAlign = 'right';
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = '#f0d3a3';
+    const traitNames = lang === 'en' ? { swift: 'Swift', sturdy: 'Sturdy', restorative: 'Recovery' } : { swift: '迅捷', sturdy: '强韧', restorative: '恢复' };
+    ctx.fillText(`${BODY_TRAITS[s.bodyTrait].mark} ${traitNames[s.bodyTrait]}`, W - WALL - 10, WALL + 26);
+    if (s.faction === 'reindeer') {
+      ctx.fillStyle = s.mentalLoad >= 66 ? '#f5a45b' : '#83cbb5';
+      ctx.fillText(`${lang === 'en' ? 'Mental load' : '精神负荷'} ${Math.round(s.mentalLoad)}/100`, W - WALL - 10, WALL + 50);
+      ctx.fillStyle = '#315347'; ctx.fillRect(W - WALL - 160, WALL + 58, 150, 5);
+      ctx.fillStyle = s.mentalLoad >= 66 ? '#e8833a' : '#6fcbb8';
+      ctx.fillRect(W - WALL - 160, WALL + 58, 150 * s.mentalLoad / 100, 5);
+    }
     ctx.restore();
+    if (s.combatRoute) {
+      ctx.save(); ctx.textAlign = 'right'; ctx.font = '14px sans-serif'; ctx.fillStyle = '#e8833a';
+      ctx.fillText(lang === 'en' ? ROUTES[s.combatRoute].en : ROUTES[s.combatRoute].zh, W - WALL - 10, WALL + 82);
+      ctx.restore();
+    }
     // 经验条
     const xw = W - WALL * 2 - 20;
     const xr = Math.min(1, s.xp / xpNeed(s.level));
@@ -1709,20 +1825,22 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
     const base = FACTION_BASE[fac];
     s.faction = fac;
     s.px = W / 2; s.py = H * 0.65;
-    s.maxHp = base.hp; s.hp = base.hp;
+    s.bodyTrait = BODY_KEYS[Math.floor(Math.random() * BODY_KEYS.length)];
+    s.maxHp = Math.round(base.hp * BODY_TRAITS[s.bodyTrait].hp); s.hp = s.maxHp;
+    s.mentalLoad = 0; s.eatingCorpseId = null;
     s.facing = -Math.PI / 2;
     s.aimAngle = -Math.PI / 2; s.aimSrc = '';
     s.playerSerial = 1 + Math.floor(Math.random() * POOL_TOTAL);
     s.prevSerial = s.playerSerial;
     s.serialNext = 1;
-    s.wAuto = 1; s.wActive = 1;
+    s.wAuto = 1; s.wActive = 1; s.combatRoute = null;
     s.lastAuto = 0; s.lastActive = -99999;
     s.ammo = GUN_LEVELS[0].mag; s.lastReload = nowMs();
     s.passives = { mov: 0, vit: 0, cdr: 0, pick: 0 };
     s.xp = 0; s.level = 1;
     s.kills = 0; s.bodies = 1;
     s.lastDamagerId = -1;
-    s.darkUntil = 0; s.selfSlowUntil = 0;
+    s.darkUntil = 0; s.selfSlowUntil = 0; s.slowProtectedUntil = 0;
     s.mobs = []; s.corpses = []; s.bullets = []; s.enemyBullets = [];
     s.filamentFx = []; s.beamFx = []; s.slashFx = []; s.bloodFx = []; s.eatFx = []; s.dmgNums = [];
     s.hasteUntil = 0;
@@ -1959,6 +2077,11 @@ const HatchGame: React.FC<HatchGameProps> = ({ onClose, lang = 'zh' }) => {
                 </button>
               </div>
               <p className="text-[14px] text-[#F5A45B]/90 tracking-wide">{T.hint}</p>
+              <div className="text-[13px] text-[#D5C6B4] text-center leading-6 px-6 max-w-3xl">
+                <p>{lang === 'en' ? 'Rabbit: each kill returns 1 round. Reindeer: casts add 34 load; 100 triggers backlash. Higher load boosts cast range and stun. Move out of orange warnings or interrupt the caster. Rest to recover.' : '兔：击杀回填1发子弹。鹿：施法增加34负荷，达到100触发反噬；负荷越高，施法范围与控制越强。橙圈电击可走位躲避或打断；停用技能逐渐恢复。'}</p>
+                <p>{lang === 'en' ? '› Swift: +15% speed, −10% HP · ◇ Sturdy: +25% HP, −8% speed · + Recovery: +40% feeding heal. Traits transfer with bodies.' : '› 迅捷：移速+15%、生命−10% · ◇ 强韧：生命+25%、移速−8% · + 恢复：进食回血+40%。换体继承特点。'}</p>
+                <p>{lang === 'en' ? 'Stop to feed; move to cancel. Reindeer no longer randomly refuse food.' : '停留开始进食，移动立即取消；驯鹿不再随机拒食。'}</p>
+              </div>
             </div>
           )}
 

@@ -314,7 +314,7 @@ main > div:has(> .journal-toc), main > div:has(> .journal-reader) { max-width: 1
 /* Observation game: warm archive paper, with each ending's own accent. */
 .observation-overlay { background: #47423765; }
 .observation-panel { background: #f8f5ed; border-color: #ded6c7; border-radius: 7px; box-shadow: 0 24px 80px #40352830; }
-.observation-panel > div:first-child h2 { font-size: 19px; font-weight: 500; color: #a87544; }
+.observation-panel > div:first-child h2 { font-size: 19px; font-weight: 500; color: #C96A24; }
 .observation-panel > div:first-child button { border-radius: 4px; }
 .observation-stage { padding: 8px; background: #f1ece2; border: 1px solid #e0d8c9; border-radius: 3px; }
 .observation-stage canvas { border-radius: 2px; border-color: #e3d8c5; }
@@ -330,8 +330,8 @@ main > div:has(> .journal-toc), main > div:has(> .journal-reader) { max-width: 1
 .observation-ending--blood .observation-ending-title { color: #873c43 !important; font-weight: 500; text-shadow: none; }
 
 .observation-ending-title::after { content: ''; display: block; height: 3px; width: 32px; margin: 22px auto 0; background: currentColor; opacity: .7; border-radius: 2px; }
-.observation-panel > .flex.flex-wrap button { border-radius: 4px; box-shadow: 0 2px 0 #cbbba438; background: #a77c51; padding: 11px 27px; font-weight: 500; }
-.observation-panel > .flex.flex-wrap button:hover { background: #89613e; }
+.observation-panel > .flex.flex-wrap button { border-radius: 4px; box-shadow: 0 2px 0 #d9762526; background: #E8833A; padding: 11px 27px; font-weight: 500; }
+.observation-panel > .flex.flex-wrap button:hover { background: #C96A24; }
 .observation-panel > div:last-child { color: #8b7e6c; font-size: 12px; line-height: 1.8; }
 @media (max-width: 640px) {
   .observation-overlay { padding: 10px; }

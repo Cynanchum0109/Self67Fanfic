@@ -215,7 +215,6 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
   // 配对羁绊：记录每一对agent之间发生过多少次互相增强（按相遇次数去重，不按帧数）
   const pairBondRef = useRef<Map<string, { count: number; last: number }>>(new Map());
   const BOND_ENCOUNTER_GAP = 1000; // 同一对1秒内的连续增强只算一次相遇
-  const BOND_ESCAPE_COUNT = 3; // 羁绊达到3次相遇，终局中间档升格为逃脱
 
   const agentsRef = useRef<Agent[]>([]);
   const drugPointsRef = useRef<DrugPoint[]>([]);
@@ -248,13 +247,16 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
   const RABBIT_AGGRESSIVENESS = 0.25; // 兔子攻击性阈值（降低攻击欲望）
   const POWER_GAIN_ON_DRUG = 5;
   const POWER_GAIN_ON_CROSS_TEAM = 3;
-  const POWER_GAIN_ON_CROSS_TEAM_REINDEER = 4; // 驯鹿队跨队增强加成
+  const POWER_GAIN_ON_CROSS_TEAM_REINDEER = 3.8; // 驯鹿队跨队增强加成
   const CROSS_TEAM_GROWTH_THRESHOLD = 0.5; // 跨队共同增强的阈值（提高阈值，让更多异队碰撞触发共同增强）
   const HEART_EFFECT_COOLDOWN = 500; // 爱心特效冷却时间（0.5秒）
   const NO_ENCOUNTER_TIME = 5000; // 5秒没有相遇开始缩圈（缩短）
   const SHRINK_RATE = 10; // 每秒缩小10像素（更快）
-  const FINAL_BOOST_DIFF = 0.1; // 小差距：逃脱（增强）
-  const FINAL_MID_DIFF = 0.35;   // 中差距：中间范畴
+  const FINAL_BOOST_DIFF = 0.032; // 极接近的战力：隐藏逃脱
+  const FINAL_MID_DIFF = 0.125; // 较接近的战力：共同存活
+  // 仅在首次进入最终1v1、差距达到击杀档时检查一次。
+  // 约80%的终局在击杀档，12.5%的条件概率对应约10%的单独存活（两队各约5%）。
+  const FINAL_COLLAPSE_CHANCE = 0.125;
   
   // 弹幕系统常量
   const BUBBLE_LIFETIME = 1000; // 1秒（立刻开始淡出）
@@ -658,7 +660,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
             if (powerDiff > 0) {
                 // other更强，杀agent
                 // 如果是驯鹿击杀，获得更多战力加成
-                const killBonus = other.team === 0 ? 0.65 : 0.5;
+                const killBonus = other.team === 0 ? 0.63 : 0.52;
                 other.power += agent.power * killBonus;
                 agentsToRemove.push(agent.id);
                 darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
@@ -673,7 +675,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
             } else {
                 // agent更强，杀other
                 // 如果是驯鹿击杀，获得更多战力加成
-                const killBonus = agent.team === 0 ? 0.65 : 0.5;
+                const killBonus = agent.team === 0 ? 0.63 : 0.52;
                 agent.power += other.power * killBonus;
                 agentsToRemove.push(other.id);
                 darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
@@ -697,7 +699,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
               // other更强，杀agent（但受保护的agent不会被击杀，改为共同增强）
               if (!agent.protected) {
                 // 如果是驯鹿击杀，获得更多战力加成
-                const killBonus = other.team === 0 ? 0.65 : 0.5;
+                const killBonus = other.team === 0 ? 0.63 : 0.52;
                 other.power += agent.power * killBonus;
                 agentsToRemove.push(agent.id);
                 darkeningEffectsRef.current.push({ x: agent.x, y: agent.y, time: now });
@@ -755,7 +757,7 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
               // agent更强，杀other（但受保护的other不会被击杀，改为共同增强）
               if (!other.protected) {
                 // 如果是驯鹿击杀，获得更多战力加成
-                const killBonus = agent.team === 0 ? 0.65 : 0.5;
+                const killBonus = agent.team === 0 ? 0.63 : 0.52;
                 agent.power += other.power * killBonus;
                 agentsToRemove.push(other.id);
                 darkeningEffectsRef.current.push({ x: other.x, y: other.y, time: now });
@@ -1066,10 +1068,10 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
       const d = Math.abs(powerDiff);
       const bond = getBondCount(a0.id, a1.id);
       // 调参观测：终局碰撞时的战力差与羁绊数
-      console.log(`[RCop终局] d=${d.toFixed(3)} bond=${bond} (逃脱: d≤${FINAL_BOOST_DIFF} 或 bond≥${BOND_ESCAPE_COUNT}且d<${FINAL_MID_DIFF})`);
+      console.log(`[RCop终局] d=${d.toFixed(3)} bond=${bond} (逃脱≤${FINAL_BOOST_DIFF}, 共同存活<${FINAL_MID_DIFF})`);
 
-      // 1) 逃脱结局：势均力敌，或这一对有足够羁绊史且差距未到击杀档
-      if (d <= FINAL_BOOST_DIFF || (bond >= BOND_ESCAPE_COUNT && d < FINAL_MID_DIFF)) {
+      // 1) 逃脱结局：最终战力几乎一致，不再由羁绊直接把整个存活档升格
+      if (d <= FINAL_BOOST_DIFF) {
         pinkMistEffectsRef.current.push({ x: midX, y: midY, time: now, radius: 0 });
         heartEffectsRef.current.push({ x: midX, y: midY, time: now, scale: 0 });
         clashRef.current = { at: now, ending: 'escape' };
@@ -1151,6 +1153,20 @@ const Simulation: React.FC<SimulationProps> = ({ onClose, lang = 'zh' }) => {
       
       if (!finalBattleRef.current.started) {
         finalBattleRef.current = { a0, a1, started: true };
+        // 隐藏单独存活：长期厮杀后，较弱一方可能在最终交锋前倒下。
+        // 只在这一入口抽取一次；进入对峙后不会按帧数或倍速重复抽取。
+        const gap = Math.abs(a1.power - a0.power) / Math.max(a0.power, a1.power);
+        if (gap >= FINAL_MID_DIFF && Math.random() < FINAL_COLLAPSE_CHANCE) {
+          const loser = a1.power > a0.power ? a0 : a1;
+          const now = Date.now();
+          spawnBloodSplash(loser.x, loser.y, now);
+          agentsRef.current = agentsRef.current.filter(agent => agent.id !== loser.id);
+          clashRef.current = {
+            at: now,
+            ending: loser.team === 0 ? 'rabbit_survives' : 'reindeer_survives',
+          };
+          return;
+        }
       } else {
         finalBattleRef.current.a0 = a0;
         finalBattleRef.current.a1 = a1;
